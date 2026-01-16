@@ -4,6 +4,9 @@ import { useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
+// 直接使用桶名，避免环境变量问题
+const BUCKET_NAME = 'drawings'
+
 interface UploadFormProps {
   projectId?: string
 }
@@ -51,21 +54,19 @@ export default function UploadForm({ projectId }: UploadFormProps) {
     setProgress(0)
 
     try {
-      const bucketName = process.env.NEXT_PUBLIC_SUPABASE_BUCKET_NAME || 'portfolio'
-      
       for (let i = 0; i < files.length; i++) {
         const file = files[i]
         const fileExt = file.name.split('.').pop()
         const fileName = `${projectId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
 
         const { error: uploadError } = await supabase.storage
-          .from(bucketName)
+          .from(BUCKET_NAME)
           .upload(fileName, file)
 
         if (uploadError) throw uploadError
 
         const { data: { publicUrl } } = supabase.storage
-          .from(bucketName)
+          .from(BUCKET_NAME)
           .getPublicUrl(fileName)
 
         const { error: dbError } = await supabase
