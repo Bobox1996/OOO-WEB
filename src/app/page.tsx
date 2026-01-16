@@ -1,9 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 
-// 启用 ISR - 每 60 秒重新生成页面
-export const revalidate = 60
-
 export default async function HomePage() {
   const supabase = await createClient()
   

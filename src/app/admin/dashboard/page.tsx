@@ -2,9 +2,6 @@ import { createClient } from '@/lib/supabase/server'
 import AdminNav from '@/components/AdminNav'
 import Link from 'next/link'
 
-// Admin 页面不缓存，始终获取最新数据
-export const dynamic = 'force-dynamic'
-
 export default async function DashboardPage() {
   const supabase = await createClient()
   

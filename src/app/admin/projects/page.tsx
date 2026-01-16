@@ -3,9 +3,6 @@ import AdminNav from '@/components/AdminNav'
 import Link from 'next/link'
 import DeleteProjectButton from '@/components/DeleteProjectButton'
 
-// Admin 页面不缓存
-export const dynamic = 'force-dynamic'
-
 export default async function ProjectsPage() {
   const supabase = await createClient()
   

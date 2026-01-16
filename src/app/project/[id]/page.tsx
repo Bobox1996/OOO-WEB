@@ -1,36 +1,57 @@
-import { createClient } from '@/lib/supabase/server'
-import { createStaticClient } from '@/lib/supabase/static'
+'use client'
+
+import { useState, useEffect, use } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
-import ProjectImages from './ProjectImages'
+import Lightbox from '@/components/Lightbox'
+import type { Project, Image } from '@/lib/types'
 
-// 启用 ISR - 每 60 秒重新生成页面
-export const revalidate = 60
+export default function ProjectPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params)
+  const [project, setProject] = useState<Project | null>(null)
+  const [images, setImages] = useState<Image[]>([])
+  const [loading, setLoading] = useState(true)
+  const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const supabase = createClient()
 
-// 生成静态路径（使用不依赖 cookies 的客户端）
-export async function generateStaticParams() {
-  const supabase = createStaticClient()
-  const { data: projects } = await supabase.from('projects').select('id')
-  
-  return (projects || []).map((project) => ({
-    id: project.id,
-  }))
-}
+  useEffect(() => {
+    fetchProject()
+  }, [id])
 
-export default async function ProjectPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
-  const supabase = await createClient()
+  const fetchProject = async () => {
+    const { data: projectData } = await supabase
+      .from('projects')
+      .select('*')
+      .eq('id', id)
+      .single()
 
-  const { data: project } = await supabase
-    .from('projects')
-    .select('*')
-    .eq('id', id)
-    .single()
+    if (projectData) {
+      setProject(projectData)
+    }
 
-  const { data: images } = await supabase
-    .from('images')
-    .select('*')
-    .eq('project_id', id)
-    .order('created_at', { ascending: false })
+    const { data: imagesData } = await supabase
+      .from('images')
+      .select('*')
+      .eq('project_id', id)
+      .order('created_at', { ascending: false })
+
+    if (imagesData) setImages(imagesData)
+    setLoading(false)
+  }
+
+  const openLightbox = (index: number) => {
+    setCurrentImageIndex(index)
+    setLightboxOpen(true)
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="w-6 h-6 border border-black border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
 
   if (!project) {
     return (
@@ -91,7 +112,33 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
       </section>
 
       {/* Images Grid */}
-      <ProjectImages images={images || []} />
+      <section className="px-6 py-12">
+        <div className="max-w-screen-2xl mx-auto">
+          {images.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-black/10">
+              {images.map((image, index) => (
+                <div
+                  key={image.id}
+                  onClick={() => openLightbox(index)}
+                  className="bg-white cursor-pointer img-zoom"
+                >
+                  <div className="aspect-[4/3]">
+                    <img
+                      src={image.url}
+                      alt={image.filename}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="py-32 text-center border border-black/10">
+              <p className="text-neutral-500 uppercase tracking-wider text-sm">No images</p>
+            </div>
+          )}
+        </div>
+      </section>
 
       {/* Footer */}
       <footer className="border-t border-black/10 px-6 py-8">
@@ -104,6 +151,17 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
           </Link>
         </div>
       </footer>
+
+      {/* Lightbox */}
+      {lightboxOpen && (
+        <Lightbox
+          images={images}
+          currentIndex={currentImageIndex}
+          onClose={() => setLightboxOpen(false)}
+          onPrev={() => setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length)}
+          onNext={() => setCurrentImageIndex((prev) => (prev + 1) % images.length)}
+        />
+      )}
     </div>
   )
 }
