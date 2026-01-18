@@ -200,11 +200,11 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
 
       {/* Footer */}
       <footer className="border-t border-black/10 px-6 py-8">
-        <div className="max-w-screen-2xl mx-auto flex items-center justify-between">
+        <div className="max-w-screen-2xl mx-auto flex flex-col items-center gap-4 md:flex-row md:justify-between md:gap-0">
           <p className="text-sm text-neutral-500">
             © {new Date().getFullYear()} OOO
           </p>
-          <div className="flex items-center gap-8">
+          <div className="flex flex-col items-center gap-2 md:flex-row md:gap-8">
             <a 
               href="mailto:office@out-of-office.design" 
               className="text-sm text-neutral-500 hover:opacity-50 transition-opacity"
