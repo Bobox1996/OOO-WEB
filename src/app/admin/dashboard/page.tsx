@@ -13,6 +13,10 @@ export default async function DashboardPage() {
     .from('images')
     .select('*', { count: 'exact', head: true })
 
+  const { count: teamCount } = await supabase
+    .from('team_members')
+    .select('*', { count: 'exact', head: true })
+
   const { data: recentProjects } = await supabase
     .from('projects')
     .select('*')
@@ -33,7 +37,7 @@ export default async function DashboardPage() {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-black/10 mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-px bg-black/10 mb-12">
             <div className="bg-white p-8">
               <p className="text-sm uppercase tracking-wider text-neutral-500 mb-2">Projects</p>
               <p className="text-5xl font-bold tracking-tight">{projectCount || 0}</p>
@@ -41,6 +45,10 @@ export default async function DashboardPage() {
             <div className="bg-white p-8">
               <p className="text-sm uppercase tracking-wider text-neutral-500 mb-2">Images</p>
               <p className="text-5xl font-bold tracking-tight">{imageCount || 0}</p>
+            </div>
+            <div className="bg-white p-8">
+              <p className="text-sm uppercase tracking-wider text-neutral-500 mb-2">Team</p>
+              <p className="text-5xl font-bold tracking-tight">{teamCount || 0}</p>
             </div>
             <div className="bg-white p-8">
               <p className="text-sm uppercase tracking-wider text-neutral-500 mb-4">Quick Actions</p>

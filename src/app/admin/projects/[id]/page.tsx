@@ -14,6 +14,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const [editing, setEditing] = useState(false)
   const [formData, setFormData] = useState({ title: '', description: '', category: '' })
   const [saving, setSaving] = useState(false)
+  const [reordering, setReordering] = useState<string | null>(null)
+  const [settingCover, setSettingCover] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -41,7 +43,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       .from('images')
       .select('*')
       .eq('project_id', id)
-      .order('created_at', { ascending: false })
+      .order('sort_order', { ascending: true })
 
     if (imagesData) setImages(imagesData)
   }
@@ -73,6 +75,57 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     if (!error) {
       setImages(images.filter(img => img.id !== imageId))
     }
+  }
+
+  const moveImage = async (imageId: string, direction: 'up' | 'down') => {
+    const currentIndex = images.findIndex(img => img.id === imageId)
+    if (currentIndex === -1) return
+    
+    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1
+    if (newIndex < 0 || newIndex >= images.length) return
+
+    setReordering(imageId)
+
+    // Swap the two images
+    const currentImage = images[currentIndex]
+    const swapImage = images[newIndex]
+
+    // Update both images in the database
+    const { error: error1 } = await supabase
+      .from('images')
+      .update({ sort_order: swapImage.sort_order })
+      .eq('id', currentImage.id)
+
+    const { error: error2 } = await supabase
+      .from('images')
+      .update({ sort_order: currentImage.sort_order })
+      .eq('id', swapImage.id)
+
+    if (!error1 && !error2) {
+      // Update local state
+      const newImages = [...images]
+      const tempOrder = newImages[currentIndex].sort_order
+      newImages[currentIndex] = { ...swapImage, sort_order: tempOrder }
+      newImages[newIndex] = { ...currentImage, sort_order: swapImage.sort_order }
+      // Re-sort by sort_order
+      newImages.sort((a, b) => a.sort_order - b.sort_order)
+      setImages(newImages)
+    }
+
+    setReordering(null)
+  }
+
+  const setCoverImage = async (imageId: string) => {
+    setSettingCover(true)
+    const { error } = await supabase
+      .from('projects')
+      .update({ cover_image_id: imageId })
+      .eq('id', id)
+
+    if (!error) {
+      setProject({ ...project!, cover_image_id: imageId })
+    }
+    setSettingCover(false)
   }
 
   if (!project) {
@@ -113,7 +166,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                         type="text"
                         value={formData.title}
                         onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                        className="w-full px-0 py-2 bg-transparent border-0 border-b border-black text-black focus:outline-none"
+                        placeholder="Project title"
+                        className="w-full px-3 py-3 bg-neutral-50 border border-black/20 text-black placeholder-neutral-400 focus:outline-none focus:border-black focus:bg-white"
                       />
                     </div>
                     <div>
@@ -122,7 +176,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                         type="text"
                         value={formData.category}
                         onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                        className="w-full px-0 py-2 bg-transparent border-0 border-b border-black/30 text-black focus:outline-none focus:border-black"
+                        placeholder="e.g., Architecture, Photography"
+                        className="w-full px-3 py-3 bg-neutral-50 border border-black/20 text-black placeholder-neutral-400 focus:outline-none focus:border-black focus:bg-white"
                       />
                     </div>
                     <div>
@@ -131,7 +186,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                         value={formData.description}
                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                         rows={4}
-                        className="w-full px-0 py-2 bg-transparent border-0 border-b border-black/30 text-black focus:outline-none focus:border-black resize-none"
+                        placeholder="Brief description..."
+                        className="w-full px-3 py-3 bg-neutral-50 border border-black/20 text-black placeholder-neutral-400 focus:outline-none focus:border-black focus:bg-white resize-none"
                       />
                     </div>
                     <div className="flex gap-3 pt-4">
@@ -164,8 +220,10 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                     {project.category && (
                       <p className="text-sm uppercase tracking-wider text-neutral-500 mb-4">{project.category}</p>
                     )}
-                    {project.description && (
-                      <p className="text-neutral-600 mb-6">{project.description}</p>
+                    {project.description ? (
+                      <p className="text-neutral-600 mb-6 whitespace-pre-wrap">{project.description}</p>
+                    ) : (
+                      <p className="text-neutral-400 italic mb-6">No description yet</p>
                     )}
                     <div className="text-sm text-neutral-400 pt-4 border-t border-black/10">
                       <p>{images.length} images</p>
@@ -184,13 +242,18 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
             {/* Images Grid */}
             <div className="lg:col-span-2">
-              <h2 className="text-sm uppercase tracking-wider text-neutral-500 mb-6">
-                Images ({images.length})
-              </h2>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-sm uppercase tracking-wider text-neutral-500">
+                  Images ({images.length})
+                </h2>
+                <p className="text-xs text-neutral-400">
+                  Use arrows to reorder
+                </p>
+              </div>
               {images.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-px bg-black/10">
-                  {images.map((image) => (
-                    <div key={image.id} className="relative group bg-white">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {images.map((image, index) => (
+                    <div key={image.id} className="relative group bg-white border border-black/10">
                       <div className="aspect-square">
                         <img
                           src={image.url}
@@ -198,15 +261,71 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                           className="w-full h-full object-cover"
                         />
                       </div>
-                      <button
-                        onClick={() => deleteImage(image.id)}
-                        className="absolute top-2 right-2 p-2 bg-white/90 text-black opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black hover:text-white"
-                        title="Delete"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
+                      
+                      {/* Image number badge */}
+                      <div className="absolute top-2 left-2 w-6 h-6 bg-black text-white text-xs flex items-center justify-center">
+                        {index + 1}
+                      </div>
+
+                      {/* Cover badge */}
+                      {project.cover_image_id === image.id && (
+                        <div className="absolute top-2 right-2 px-2 py-1 bg-blue-600 text-white text-xs uppercase tracking-wider">
+                          Cover
+                        </div>
+                      )}
+
+                      {/* Controls overlay */}
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+                        {/* Top row: Set as Cover */}
+                        {project.cover_image_id !== image.id && (
+                          <button
+                            onClick={() => setCoverImage(image.id)}
+                            disabled={settingCover}
+                            className="px-3 py-1.5 bg-blue-600 text-white text-xs uppercase tracking-wider hover:bg-blue-700 transition-colors disabled:opacity-50"
+                            title="Set as cover image"
+                          >
+                            Set as Cover
+                          </button>
+                        )}
+                        
+                        {/* Bottom row: Move and Delete */}
+                        <div className="flex items-center gap-2">
+                          {/* Move Up */}
+                          <button
+                            onClick={() => moveImage(image.id, 'up')}
+                            disabled={index === 0 || reordering === image.id}
+                            className="p-2 bg-white text-black hover:bg-neutral-200 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="Move up"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                            </svg>
+                          </button>
+
+                          {/* Move Down */}
+                          <button
+                            onClick={() => moveImage(image.id, 'down')}
+                            disabled={index === images.length - 1 || reordering === image.id}
+                            className="p-2 bg-white text-black hover:bg-neutral-200 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="Move down"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </button>
+
+                          {/* Delete */}
+                          <button
+                            onClick={() => deleteImage(image.id)}
+                            className="p-2 bg-white text-black hover:bg-red-500 hover:text-white transition-colors"
+                            title="Delete image"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>

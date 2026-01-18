@@ -19,6 +19,7 @@ export default function AdminNav() {
     { href: '/admin/dashboard', label: 'Dashboard' },
     { href: '/admin/upload', label: 'Upload' },
     { href: '/admin/projects', label: 'Projects' },
+    { href: '/admin/team', label: 'Team' },
   ]
 
   return (

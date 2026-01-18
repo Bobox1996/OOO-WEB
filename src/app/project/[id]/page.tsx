@@ -147,7 +147,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
             © {new Date().getFullYear()} OOO
           </p>
           <Link href="/" className="text-sm uppercase tracking-wider hover:opacity-50 transition-opacity">
-            All Projects
+            All Works
           </Link>
         </div>
       </footer>

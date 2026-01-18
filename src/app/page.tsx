@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
+import HomePageClient from '@/components/HomePageClient'
 
 export default async function HomePage() {
   const supabase = await createClient()
@@ -22,7 +23,10 @@ export default async function HomePage() {
           </Link>
           <nav className="flex items-center gap-8">
             <Link href="/" className="text-sm uppercase tracking-widest hover:opacity-50 transition-opacity">
-              Projects
+              Works
+            </Link>
+            <Link href="/team" className="text-sm uppercase tracking-widest hover:opacity-50 transition-opacity">
+              Team
             </Link>
             <Link href="/admin/login" className="text-sm uppercase tracking-widest hover:opacity-50 transition-opacity">
               Admin
@@ -31,19 +35,9 @@ export default async function HomePage() {
         </div>
       </header>
 
-      {/* Hero */}
-      <section className="pt-32 pb-16 px-6">
-        <div className="max-w-screen-2xl mx-auto">
-          <h1 className="text-[clamp(3rem,10vw,8rem)] font-bold leading-[0.9] tracking-tighter uppercase">
-            Selected
-            <br />
-            Works
-          </h1>
-        </div>
-      </section>
-
-      {/* Projects Grid */}
-      <section className="px-6 pb-24">
+      <HomePageClient>
+        {/* Projects Grid */}
+        <section className="relative z-30 bg-white px-6 pb-24">
         <div className="max-w-screen-2xl mx-auto">
           {projects && projects.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-black/10">
@@ -55,19 +49,30 @@ export default async function HomePage() {
                 >
                   {/* Image */}
                   <div className="aspect-[4/3] bg-neutral-100 img-zoom">
-                    {project.images && project.images.length > 0 ? (
-                      <img
-                        src={project.images[0].url}
-                        alt={project.title}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-neutral-300">
-                        <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                      </div>
-                    )}
+                    {(() => {
+                      // Find cover image or fall back to first image
+                      const coverImage = project.cover_image_id 
+                        ? project.images?.find((img: { id: string }) => img.id === project.cover_image_id)
+                        : null
+                      const displayImage = coverImage || project.images?.[0]
+                      
+                      if (displayImage) {
+                        return (
+                          <img
+                            src={displayImage.url}
+                            alt={project.title}
+                            className="w-full h-full object-cover"
+                          />
+                        )
+                      }
+                      return (
+                        <div className="w-full h-full flex items-center justify-center text-neutral-300">
+                          <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                      )
+                    })()}
                   </div>
                   
                   {/* Info */}
@@ -98,6 +103,7 @@ export default async function HomePage() {
           )}
         </div>
       </section>
+      </HomePageClient>
 
       {/* Footer */}
       <footer className="border-t border-black/10 px-6 py-8">

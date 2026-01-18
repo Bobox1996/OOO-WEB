@@ -69,12 +69,24 @@ export default function UploadForm({ projectId }: UploadFormProps) {
           .from(BUCKET_NAME)
           .getPublicUrl(fileName)
 
+        // Get current max sort_order for this project
+        const { data: maxOrderData } = await supabase
+          .from('images')
+          .select('sort_order')
+          .eq('project_id', projectId)
+          .order('sort_order', { ascending: false })
+          .limit(1)
+          .single()
+
+        const nextOrder = (maxOrderData?.sort_order ?? -1) + 1
+
         const { error: dbError } = await supabase
           .from('images')
           .insert({
             project_id: projectId,
             url: publicUrl,
             filename: file.name,
+            sort_order: nextOrder + i,
           })
 
         if (dbError) throw dbError

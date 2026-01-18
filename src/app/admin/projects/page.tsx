@@ -41,20 +41,38 @@ export default async function ProjectsPage() {
               {projects.map((project, index) => (
                 <div key={project.id} className="bg-white">
                   {/* Thumbnail */}
-                  <div className="aspect-[4/3] bg-neutral-100">
-                    {project.images && project.images.length > 0 ? (
-                      <img
-                        src={project.images[0].url}
-                        alt={project.title}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-neutral-300">
-                        <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                      </div>
-                    )}
+                  <div className="aspect-[4/3] bg-neutral-100 relative">
+                    {(() => {
+                      // Find cover image or fall back to first image
+                      const coverImage = project.cover_image_id 
+                        ? project.images?.find((img: { id: string }) => img.id === project.cover_image_id)
+                        : null
+                      const displayImage = coverImage || project.images?.[0]
+                      
+                      if (displayImage) {
+                        return (
+                          <>
+                            <img
+                              src={displayImage.url}
+                              alt={project.title}
+                              className="w-full h-full object-cover"
+                            />
+                            {coverImage && (
+                              <div className="absolute top-2 right-2 px-2 py-1 bg-blue-600 text-white text-xs uppercase tracking-wider">
+                                Cover
+                              </div>
+                            )}
+                          </>
+                        )
+                      }
+                      return (
+                        <div className="w-full h-full flex items-center justify-center text-neutral-300">
+                          <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                      )
+                    })()}
                   </div>
 
                   {/* Info */}
