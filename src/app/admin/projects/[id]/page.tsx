@@ -12,7 +12,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const [project, setProject] = useState<Project | null>(null)
   const [images, setImages] = useState<Image[]>([])
   const [editing, setEditing] = useState(false)
-  const [formData, setFormData] = useState({ title: '', description: '', category: '' })
+  const [formData, setFormData] = useState({ index: '', title: '', description: '', category: '' })
   const [saving, setSaving] = useState(false)
   const [reordering, setReordering] = useState<string | null>(null)
   const [settingCover, setSettingCover] = useState(false)
@@ -33,6 +33,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     if (projectData) {
       setProject(projectData)
       setFormData({
+        index: projectData.index || '',
         title: projectData.title,
         description: projectData.description || '',
         category: projectData.category || '',
@@ -53,6 +54,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     const { error } = await supabase
       .from('projects')
       .update({
+        index: formData.index || null,
         title: formData.title,
         description: formData.description || null,
         category: formData.category || null,
@@ -160,6 +162,16 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
               <div className="border border-black/10 p-6 sticky top-24">
                 {editing ? (
                   <div className="space-y-6">
+                    <div>
+                      <label className="block text-sm uppercase tracking-wider text-neutral-500 mb-2">Index</label>
+                      <input
+                        type="text"
+                        value={formData.index}
+                        onChange={(e) => setFormData({ ...formData, index: e.target.value })}
+                        placeholder="Display index (e.g., 01, A1)"
+                        className="w-full px-3 py-3 bg-neutral-50 border border-black/20 text-black placeholder-neutral-400 focus:outline-none focus:border-black focus:bg-white"
+                      />
+                    </div>
                     <div>
                       <label className="block text-sm uppercase tracking-wider text-neutral-500 mb-2">Title</label>
                       <input

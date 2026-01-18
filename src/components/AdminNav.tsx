@@ -20,6 +20,7 @@ export default function AdminNav() {
     { href: '/admin/upload', label: 'Upload' },
     { href: '/admin/projects', label: 'Projects' },
     { href: '/admin/team', label: 'Team' },
+    { href: '/admin/vision', label: 'Vision' },
   ]
 
   return (

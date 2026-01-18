@@ -1,24 +1,20 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback, forwardRef, useImperativeHandle, useMemo } from 'react'
-import Image from 'next/image'
-import type { TeamMember } from '@/lib/types'
 
 interface LineSegment {
-  type: 'o' | 'name' | 'description'
+  type: 'o' | 'vision'
   content: string
-  memberId?: string
 }
 
-interface TeamOFieldProps {
+interface VisionOFieldProps {
   oCount: number
-  members: TeamMember[]
+  visionContent: string
   onScroll?: (scrollTop: number) => void
 }
 
-export interface TeamOFieldRef {
+export interface VisionOFieldRef {
   scrollContainer: HTMLDivElement | null
-  resetSelection: () => void
 }
 
 // Buffer lines to render above/below viewport for smooth scrolling
@@ -46,33 +42,26 @@ function throttle<T extends (...args: Parameters<T>) => void>(fn: T, delay: numb
   }) as T
 }
 
-const TeamOField = forwardRef<TeamOFieldRef, TeamOFieldProps>(({ oCount, members, onScroll }, ref) => {
+const VisionOField = forwardRef<VisionOFieldRef, VisionOFieldProps>(({ oCount, visionContent, onScroll }, ref) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const textContainerRef = useRef<HTMLDivElement>(null)
   const measureRef = useRef<HTMLSpanElement>(null)
-  const nameMeasureRef = useRef<HTMLSpanElement>(null)
+  const textMeasureRef = useRef<HTMLSpanElement>(null)
   const contentHeightRef = useRef(0)
-  const randomSeed = useRef(Math.random() * 10000)
   const [charsPerLine, setCharsPerLine] = useState(50)
   const [visibleLines, setVisibleLines] = useState(0)
   const [lineHeight, setLineHeight] = useState(0)
   const [oCharWidth, setOCharWidth] = useState(0)
-  const [memberMeasurements, setMemberMeasurements] = useState<Map<string, { name: string; osToReplace: number }>>(new Map())
-  const [descriptionLines, setDescriptionLines] = useState<{ text: string; osToReplace: number }[]>([])
-  const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null)
+  const [visionLines, setVisionLines] = useState<{ text: string; osToReplace: number }[]>([])
   const cursorOverlayRef = useRef<HTMLDivElement>(null)
   
   // Virtualization state - track current scroll position for visible range calculation
   const [scrollTop, setScrollTop] = useState(0)
 
-  // Create a map for quick member lookup by ID (memoized)
-  const memberMap = useMemo(() => new Map(members.map(m => [m.id, m])), [members])
-
-  // Expose scroll container ref and reset function to parent
+  // Expose scroll container ref to parent
   useImperativeHandle(ref, () => ({
     scrollContainer: scrollContainerRef.current,
-    resetSelection: () => setSelectedMember(null)
   }))
 
   // Calculate how many O's fit per line, visible lines, and line height
@@ -127,50 +116,17 @@ const TeamOField = forwardRef<TeamOFieldRef, TeamOFieldProps>(({ oCount, members
     }
   }, [lineHeight, totalLines])
 
-  // Measure each member's name width and calculate Os to replace
+  // Measure vision content lines
   useEffect(() => {
-    if (!nameMeasureRef.current || !measureRef.current || oCharWidth === 0 || members.length === 0) return
-
-    const measurements = new Map<string, { name: string; osToReplace: number }>()
-    
-    members.forEach(member => {
-      const nameText = `${member.first_name} ${member.last_name}`
-      
-      nameMeasureRef.current!.textContent = nameText
-      const nameWidth = nameMeasureRef.current!.offsetWidth
-      
-      let osToReplace = Math.ceil(nameWidth / oCharWidth)
-      
-      measureRef.current!.textContent = 'O'.repeat(osToReplace)
-      let osWidth = measureRef.current!.offsetWidth
-      
-      while (osWidth < nameWidth && osToReplace < 100) {
-        osToReplace++
-        measureRef.current!.textContent = 'O'.repeat(osToReplace)
-        osWidth = measureRef.current!.offsetWidth
-      }
-      
-      measurements.set(member.id, { name: nameText, osToReplace })
-      
-      measureRef.current!.textContent = 'O'
-    })
-    
-    nameMeasureRef.current.textContent = ''
-    
-    setMemberMeasurements(measurements)
-  }, [members, oCharWidth])
-
-  // Measure description lines when a member is selected
-  useEffect(() => {
-    if (!selectedMember?.description || !nameMeasureRef.current || !measureRef.current || oCharWidth === 0 || charsPerLine === 0) {
-      setDescriptionLines([])
+    if (!visionContent || !textMeasureRef.current || !measureRef.current || oCharWidth === 0 || charsPerLine === 0) {
+      setVisionLines([])
       return
     }
 
     measureRef.current.textContent = 'O'.repeat(charsPerLine)
     const fullLineOsWidth = measureRef.current.offsetWidth
 
-    const rawLines = selectedMember.description.split('\n')
+    const rawLines = visionContent.split('\n')
     const processedLines: { text: string; osToReplace: number }[] = []
 
     rawLines.forEach(rawLine => {
@@ -179,8 +135,8 @@ const TeamOField = forwardRef<TeamOFieldRef, TeamOFieldProps>(({ oCount, members
         return
       }
 
-      nameMeasureRef.current!.textContent = rawLine
-      const lineWidth = nameMeasureRef.current!.offsetWidth
+      textMeasureRef.current!.textContent = rawLine
+      const lineWidth = textMeasureRef.current!.offsetWidth
 
       if (lineWidth <= fullLineOsWidth) {
         let osToReplace = Math.ceil(lineWidth / oCharWidth)
@@ -201,15 +157,15 @@ const TeamOField = forwardRef<TeamOFieldRef, TeamOFieldProps>(({ oCount, members
         
         words.forEach(word => {
           const testLine = currentLine ? `${currentLine} ${word}` : word
-          nameMeasureRef.current!.textContent = testLine
-          const testWidth = nameMeasureRef.current!.offsetWidth
+          textMeasureRef.current!.textContent = testLine
+          const testWidth = textMeasureRef.current!.offsetWidth
 
           if (testWidth <= fullLineOsWidth) {
             currentLine = testLine
           } else {
             if (currentLine) {
-              nameMeasureRef.current!.textContent = currentLine
-              const currentWidth = nameMeasureRef.current!.offsetWidth
+              textMeasureRef.current!.textContent = currentLine
+              const currentWidth = textMeasureRef.current!.offsetWidth
               let osToReplace = Math.ceil(currentWidth / oCharWidth)
               
               measureRef.current!.textContent = 'O'.repeat(osToReplace)
@@ -227,8 +183,8 @@ const TeamOField = forwardRef<TeamOFieldRef, TeamOFieldProps>(({ oCount, members
         })
 
         if (currentLine) {
-          nameMeasureRef.current!.textContent = currentLine
-          const currentWidth = nameMeasureRef.current!.offsetWidth
+          textMeasureRef.current!.textContent = currentLine
+          const currentWidth = textMeasureRef.current!.offsetWidth
           let osToReplace = Math.ceil(currentWidth / oCharWidth)
           
           measureRef.current!.textContent = 'O'.repeat(osToReplace)
@@ -245,10 +201,10 @@ const TeamOField = forwardRef<TeamOFieldRef, TeamOFieldProps>(({ oCount, members
     })
 
     measureRef.current.textContent = 'O'
-    nameMeasureRef.current.textContent = ''
+    textMeasureRef.current.textContent = ''
 
-    setDescriptionLines(processedLines)
-  }, [selectedMember, oCharWidth, charsPerLine])
+    setVisionLines(processedLines)
+  }, [visionContent, oCharWidth, charsPerLine])
 
   // Track mouse position relative to viewport for cursor mask
   const mouseClientPos = useRef<{ x: number; y: number } | null>(null)
@@ -289,59 +245,13 @@ const TeamOField = forwardRef<TeamOFieldRef, TeamOFieldProps>(({ oCount, members
       currentScrollTop = currentScrollTop - contentHeight
       scrollContainer.scrollTop = currentScrollTop
     }
-    // Note: We don't handle scrolling up past start (scrollTop < 0) because browsers 
-    // prevent scrollTop from going negative. The previous condition (scrollTop <= 0)
-    // caused an infinite loop when reaching the top.
     
     // Update virtualization scroll position (throttled)
     throttledSetScrollTop(currentScrollTop)
   }, [onScroll, updateCursorPos, throttledSetScrollTop])
 
-  // Seeded random for consistent rendering
-  const seededRandom = useCallback((seed: number) => {
-    const x = Math.sin(seed) * 10000
-    return x - Math.floor(x)
-  }, [])
-
-  // Handle name click - select the member
-  const handleNameClick = useCallback((e: React.MouseEvent, memberId: string) => {
-    e.stopPropagation()
-    const member = memberMap.get(memberId)
-    if (member) {
-      setSelectedMember(member)
-    }
-  }, [memberMap])
-
-  // Handle background click - exit selection mode
-  const handleBackgroundClick = useCallback(() => {
-    if (selectedMember) {
-      setSelectedMember(null)
-    }
-  }, [selectedMember])
-
-  // Throttled mouse move handler for cursor mask effect
-  const throttledUpdateCursor = useMemo(
-    () => throttle((x: number, y: number) => {
-      mouseClientPos.current = { x, y }
-      updateCursorPos()
-    }, 16),
-    [updateCursorPos]
-  )
-
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    throttledUpdateCursor(e.clientX, e.clientY)
-  }, [throttledUpdateCursor])
-
-  // Handle mouse leave - hide cursor mask
-  const handleMouseLeave = useCallback(() => {
-    mouseClientPos.current = null
-    if (cursorOverlayRef.current) {
-      cursorOverlayRef.current.style.display = 'none'
-    }
-  }, [])
-
-  // Build lines with member names inserted at random positions (one name per line)
-  const buildLinesWithNames = useCallback((): LineSegment[][] => {
+  // Build lines with vision text centered
+  const buildVisionLines = useCallback((): LineSegment[][] => {
     const lines: LineSegment[][] = []
     
     // Initialize all lines as pure O's
@@ -349,91 +259,38 @@ const TeamOField = forwardRef<TeamOFieldRef, TeamOFieldProps>(({ oCount, members
       lines.push([{ type: 'o', content: 'O'.repeat(charsPerLine) }])
     }
     
-    // If no members or measurements not ready, return pure O lines
-    if (members.length === 0 || memberMeasurements.size === 0 || visibleLines === 0) {
+    // If no vision content, return pure O lines
+    if (visionLines.length === 0) {
       return lines
     }
     
-    // Track which lines are already used to prevent multiple names per line
-    const usedLines = new Set<number>()
-    const maxAvailableLines = Math.min(visibleLines, totalLines)
+    // Start vision text from line 10 (index 9)
+    const visionStartLine = 9
     
-    // Assign each member to a unique random line within visible lines
-    members.forEach((member, memberIndex) => {
-      const measurement = memberMeasurements.get(member.id)
-      if (!measurement) return
-      
-      if (usedLines.size >= maxAvailableLines) return
-      
-      let seed = member.id.charCodeAt(0) + memberIndex + randomSeed.current
-      let lineIndex: number
-      let attempts = 0
-      do {
-        lineIndex = Math.floor(seededRandom(seed) * maxAvailableLines)
-        seed++
-        attempts++
-      } while (usedLines.has(lineIndex) && attempts < 100)
-      
-      usedLines.add(lineIndex)
-      
-      const maxStartPos = Math.max(0, charsPerLine - measurement.osToReplace)
-      const startPos = Math.floor(seededRandom(seed + 1) * maxStartPos)
-      
-      const newSegments: LineSegment[] = []
-      
-      if (startPos > 0) {
-        newSegments.push({ type: 'o', content: 'O'.repeat(startPos) })
-      }
-      newSegments.push({ type: 'name', content: measurement.name, memberId: member.id })
-      const endPos = startPos + measurement.osToReplace
-      if (endPos < charsPerLine) {
-        newSegments.push({ type: 'o', content: 'O'.repeat(charsPerLine - endPos) })
-      }
-      
-      lines[lineIndex] = newSegments
-    })
-    
-    return lines
-  }, [totalLines, charsPerLine, members, memberMeasurements, visibleLines, seededRandom])
-
-  // Build lines for selected state (only selected name at line 10, description at line 13+)
-  const buildSelectedLines = useCallback((): LineSegment[][] => {
-    const lines: LineSegment[][] = []
-    
-    // Initialize all lines as pure O's
-    for (let i = 0; i < totalLines; i++) {
-      lines.push([{ type: 'o', content: 'O'.repeat(charsPerLine) }])
-    }
-    
-    if (!selectedMember) return lines
-    
-    const measurement = memberMeasurements.get(selectedMember.id)
-    if (!measurement) return lines
-    
-    const nameTargetLine = 9
-    if (nameTargetLine < totalLines) {
-      const newSegments: LineSegment[] = []
-      newSegments.push({ type: 'name', content: measurement.name, memberId: selectedMember.id })
-      const remainingOs = charsPerLine - measurement.osToReplace
-      if (remainingOs > 0) {
-        newSegments.push({ type: 'o', content: 'O'.repeat(remainingOs) })
-      }
-      lines[nameTargetLine] = newSegments
-    }
-    
-    const descriptionStartLine = 12
-    descriptionLines.forEach((descLine, idx) => {
-      const targetLine = descriptionStartLine + idx
+    visionLines.forEach((visionLine, idx) => {
+      const targetLine = visionStartLine + idx
       if (targetLine < totalLines) {
         const newSegments: LineSegment[] = []
         
-        if (descLine.text) {
-          newSegments.push({ type: 'description', content: descLine.text })
-          const remainingOs = charsPerLine - descLine.osToReplace
-          if (remainingOs > 0) {
-            newSegments.push({ type: 'o', content: 'O'.repeat(remainingOs) })
+        if (visionLine.text) {
+          // Calculate start position to CENTER the text
+          const startPos = Math.floor((charsPerLine - visionLine.osToReplace) / 2)
+          
+          // Add leading O's
+          if (startPos > 0) {
+            newSegments.push({ type: 'o', content: 'O'.repeat(startPos) })
+          }
+          
+          // Add vision text
+          newSegments.push({ type: 'vision', content: visionLine.text })
+          
+          // Add trailing O's
+          const endPos = startPos + visionLine.osToReplace
+          if (endPos < charsPerLine) {
+            newSegments.push({ type: 'o', content: 'O'.repeat(charsPerLine - endPos) })
           }
         } else {
+          // Empty line - just O's
           newSegments.push({ type: 'o', content: 'O'.repeat(charsPerLine) })
         }
         
@@ -442,13 +299,10 @@ const TeamOField = forwardRef<TeamOFieldRef, TeamOFieldProps>(({ oCount, members
     })
     
     return lines
-  }, [totalLines, charsPerLine, selectedMember, memberMeasurements, descriptionLines])
+  }, [totalLines, charsPerLine, visionLines])
 
-  // Generate all lines based on selection state (memoized)
-  const allLines = useMemo(
-    () => selectedMember ? buildSelectedLines() : buildLinesWithNames(),
-    [selectedMember, buildSelectedLines, buildLinesWithNames]
-  )
+  // Generate all lines (memoized)
+  const allLines = useMemo(() => buildVisionLines(), [buildVisionLines])
 
   // Calculate which lines are visible based on scroll position (virtualization)
   const { visibleStart, visibleEnd, totalHeight } = useMemo(() => {
@@ -501,10 +355,7 @@ const TeamOField = forwardRef<TeamOFieldRef, TeamOFieldProps>(({ oCount, members
         }}
       >
         {lineSegments.map((segment, j) => {
-          if (segment.type === 'name') {
-            // Render invisible placeholder to maintain spacing
-            return <span key={j} className="invisible">{segment.content}</span>
-          } else if (segment.type === 'description') {
+          if (segment.type === 'vision') {
             // Render invisible placeholder to maintain spacing
             return <span key={j} className="invisible">{segment.content}</span>
           } else {
@@ -515,18 +366,18 @@ const TeamOField = forwardRef<TeamOFieldRef, TeamOFieldProps>(({ oCount, members
     )
   }, [lineHeight, totalLines])
 
-  // Render a single line with only names and descriptions (for top layer unaffected by cursor overlay)
-  const renderNamesOnlyLine = useCallback((lineSegments: LineSegment[], index: number, isSecondSet: boolean) => {
-    const key = isSecondSet ? `names-second-${index - totalLines}` : `names-first-${index}`
+  // Render a single line with only vision text (for top layer unaffected by cursor overlay)
+  const renderVisionOnlyLine = useCallback((lineSegments: LineSegment[], index: number, isSecondSet: boolean) => {
+    const key = isSecondSet ? `vision-second-${index - totalLines}` : `vision-first-${index}`
     
-    // Check if this line has any name or description segments
-    const hasNameOrDescription = lineSegments.some(s => s.type === 'name' || s.type === 'description')
-    if (!hasNameOrDescription) return null
+    // Check if this line has any vision segments
+    const hasVision = lineSegments.some(s => s.type === 'vision')
+    if (!hasVision) return null
     
     return (
       <div 
         key={key}
-        className="whitespace-nowrap absolute left-0 right-0 pointer-events-auto" 
+        className="whitespace-nowrap absolute left-0 right-0" 
         style={{ 
           height: lineHeight || 'auto',
           top: index * lineHeight,
@@ -534,21 +385,9 @@ const TeamOField = forwardRef<TeamOFieldRef, TeamOFieldProps>(({ oCount, members
         }}
       >
         {lineSegments.map((segment, j) => {
-          if (segment.type === 'name') {
-            // Use CSS animation class for vibration instead of JS
-            const shouldVibrate = !selectedMember
+          if (segment.type === 'vision') {
             return (
-              <span 
-                key={j} 
-                className={`text-green-500 cursor-pointer hover:opacity-70 transition-opacity inline-block ${shouldVibrate ? 'name-vibrate' : ''}`}
-                onClick={(e) => handleNameClick(e, segment.memberId!)}
-              >
-                {segment.content}
-              </span>
-            )
-          } else if (segment.type === 'description') {
-            return (
-              <span key={j} className="text-red-500">
+              <span key={j} className="text-cyan-500">
                 {segment.content}
               </span>
             )
@@ -559,13 +398,33 @@ const TeamOField = forwardRef<TeamOFieldRef, TeamOFieldProps>(({ oCount, members
         })}
       </div>
     )
-  }, [lineHeight, totalLines, selectedMember, handleNameClick])
+  }, [lineHeight, totalLines])
+
+  // Throttled mouse move handler for cursor mask effect
+  const throttledUpdateCursor = useMemo(
+    () => throttle((x: number, y: number) => {
+      mouseClientPos.current = { x, y }
+      updateCursorPos()
+    }, 16),
+    [updateCursorPos]
+  )
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    throttledUpdateCursor(e.clientX, e.clientY)
+  }, [throttledUpdateCursor])
+
+  // Handle mouse leave - hide cursor mask
+  const handleMouseLeave = useCallback(() => {
+    mouseClientPos.current = null
+    if (cursorOverlayRef.current) {
+      cursorOverlayRef.current.style.display = 'none'
+    }
+  }, [])
 
   return (
     <div 
       ref={containerRef} 
-      className="relative h-full w-full cursor-pointer"
-      onClick={handleBackgroundClick}
+      className="relative h-full w-full"
     >
       {/* Hidden element to measure character width */}
       <span 
@@ -575,9 +434,9 @@ const TeamOField = forwardRef<TeamOFieldRef, TeamOFieldProps>(({ oCount, members
       >
         O
       </span>
-      {/* Hidden element to measure name widths */}
+      {/* Hidden element to measure text widths */}
       <span 
-        ref={nameMeasureRef}
+        ref={textMeasureRef}
         className="absolute opacity-0 pointer-events-none font-bold text-[clamp(1rem,2.5vw,1.5rem)] leading-[1.1] tracking-tight whitespace-nowrap"
         aria-hidden="true"
       />
@@ -615,39 +474,20 @@ const TeamOField = forwardRef<TeamOFieldRef, TeamOFieldProps>(({ oCount, members
           }}
         />
 
-        {/* Layer 3: Names and descriptions only (top layer - NOT affected by cursor overlay) */}
+        {/* Layer 3: Vision text only (top layer - NOT affected by cursor overlay) */}
         <div 
           className="absolute top-0 left-0 w-full font-bold text-[clamp(1rem,2.5vw,1.5rem)] leading-[1.1] tracking-tight select-none pointer-events-none"
           style={{ height: totalHeight, zIndex: 100 }}
         >
           {visibleLinesData.map(({ lineSegments, index, isSecondSet }) => 
-            renderNamesOnlyLine(lineSegments, index, isSecondSet)
+            renderVisionOnlyLine(lineSegments, index, isSecondSet)
           )}
         </div>
       </div>
-
-      {/* Portrait overlay when member is selected */}
-      {selectedMember && selectedMember.portrait_url && (
-        <div 
-          className="fixed inset-x-0 bottom-0 pointer-events-none z-[150]"
-          style={{ height: '70vh' }}
-        >
-          <div className="relative w-full h-full">
-            <Image
-              src={selectedMember.portrait_url}
-              alt={`${selectedMember.first_name} ${selectedMember.last_name}`}
-              fill
-              className="object-contain object-bottom"
-              sizes="100vw"
-              priority
-            />
-          </div>
-        </div>
-      )}
     </div>
   )
 })
 
-TeamOField.displayName = 'TeamOField'
+VisionOField.displayName = 'VisionOField'
 
-export default TeamOField
+export default VisionOField

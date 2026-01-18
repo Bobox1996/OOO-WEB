@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import HomePageClient from '@/components/HomePageClient'
+import SwimmingTitle from '@/components/SwimmingTitle'
 
 export default async function HomePage() {
   const supabase = await createClient()
@@ -28,6 +29,9 @@ export default async function HomePage() {
             <Link href="/team" className="text-sm uppercase tracking-widest hover:opacity-50 transition-opacity">
               Team
             </Link>
+            <Link href="/vision" className="text-sm uppercase tracking-widest hover:opacity-50 transition-opacity">
+              Vision
+            </Link>
             <Link href="/admin/login" className="text-sm uppercase tracking-widest hover:opacity-50 transition-opacity">
               Admin
             </Link>
@@ -48,7 +52,7 @@ export default async function HomePage() {
                   className="group bg-white"
                 >
                   {/* Image */}
-                  <div className="aspect-[4/3] bg-neutral-100 img-zoom">
+                  <div className="aspect-[4/3] bg-neutral-100 img-zoom relative">
                     {(() => {
                       // Find cover image or fall back to first image
                       const coverImage = project.cover_image_id 
@@ -73,6 +77,8 @@ export default async function HomePage() {
                         </div>
                       )
                     })()}
+                    {/* Title Overlay */}
+                    <SwimmingTitle title={project.title} />
                   </div>
                   
                   {/* Info */}
@@ -80,7 +86,7 @@ export default async function HomePage() {
                     <div className="flex items-start justify-between gap-4">
                       <div>
                         <h2 className="text-xl font-semibold tracking-tight group-hover:opacity-50 transition-opacity">
-                          {project.title}
+                          {project.index || project.title}
                         </h2>
                         {project.category && (
                           <p className="text-sm text-neutral-500 mt-1 uppercase tracking-wider">
@@ -111,9 +117,17 @@ export default async function HomePage() {
           <p className="text-sm text-neutral-500">
             © {new Date().getFullYear()} OOO
           </p>
-          <p className="text-sm text-neutral-500 uppercase tracking-wider">
-            Architecture & Design
-          </p>
+          <div className="flex items-center gap-8">
+            <a 
+              href="mailto:office@out-of-office.design" 
+              className="text-sm text-neutral-500 hover:opacity-50 transition-opacity"
+            >
+              office@out-of-office.design
+            </a>
+            <p className="text-sm text-neutral-500 uppercase tracking-wider">
+              Architecture & Design
+            </p>
+          </div>
         </div>
       </footer>
     </div>

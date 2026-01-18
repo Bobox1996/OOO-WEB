@@ -1,21 +1,20 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
-import TeamOField, { TeamOFieldRef } from '@/components/TeamOField'
+import VisionOField, { VisionOFieldRef } from '@/components/VisionOField'
 import { useGravityTitle } from '@/hooks/useGravityTitle'
-import type { TeamMember } from '@/lib/types'
 
-interface TeamPageClientProps {
+interface VisionPageClientProps {
   oCount: number
-  members: TeamMember[]
+  visionContent: string
 }
 
-export default function TeamPageClient({ oCount, members }: TeamPageClientProps) {
+export default function VisionPageClient({ oCount, visionContent }: VisionPageClientProps) {
   const [maxOffset, setMaxOffset] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
   const titleTextRef = useRef<HTMLHeadingElement>(null)
-  const oFieldRef = useRef<TeamOFieldRef>(null)
+  const oFieldRef = useRef<VisionOFieldRef>(null)
 
   // Calculate max offset to show only half of the last text row
   useEffect(() => {
@@ -44,12 +43,6 @@ export default function TeamPageClient({ oCount, members }: TeamPageClientProps)
     scrollStopDelay: 100,  // ms before gravity kicks in
   })
 
-  // Handle Team link click - reset selection to show all members
-  const handleTeamClick = useCallback((e: React.MouseEvent) => {
-    e.preventDefault()
-    oFieldRef.current?.resetSelection()
-  }, [])
-
   return (
     <>
       {/* Header */}
@@ -62,12 +55,9 @@ export default function TeamPageClient({ oCount, members }: TeamPageClientProps)
             <Link href="/" className="text-sm uppercase tracking-widest hover:opacity-50 transition-opacity">
               Works
             </Link>
-            <button 
-              onClick={handleTeamClick}
-              className="text-sm uppercase tracking-widest hover:opacity-50 transition-opacity"
-            >
+            <Link href="/team" className="text-sm uppercase tracking-widest hover:opacity-50 transition-opacity">
               Team
-            </button>
+            </Link>
             <Link href="/vision" className="text-sm uppercase tracking-widest hover:opacity-50 transition-opacity">
               Vision
             </Link>
@@ -93,18 +83,18 @@ export default function TeamPageClient({ oCount, members }: TeamPageClientProps)
             ref={titleTextRef}
             className="text-[clamp(3rem,10vw,8rem)] font-bold leading-[0.9] tracking-tighter uppercase"
           >
-            Team
+            Vision
           </h1>
         </div>
       </div>
 
-      {/* O-Field with embedded names - fills viewport below header */}
+      {/* O-Field with embedded vision text - fills viewport below header */}
       <section className="fixed top-[60px] left-0 right-0 bottom-0 z-[45] px-6">
         <div className="max-w-screen-2xl mx-auto h-full">
-          <TeamOField 
+          <VisionOField 
             ref={oFieldRef}
             oCount={oCount}
-            members={members}
+            visionContent={visionContent}
             onScroll={handleScroll}
           />
         </div>
