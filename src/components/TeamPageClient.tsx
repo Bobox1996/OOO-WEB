@@ -51,7 +51,8 @@ export default function TeamPageClient({ oCount, members }: TeamPageClientProps)
         className="fixed left-0 right-0 z-40 pt-8 px-6 pointer-events-none"
         style={{ 
           top: 60,
-          transform: `translateY(-${titleOffset}px)` 
+          transform: `translateY(-${titleOffset}px) translateZ(0)`,
+          willChange: 'transform',
         }}
       >
         <div className="max-w-screen-2xl mx-auto">
@@ -65,7 +66,7 @@ export default function TeamPageClient({ oCount, members }: TeamPageClientProps)
       </div>
 
       {/* O-Field with embedded names - fills viewport below header */}
-      <section className="fixed top-[60px] left-0 right-0 bottom-0 z-30 px-6">
+      <section className="fixed top-[60px] left-0 right-0 bottom-0 z-[45] px-6">
         <div className="max-w-screen-2xl mx-auto h-full">
           <TeamOField 
             ref={oFieldRef}

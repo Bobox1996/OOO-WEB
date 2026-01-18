@@ -16,10 +16,6 @@ export interface Image {
   created_at: string
 }
 
-export interface ProjectWithImages extends Project {
-  images: Image[]
-}
-
 export interface TeamMember {
   id: string
   first_name: string

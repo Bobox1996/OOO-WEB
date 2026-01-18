@@ -27,21 +27,42 @@ export function useGravityTitle({
   const scrollStopTimer = useRef<NodeJS.Timeout | null>(null)
   const gravityAnimationRef = useRef<number | null>(null)
   const currentOffsetRef = useRef(0)
+  // Track if component is mounted to prevent state updates after unmount
+  const isMountedRef = useRef(true)
 
   // Keep currentOffsetRef in sync with state
   useEffect(() => {
     currentOffsetRef.current = titleOffset
   }, [titleOffset])
 
+  // Set mounted flag
+  useEffect(() => {
+    isMountedRef.current = true
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
+
   // Gravity animation - smoothly pull title back to initial position
   const startGravity = useCallback(() => {
+    // Cancel any existing animation first
     if (gravityAnimationRef.current) {
       cancelAnimationFrame(gravityAnimationRef.current)
+      gravityAnimationRef.current = null
     }
+
+    // Don't start if unmounted
+    if (!isMountedRef.current) return
 
     setIsGravityActive(true)
 
     const animate = () => {
+      // Stop if component unmounted
+      if (!isMountedRef.current) {
+        gravityAnimationRef.current = null
+        return
+      }
+
       const current = currentOffsetRef.current
       
       if (current <= 0) {
@@ -68,11 +89,16 @@ export function useGravityTitle({
       cancelAnimationFrame(gravityAnimationRef.current)
       gravityAnimationRef.current = null
     }
-    setIsGravityActive(false)
+    if (isMountedRef.current) {
+      setIsGravityActive(false)
+    }
   }, [])
 
   // Handle scroll events
   const handleScroll = useCallback((scrollTop: number) => {
+    // Don't process if unmounted
+    if (!isMountedRef.current) return
+
     // Determine scroll direction
     const direction = scrollTop > lastScrollTop.current ? 'down' : 'up'
     scrollDirection.current = direction
@@ -84,6 +110,7 @@ export function useGravityTitle({
     // Clear previous scroll stop timer
     if (scrollStopTimer.current) {
       clearTimeout(scrollStopTimer.current)
+      scrollStopTimer.current = null
     }
 
     if (direction === 'down') {
@@ -97,21 +124,29 @@ export function useGravityTitle({
 
     // Set timer to detect scroll stop
     scrollStopTimer.current = setTimeout(() => {
-      // User stopped scrolling - apply gravity
-      if (currentOffsetRef.current > 0) {
+      // User stopped scrolling - apply gravity if still mounted
+      if (isMountedRef.current && currentOffsetRef.current > 0) {
         startGravity()
       }
     }, scrollStopDelay)
   }, [maxOffset, scrollStopDelay, startGravity, stopGravity])
 
-  // Cleanup on unmount
+  // Cleanup on unmount - comprehensive cleanup of all timers and animations
   useEffect(() => {
     return () => {
+      // Mark as unmounted first
+      isMountedRef.current = false
+      
+      // Clear scroll stop timer
       if (scrollStopTimer.current) {
         clearTimeout(scrollStopTimer.current)
+        scrollStopTimer.current = null
       }
+      
+      // Cancel gravity animation
       if (gravityAnimationRef.current) {
         cancelAnimationFrame(gravityAnimationRef.current)
+        gravityAnimationRef.current = null
       }
     }
   }, [])

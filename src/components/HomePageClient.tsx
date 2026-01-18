@@ -63,7 +63,8 @@ export default function HomePageClient({ children }: HomePageClientProps) {
         className="fixed left-0 right-0 z-40 pt-12 pb-4 px-6 pointer-events-none"
         style={{ 
           top: 60,
-          transform: `translateY(-${titleOffset}px)` 
+          transform: `translateY(-${titleOffset}px) translateZ(0)`,
+          willChange: 'transform',
         }}
       >
         <div className="max-w-screen-2xl mx-auto">
