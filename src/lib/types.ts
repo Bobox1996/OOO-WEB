@@ -32,3 +32,10 @@ export interface VisionContent {
   updated_at: string
   updated_by: string | null
 }
+
+export interface TeamDescription {
+  id: string
+  content: string
+  updated_at: string
+  updated_by: string | null
+}

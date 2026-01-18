@@ -2,7 +2,8 @@ import { createClient } from '@/lib/supabase/server'
 import AdminNav from '@/components/AdminNav'
 import Link from 'next/link'
 import DeleteTeamMemberButton from '@/components/DeleteTeamMemberButton'
-import type { TeamMember } from '@/lib/types'
+import TeamDescriptionEditor from '@/components/TeamDescriptionEditor'
+import type { TeamMember, TeamDescription } from '@/lib/types'
 
 export default async function TeamPage() {
   const supabase = await createClient()
@@ -12,7 +13,14 @@ export default async function TeamPage() {
     .select('*')
     .order('created_at', { ascending: true })
 
+  const { data: descriptionData } = await supabase
+    .from('team_description')
+    .select('*')
+    .limit(1)
+    .single()
+
   const teamMembers = (members as TeamMember[]) || []
+  const teamDescription = (descriptionData as TeamDescription) || null
 
   return (
     <>
@@ -34,6 +42,9 @@ export default async function TeamPage() {
               + New Member
             </Link>
           </div>
+
+          {/* About This Team */}
+          <TeamDescriptionEditor initialDescription={teamDescription} />
 
           {/* Team Grid */}
           {teamMembers.length > 0 ? (

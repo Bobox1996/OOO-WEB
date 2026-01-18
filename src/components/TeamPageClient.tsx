@@ -4,14 +4,15 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import TeamOField, { TeamOFieldRef } from '@/components/TeamOField'
 import { useGravityTitle } from '@/hooks/useGravityTitle'
-import type { TeamMember } from '@/lib/types'
+import type { TeamMember, TeamDescription } from '@/lib/types'
 
 interface TeamPageClientProps {
   oCount: number
   members: TeamMember[]
+  teamDescription: TeamDescription | null
 }
 
-export default function TeamPageClient({ oCount, members }: TeamPageClientProps) {
+export default function TeamPageClient({ oCount, members, teamDescription }: TeamPageClientProps) {
   const [maxOffset, setMaxOffset] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
   const titleTextRef = useRef<HTMLHeadingElement>(null)
@@ -102,6 +103,7 @@ export default function TeamPageClient({ oCount, members }: TeamPageClientProps)
             ref={oFieldRef}
             oCount={oCount}
             members={members}
+            teamDescription={teamDescription}
             onScroll={handleScroll}
           />
         </div>

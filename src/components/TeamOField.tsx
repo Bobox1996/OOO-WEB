@@ -2,10 +2,10 @@
 
 import { useState, useRef, useEffect, useCallback, forwardRef, useImperativeHandle, useMemo } from 'react'
 import Image from 'next/image'
-import type { TeamMember } from '@/lib/types'
+import type { TeamMember, TeamDescription } from '@/lib/types'
 
 interface LineSegment {
-  type: 'o' | 'name' | 'description'
+  type: 'o' | 'name' | 'description' | 'team_description'
   content: string
   memberId?: string
 }
@@ -13,6 +13,7 @@ interface LineSegment {
 interface TeamOFieldProps {
   oCount: number
   members: TeamMember[]
+  teamDescription: TeamDescription | null
   onScroll?: (scrollTop: number) => void
 }
 
@@ -46,7 +47,7 @@ function throttle<T extends (...args: Parameters<T>) => void>(fn: T, delay: numb
   }) as T
 }
 
-const TeamOField = forwardRef<TeamOFieldRef, TeamOFieldProps>(({ oCount, members, onScroll }, ref) => {
+const TeamOField = forwardRef<TeamOFieldRef, TeamOFieldProps>(({ oCount, members, teamDescription, onScroll }, ref) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const textContainerRef = useRef<HTMLDivElement>(null)
@@ -54,12 +55,14 @@ const TeamOField = forwardRef<TeamOFieldRef, TeamOFieldProps>(({ oCount, members
   const nameMeasureRef = useRef<HTMLSpanElement>(null)
   const contentHeightRef = useRef(0)
   const randomSeed = useRef(Math.random() * 10000)
+  const teamDescRandomOffset = useRef(Math.floor(Math.random() * 5) + 1) // Random offset 1-5 lines
   const [charsPerLine, setCharsPerLine] = useState(50)
   const [visibleLines, setVisibleLines] = useState(0)
   const [lineHeight, setLineHeight] = useState(0)
   const [oCharWidth, setOCharWidth] = useState(0)
   const [memberMeasurements, setMemberMeasurements] = useState<Map<string, { name: string; osToReplace: number }>>(new Map())
   const [descriptionLines, setDescriptionLines] = useState<{ text: string; osToReplace: number }[]>([])
+  const [teamDescriptionLines, setTeamDescriptionLines] = useState<{ text: string; osToReplace: number }[]>([])
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null)
   const cursorOverlayRef = useRef<HTMLDivElement>(null)
   
@@ -250,6 +253,96 @@ const TeamOField = forwardRef<TeamOFieldRef, TeamOFieldProps>(({ oCount, members
     setDescriptionLines(processedLines)
   }, [selectedMember, oCharWidth, charsPerLine])
 
+  // Measure team description lines (for normal mode display)
+  useEffect(() => {
+    if (!teamDescription?.content || !nameMeasureRef.current || !measureRef.current || oCharWidth === 0 || charsPerLine === 0) {
+      setTeamDescriptionLines([])
+      return
+    }
+
+    measureRef.current.textContent = 'O'.repeat(charsPerLine)
+    const fullLineOsWidth = measureRef.current.offsetWidth
+
+    const rawLines = teamDescription.content.split('\n')
+    const processedLines: { text: string; osToReplace: number }[] = []
+
+    rawLines.forEach(rawLine => {
+      if (!rawLine.trim()) {
+        processedLines.push({ text: '', osToReplace: 0 })
+        return
+      }
+
+      nameMeasureRef.current!.textContent = rawLine
+      const lineWidth = nameMeasureRef.current!.offsetWidth
+
+      if (lineWidth <= fullLineOsWidth) {
+        let osToReplace = Math.ceil(lineWidth / oCharWidth)
+        
+        measureRef.current!.textContent = 'O'.repeat(osToReplace)
+        let osWidth = measureRef.current!.offsetWidth
+        
+        while (osWidth < lineWidth && osToReplace < charsPerLine) {
+          osToReplace++
+          measureRef.current!.textContent = 'O'.repeat(osToReplace)
+          osWidth = measureRef.current!.offsetWidth
+        }
+
+        processedLines.push({ text: rawLine, osToReplace })
+      } else {
+        const words = rawLine.split(' ')
+        let currentLine = ''
+        
+        words.forEach(word => {
+          const testLine = currentLine ? `${currentLine} ${word}` : word
+          nameMeasureRef.current!.textContent = testLine
+          const testWidth = nameMeasureRef.current!.offsetWidth
+
+          if (testWidth <= fullLineOsWidth) {
+            currentLine = testLine
+          } else {
+            if (currentLine) {
+              nameMeasureRef.current!.textContent = currentLine
+              const currentWidth = nameMeasureRef.current!.offsetWidth
+              let osToReplace = Math.ceil(currentWidth / oCharWidth)
+              
+              measureRef.current!.textContent = 'O'.repeat(osToReplace)
+              let osWidth = measureRef.current!.offsetWidth
+              while (osWidth < currentWidth && osToReplace < charsPerLine) {
+                osToReplace++
+                measureRef.current!.textContent = 'O'.repeat(osToReplace)
+                osWidth = measureRef.current!.offsetWidth
+              }
+
+              processedLines.push({ text: currentLine, osToReplace })
+            }
+            currentLine = word
+          }
+        })
+
+        if (currentLine) {
+          nameMeasureRef.current!.textContent = currentLine
+          const currentWidth = nameMeasureRef.current!.offsetWidth
+          let osToReplace = Math.ceil(currentWidth / oCharWidth)
+          
+          measureRef.current!.textContent = 'O'.repeat(osToReplace)
+          let osWidth = measureRef.current!.offsetWidth
+          while (osWidth < currentWidth && osToReplace < charsPerLine) {
+            osToReplace++
+            measureRef.current!.textContent = 'O'.repeat(osToReplace)
+            osWidth = measureRef.current!.offsetWidth
+          }
+
+          processedLines.push({ text: currentLine, osToReplace })
+        }
+      }
+    })
+
+    measureRef.current.textContent = 'O'
+    nameMeasureRef.current.textContent = ''
+
+    setTeamDescriptionLines(processedLines)
+  }, [teamDescription, oCharWidth, charsPerLine])
+
   // Track mouse position relative to viewport for cursor mask
   const mouseClientPos = useRef<{ x: number; y: number } | null>(null)
 
@@ -357,6 +450,7 @@ const TeamOField = forwardRef<TeamOFieldRef, TeamOFieldProps>(({ oCount, members
     // Track which lines are already used to prevent multiple names per line
     const usedLines = new Set<number>()
     const maxAvailableLines = Math.min(visibleLines, totalLines)
+    let maxUsedLine = 0
     
     // Assign each member to a unique random line within visible lines
     members.forEach((member, memberIndex) => {
@@ -375,6 +469,7 @@ const TeamOField = forwardRef<TeamOFieldRef, TeamOFieldProps>(({ oCount, members
       } while (usedLines.has(lineIndex) && attempts < 100)
       
       usedLines.add(lineIndex)
+      maxUsedLine = Math.max(maxUsedLine, lineIndex)
       
       const maxStartPos = Math.max(0, charsPerLine - measurement.osToReplace)
       const startPos = Math.floor(seededRandom(seed + 1) * maxStartPos)
@@ -393,8 +488,45 @@ const TeamOField = forwardRef<TeamOFieldRef, TeamOFieldProps>(({ oCount, members
       lines[lineIndex] = newSegments
     })
     
+    // Add team description lines below all member names (centered)
+    if (teamDescriptionLines.length > 0) {
+      // Start after the last member name line, plus a random offset (1-5 lines)
+      const teamDescStartLine = maxUsedLine + teamDescRandomOffset.current + 1
+      
+      teamDescriptionLines.forEach((descLine, idx) => {
+        const targetLine = teamDescStartLine + idx
+        if (targetLine < totalLines) {
+          const newSegments: LineSegment[] = []
+          
+          if (descLine.text) {
+            // Calculate start position to CENTER the text
+            const startPos = Math.floor((charsPerLine - descLine.osToReplace) / 2)
+            
+            // Add leading O's
+            if (startPos > 0) {
+              newSegments.push({ type: 'o', content: 'O'.repeat(startPos) })
+            }
+            
+            // Add team description text
+            newSegments.push({ type: 'team_description', content: descLine.text })
+            
+            // Add trailing O's
+            const endPos = startPos + descLine.osToReplace
+            if (endPos < charsPerLine) {
+              newSegments.push({ type: 'o', content: 'O'.repeat(charsPerLine - endPos) })
+            }
+          } else {
+            // Empty line - just O's
+            newSegments.push({ type: 'o', content: 'O'.repeat(charsPerLine) })
+          }
+          
+          lines[targetLine] = newSegments
+        }
+      })
+    }
+    
     return lines
-  }, [totalLines, charsPerLine, members, memberMeasurements, visibleLines, seededRandom])
+  }, [totalLines, charsPerLine, members, memberMeasurements, visibleLines, seededRandom, teamDescriptionLines])
 
   // Build lines for selected state (only selected name at line 10, description at line 13+)
   const buildSelectedLines = useCallback((): LineSegment[][] => {
@@ -504,7 +636,7 @@ const TeamOField = forwardRef<TeamOFieldRef, TeamOFieldProps>(({ oCount, members
           if (segment.type === 'name') {
             // Render invisible placeholder to maintain spacing
             return <span key={j} className="invisible">{segment.content}</span>
-          } else if (segment.type === 'description') {
+          } else if (segment.type === 'description' || segment.type === 'team_description') {
             // Render invisible placeholder to maintain spacing
             return <span key={j} className="invisible">{segment.content}</span>
           } else {
@@ -519,9 +651,9 @@ const TeamOField = forwardRef<TeamOFieldRef, TeamOFieldProps>(({ oCount, members
   const renderNamesOnlyLine = useCallback((lineSegments: LineSegment[], index: number, isSecondSet: boolean) => {
     const key = isSecondSet ? `names-second-${index - totalLines}` : `names-first-${index}`
     
-    // Check if this line has any name or description segments
-    const hasNameOrDescription = lineSegments.some(s => s.type === 'name' || s.type === 'description')
-    if (!hasNameOrDescription) return null
+    // Check if this line has any name, description, or team_description segments
+    const hasTextContent = lineSegments.some(s => s.type === 'name' || s.type === 'description' || s.type === 'team_description')
+    if (!hasTextContent) return null
     
     return (
       <div 
@@ -549,6 +681,12 @@ const TeamOField = forwardRef<TeamOFieldRef, TeamOFieldProps>(({ oCount, members
           } else if (segment.type === 'description') {
             return (
               <span key={j} className="text-red-500">
+                {segment.content}
+              </span>
+            )
+          } else if (segment.type === 'team_description') {
+            return (
+              <span key={j} className="text-blue-800">
                 {segment.content}
               </span>
             )

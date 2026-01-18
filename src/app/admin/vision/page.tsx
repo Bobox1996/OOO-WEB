@@ -103,18 +103,7 @@ export default function AdminVisionPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
               </div>
-              <h1 className="text-2xl font-bold tracking-tight mb-4">Access Denied</h1>
-              <p className="text-neutral-500 mb-2">
-                You don&apos;t have permission to edit the Vision content.
-              </p>
-              <p className="text-sm text-neutral-400">
-                Only <span className="font-mono">{ALLOWED_EMAIL}</span> can edit this page.
-              </p>
-              {user && (
-                <p className="text-sm text-neutral-400 mt-4">
-                  Logged in as: <span className="font-mono">{user.email}</span>
-                </p>
-              )}
+              <h1 className="text-2xl font-bold tracking-tight">Access Denied</h1>
             </div>
           </div>
         </main>
