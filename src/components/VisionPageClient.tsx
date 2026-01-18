@@ -61,9 +61,6 @@ export default function VisionPageClient({ oCount, visionContent }: VisionPageCl
             <Link href="/vision" className="text-sm uppercase tracking-widest hover:opacity-50 transition-opacity">
               Vision
             </Link>
-            <Link href="/admin/login" className="text-sm uppercase tracking-widest hover:opacity-50 transition-opacity">
-              Admin
-            </Link>
           </nav>
         </div>
       </header>

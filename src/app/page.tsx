@@ -32,9 +32,6 @@ export default async function HomePage() {
             <Link href="/vision" className="text-sm uppercase tracking-widest hover:opacity-50 transition-opacity">
               Vision
             </Link>
-            <Link href="/admin/login" className="text-sm uppercase tracking-widest hover:opacity-50 transition-opacity">
-              Admin
-            </Link>
           </nav>
         </div>
       </header>
@@ -122,11 +119,17 @@ export default async function HomePage() {
               href="mailto:office@out-of-office.design" 
               className="text-sm text-neutral-500 hover:opacity-50 transition-opacity"
             >
-              office@out-of-office.design
+              E-MAIL: office@out-of-office.design
             </a>
             <p className="text-sm text-neutral-500 uppercase tracking-wider">
               Architecture & Design
             </p>
+            <Link 
+              href="/admin/login" 
+              className="text-sm text-neutral-400 hover:text-neutral-600 transition-opacity uppercase tracking-widest"
+            >
+              Admin
+            </Link>
           </div>
         </div>
       </footer>
