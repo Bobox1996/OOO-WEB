@@ -2,6 +2,45 @@ import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import HomePageClient from '@/components/HomePageClient'
 import SwimmingTitle from '@/components/SwimmingTitle'
+import ProjectImage from '@/components/ProjectImage'
+
+// Force dynamic rendering to ensure fresh random order on each page load
+export const dynamic = 'force-dynamic'
+
+// Weighted random shuffle: projects with titles ending in " " have higher priority for third slot only
+function shuffleWithPriority<T extends { title: string }>(projects: T[]): T[] {
+  if (!projects || projects.length === 0) return projects
+  
+  const remaining = [...projects]
+  const result: T[] = []
+  
+  // Slots 1 and 2: purely random selection
+  for (let i = 0; i < 2 && remaining.length > 0; i++) {
+    const idx = Math.floor(Math.random() * remaining.length)
+    result.push(remaining.splice(idx, 1)[0])
+  }
+  
+  // Slot 3: weighted selection (70% chance for priority projects)
+  if (remaining.length > 0) {
+    const priorityRemaining = remaining.filter(p => p.title.endsWith(' '))
+    const usePriority = priorityRemaining.length > 0 && Math.random() < 0.7
+    
+    const pool = usePriority ? priorityRemaining : remaining
+    const idx = Math.floor(Math.random() * pool.length)
+    const selected = pool[idx]
+    
+    result.push(selected)
+    remaining.splice(remaining.indexOf(selected), 1)
+  }
+  
+  // Fisher-Yates shuffle for remaining projects
+  for (let i = remaining.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[remaining[i], remaining[j]] = [remaining[j], remaining[i]]
+  }
+  
+  return [...result, ...remaining]
+}
 
 export default async function HomePage() {
   const supabase = await createClient()
@@ -13,6 +52,9 @@ export default async function HomePage() {
       images (id, url, filename)
     `)
     .order('created_at', { ascending: false })
+
+  // Apply weighted random shuffle
+  const shuffledProjects = shuffleWithPriority(projects || [])
 
   return (
     <div className="min-h-screen bg-white">
@@ -38,11 +80,11 @@ export default async function HomePage() {
 
       <HomePageClient>
         {/* Projects Grid */}
-        <section className="relative z-30 bg-white px-6 pb-24">
+        <section className="relative z-30 bg-white px-0 md:px-6 pb-24">
         <div className="max-w-screen-2xl mx-auto">
-          {projects && projects.length > 0 ? (
+          {shuffledProjects && shuffledProjects.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-black/10">
-              {projects.map((project, index) => (
+              {shuffledProjects.map((project, index) => (
                 <Link
                   key={project.id}
                   href={`/project/${project.id}`}
@@ -59,10 +101,10 @@ export default async function HomePage() {
                       
                       if (displayImage) {
                         return (
-                          <img
+                          <ProjectImage
                             src={displayImage.url}
                             alt={project.title}
-                            className="w-full h-full object-cover"
+                            priority={index < 2}
                           />
                         )
                       }

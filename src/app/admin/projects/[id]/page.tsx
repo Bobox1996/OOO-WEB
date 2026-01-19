@@ -4,8 +4,24 @@ import { useState, useEffect, use } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import AdminNav from '@/components/AdminNav'
 import UploadForm from '@/components/UploadForm'
+import SortableImage from '@/components/SortableImage'
 import { useRouter } from 'next/navigation'
 import type { Project, Image } from '@/lib/types'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  rectSortingStrategy,
+} from '@dnd-kit/sortable'
 
 export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
@@ -14,10 +30,20 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const [editing, setEditing] = useState(false)
   const [formData, setFormData] = useState({ index: '', title: '', description: '', category: '' })
   const [saving, setSaving] = useState(false)
-  const [reordering, setReordering] = useState<string | null>(null)
   const [settingCover, setSettingCover] = useState(false)
   const router = useRouter()
   const supabase = createClient()
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
 
   useEffect(() => {
     fetchProject()
@@ -79,42 +105,37 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     }
   }
 
-  const moveImage = async (imageId: string, direction: 'up' | 'down') => {
-    const currentIndex = images.findIndex(img => img.id === imageId)
-    if (currentIndex === -1) return
-    
-    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1
-    if (newIndex < 0 || newIndex >= images.length) return
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event
 
-    setReordering(imageId)
-
-    // Swap the two images
-    const currentImage = images[currentIndex]
-    const swapImage = images[newIndex]
-
-    // Update both images in the database
-    const { error: error1 } = await supabase
-      .from('images')
-      .update({ sort_order: swapImage.sort_order })
-      .eq('id', currentImage.id)
-
-    const { error: error2 } = await supabase
-      .from('images')
-      .update({ sort_order: currentImage.sort_order })
-      .eq('id', swapImage.id)
-
-    if (!error1 && !error2) {
-      // Update local state
-      const newImages = [...images]
-      const tempOrder = newImages[currentIndex].sort_order
-      newImages[currentIndex] = { ...swapImage, sort_order: tempOrder }
-      newImages[newIndex] = { ...currentImage, sort_order: swapImage.sort_order }
-      // Re-sort by sort_order
-      newImages.sort((a, b) => a.sort_order - b.sort_order)
-      setImages(newImages)
+    if (!over || active.id === over.id) {
+      return
     }
 
-    setReordering(null)
+    const oldIndex = images.findIndex((img) => img.id === active.id)
+    const newIndex = images.findIndex((img) => img.id === over.id)
+
+    if (oldIndex === -1 || newIndex === -1) {
+      return
+    }
+
+    // Optimistically update local state
+    const reorderedImages = arrayMove(images, oldIndex, newIndex)
+    setImages(reorderedImages)
+
+    // Update sort_order for all affected images in the database
+    const updates = reorderedImages.map((img, index) => ({
+      id: img.id,
+      sort_order: index,
+    }))
+
+    // Update each image's sort_order in the database
+    for (const update of updates) {
+      await supabase
+        .from('images')
+        .update({ sort_order: update.sort_order })
+        .eq('id', update.id)
+    }
   }
 
   const setCoverImage = async (imageId: string) => {
@@ -259,88 +280,34 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                   Images ({images.length})
                 </h2>
                 <p className="text-xs text-neutral-400">
-                  Use arrows to reorder
+                  Drag to reorder
                 </p>
               </div>
               {images.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {images.map((image, index) => (
-                    <div key={image.id} className="relative group bg-white border border-black/10">
-                      <div className="aspect-square">
-                        <img
-                          src={image.url}
-                          alt={image.filename}
-                          className="w-full h-full object-cover"
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext
+                    items={images.map((img) => img.id)}
+                    strategy={rectSortingStrategy}
+                  >
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {images.map((image, index) => (
+                        <SortableImage
+                          key={image.id}
+                          image={image}
+                          index={index}
+                          project={project}
+                          onSetCover={setCoverImage}
+                          onDelete={deleteImage}
+                          settingCover={settingCover}
                         />
-                      </div>
-                      
-                      {/* Image number badge */}
-                      <div className="absolute top-2 left-2 w-6 h-6 bg-black text-white text-xs flex items-center justify-center">
-                        {index + 1}
-                      </div>
-
-                      {/* Cover badge */}
-                      {project.cover_image_id === image.id && (
-                        <div className="absolute top-2 right-2 px-2 py-1 bg-blue-600 text-white text-xs uppercase tracking-wider">
-                          Cover
-                        </div>
-                      )}
-
-                      {/* Controls overlay */}
-                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
-                        {/* Top row: Set as Cover */}
-                        {project.cover_image_id !== image.id && (
-                          <button
-                            onClick={() => setCoverImage(image.id)}
-                            disabled={settingCover}
-                            className="px-3 py-1.5 bg-blue-600 text-white text-xs uppercase tracking-wider hover:bg-blue-700 transition-colors disabled:opacity-50"
-                            title="Set as cover image"
-                          >
-                            Set as Cover
-                          </button>
-                        )}
-                        
-                        {/* Bottom row: Move and Delete */}
-                        <div className="flex items-center gap-2">
-                          {/* Move Up */}
-                          <button
-                            onClick={() => moveImage(image.id, 'up')}
-                            disabled={index === 0 || reordering === image.id}
-                            className="p-2 bg-white text-black hover:bg-neutral-200 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                            title="Move up"
-                          >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                            </svg>
-                          </button>
-
-                          {/* Move Down */}
-                          <button
-                            onClick={() => moveImage(image.id, 'down')}
-                            disabled={index === images.length - 1 || reordering === image.id}
-                            className="p-2 bg-white text-black hover:bg-neutral-200 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                            title="Move down"
-                          >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                          </button>
-
-                          {/* Delete */}
-                          <button
-                            onClick={() => deleteImage(image.id)}
-                            className="p-2 bg-white text-black hover:bg-red-500 hover:text-white transition-colors"
-                            title="Delete image"
-                          >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                        </div>
-                      </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </SortableContext>
+                </DndContext>
               ) : (
                 <div className="border border-black/10 p-12 text-center">
                   <p className="text-neutral-500">No images yet</p>
