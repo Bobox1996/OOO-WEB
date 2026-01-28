@@ -20,6 +20,7 @@ export default function ProjectImage({ src, alt, priority = false }: ProjectImag
         src={src}
         alt={alt}
         fill
+        quality={90}
         className={`object-cover transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
         onLoad={() => setLoaded(true)}
         sizes="(max-width: 768px) 100vw, 50vw"

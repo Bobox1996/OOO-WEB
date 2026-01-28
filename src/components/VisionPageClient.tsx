@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import Link from 'next/link'
 import VisionOField, { VisionOFieldRef } from '@/components/VisionOField'
+import SiteHeader from '@/components/SiteHeader'
 import { useGravityTitle } from '@/hooks/useGravityTitle'
 
 interface VisionPageClientProps {
@@ -45,25 +45,7 @@ export default function VisionPageClient({ oCount, visionContent }: VisionPageCl
 
   return (
     <>
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-black/10">
-        <div className="flex items-center justify-between px-6 py-4">
-          <Link href="/" className="text-2xl font-bold tracking-tight">
-            OOO
-          </Link>
-          <nav className="flex items-center gap-8">
-            <Link href="/" className="text-sm uppercase tracking-widest hover:opacity-50 transition-opacity">
-              Works
-            </Link>
-            <Link href="/team" className="text-sm uppercase tracking-widest hover:opacity-50 transition-opacity">
-              Team
-            </Link>
-            <Link href="/vision" className="text-sm uppercase tracking-widest hover:opacity-50 transition-opacity">
-              Vision
-            </Link>
-          </nav>
-        </div>
-      </header>
+      <SiteHeader />
 
       {/* Floating title - moves up with scroll, gravity pulls it back */}
       <div 

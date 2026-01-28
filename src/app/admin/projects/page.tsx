@@ -1,10 +1,18 @@
 import { createClient } from '@/lib/supabase/server'
 import AdminNav from '@/components/AdminNav'
 import Link from 'next/link'
+import Image from 'next/image'
 import DeleteProjectButton from '@/components/DeleteProjectButton'
+import HideProjectToggle from '@/components/HideProjectToggle'
+
+const SUPER_ADMIN_EMAIL = 'shimin@out-of-office.design'
 
 export default async function ProjectsPage() {
   const supabase = await createClient()
+  
+  // Get current user
+  const { data: { user } } = await supabase.auth.getUser()
+  const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL
   
   const { data: projects } = await supabase
     .from('projects')
@@ -52,16 +60,26 @@ export default async function ProjectsPage() {
                       if (displayImage) {
                         return (
                           <>
-                            <img
+                            <Image
                               src={displayImage.url}
                               alt={project.title}
-                              className="w-full h-full object-cover"
+                              fill
+                              quality={85}
+                              className="object-cover"
+                              sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                             />
-                            {coverImage && (
-                              <div className="absolute top-2 right-2 px-2 py-1 bg-blue-600 text-white text-xs uppercase tracking-wider">
-                                Cover
-                              </div>
-                            )}
+                            <div className="absolute top-2 right-2 flex gap-1 z-10">
+                              {project.hidden && (
+                                <div className="px-2 py-1 bg-neutral-800 text-white text-xs uppercase tracking-wider">
+                                  Hidden
+                                </div>
+                              )}
+                              {coverImage && (
+                                <div className="px-2 py-1 bg-blue-600 text-white text-xs uppercase tracking-wider">
+                                  Cover
+                                </div>
+                              )}
+                            </div>
                           </>
                         )
                       }
@@ -95,6 +113,13 @@ export default async function ProjectsPage() {
                       >
                         Edit
                       </Link>
+                      {isSuperAdmin && (
+                        <HideProjectToggle
+                          projectId={project.id}
+                          projectTitle={project.title}
+                          initialHidden={project.hidden ?? false}
+                        />
+                      )}
                       <DeleteProjectButton projectId={project.id} projectTitle={project.title} />
                     </div>
                   </div>

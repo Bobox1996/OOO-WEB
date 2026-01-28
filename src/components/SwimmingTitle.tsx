@@ -204,7 +204,7 @@ export default function SwimmingTitle({ title }: SwimmingTitleProps) {
         cancelAnimationFrame(animationFrame.current)
       }
     }
-  }, [isMobile, position.x, position.y])
+  }, [isMobile]) // Removed position.x, position.y - animation loop manages state via refs
 
   // Reset position when switching between mobile/desktop
   useEffect(() => {

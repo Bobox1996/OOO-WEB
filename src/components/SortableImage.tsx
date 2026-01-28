@@ -2,6 +2,7 @@
 
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import NextImage from 'next/image'
 import type { Image, Project } from '@/lib/types'
 
 interface SortableImageProps {
@@ -10,6 +11,7 @@ interface SortableImageProps {
   project: Project
   onSetCover: (imageId: string) => void
   onDelete: (imageId: string) => void
+  onToggleSideBySide: (imageId: string) => void
   settingCover: boolean
 }
 
@@ -19,6 +21,7 @@ export default function SortableImage({
   project,
   onSetCover,
   onDelete,
+  onToggleSideBySide,
   settingCover,
 }: SortableImageProps) {
   const {
@@ -49,12 +52,15 @@ export default function SortableImage({
       <div
         {...attributes}
         {...listeners}
-        className="aspect-square cursor-grab active:cursor-grabbing"
+        className="aspect-square cursor-grab active:cursor-grabbing relative"
       >
-        <img
+        <NextImage
           src={image.url}
           alt={image.filename}
-          className="w-full h-full object-cover pointer-events-none"
+          fill
+          quality={85}
+          className="object-cover pointer-events-none"
+          sizes="(max-width: 768px) 50vw, 25vw"
           draggable={false}
         />
       </div>
@@ -80,35 +86,55 @@ export default function SortableImage({
       )}
 
       {/* Controls overlay - only buttons, not the whole area */}
-      <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-        {/* Set as Cover */}
-        {project.cover_image_id !== image.id && (
+      <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center gap-2">
+        {/* Side by Side Toggle - not shown for first image */}
+        {index > 0 && (
           <button
             onClick={(e) => {
               e.stopPropagation()
-              onSetCover(image.id)
+              onToggleSideBySide(image.id)
             }}
-            disabled={settingCover}
-            className="px-3 py-1.5 bg-blue-600 text-white text-xs uppercase tracking-wider hover:bg-blue-700 transition-colors disabled:opacity-50"
-            title="Set as cover image"
+            className={`px-3 py-1.5 text-xs uppercase tracking-wider transition-colors ${
+              image.side_by_side
+                ? 'bg-green-600 text-white hover:bg-green-700'
+                : 'bg-white/90 text-black hover:bg-white'
+            }`}
+            title="Toggle side by side display with adjacent image"
           >
-            Set as Cover
+            Side by Side {image.side_by_side ? 'ON' : 'OFF'}
           </button>
         )}
 
-        {/* Delete */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            onDelete(image.id)
-          }}
-          className="p-2 bg-white text-black hover:bg-red-500 hover:text-white transition-colors"
-          title="Delete image"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-          </svg>
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Set as Cover */}
+          {project.cover_image_id !== image.id && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                onSetCover(image.id)
+              }}
+              disabled={settingCover}
+              className="px-3 py-1.5 bg-blue-600 text-white text-xs uppercase tracking-wider hover:bg-blue-700 transition-colors disabled:opacity-50"
+              title="Set as cover image"
+            >
+              Set as Cover
+            </button>
+          )}
+
+          {/* Delete */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onDelete(image.id)
+            }}
+            className="p-2 bg-white text-black hover:bg-red-500 hover:text-white transition-colors"
+            title="Delete image"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
   )

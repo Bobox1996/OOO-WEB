@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
@@ -20,6 +20,18 @@ export default function UploadForm({ projectId }: UploadFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
   const supabase = createClient()
+
+  // Create object URLs for previews and memoize them
+  const previewUrls = useMemo(() => {
+    return files.map(file => URL.createObjectURL(file))
+  }, [files])
+
+  // Cleanup object URLs when files change or component unmounts
+  useEffect(() => {
+    return () => {
+      previewUrls.forEach(url => URL.revokeObjectURL(url))
+    }
+  }, [previewUrls])
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -142,7 +154,7 @@ export default function UploadForm({ projectId }: UploadFormProps) {
             {files.map((file, index) => (
               <div key={index} className="aspect-square bg-neutral-100">
                 <img
-                  src={URL.createObjectURL(file)}
+                  src={previewUrls[index]}
                   alt={file.name}
                   className="w-full h-full object-cover"
                 />

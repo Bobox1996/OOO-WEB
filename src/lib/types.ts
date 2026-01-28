@@ -5,6 +5,8 @@ export interface Project {
   description: string | null
   category: string | null
   cover_image_id: string | null
+  hidden: boolean
+  team: string | null
   created_at: string
 }
 
@@ -14,6 +16,7 @@ export interface Image {
   url: string
   filename: string
   sort_order: number
+  side_by_side: boolean
   created_at: string
 }
 

@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import Link from 'next/link'
 import TeamOField, { TeamOFieldRef } from '@/components/TeamOField'
+import SiteHeader from '@/components/SiteHeader'
 import { useGravityTitle } from '@/hooks/useGravityTitle'
 import type { TeamMember, TeamDescription } from '@/lib/types'
 
@@ -53,28 +53,7 @@ export default function TeamPageClient({ oCount, members, teamDescription }: Tea
 
   return (
     <>
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-black/10">
-        <div className="flex items-center justify-between px-6 py-4">
-          <Link href="/" className="text-2xl font-bold tracking-tight">
-            OOO
-          </Link>
-          <nav className="flex items-center gap-8">
-            <Link href="/" className="text-sm uppercase tracking-widest hover:opacity-50 transition-opacity">
-              Works
-            </Link>
-            <button 
-              onClick={handleTeamClick}
-              className="text-sm uppercase tracking-widest hover:opacity-50 transition-opacity"
-            >
-              Team
-            </button>
-            <Link href="/vision" className="text-sm uppercase tracking-widest hover:opacity-50 transition-opacity">
-              Vision
-            </Link>
-          </nav>
-        </div>
-      </header>
+      <SiteHeader onTeamClick={handleTeamClick} />
 
       {/* Floating title - moves up with scroll, gravity pulls it back */}
       <div 

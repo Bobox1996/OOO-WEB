@@ -10,6 +10,8 @@ const nextConfig: NextConfig = {
         pathname: '/storage/v1/object/public/**',
       },
     ],
+    // Enable modern image formats for better compression
+    formats: ['image/avif', 'image/webp'],
   },
 };
 

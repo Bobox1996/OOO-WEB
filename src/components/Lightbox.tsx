@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect, useCallback } from 'react'
-import type { Image } from '@/lib/types'
+import Image from 'next/image'
+import type { Image as ImageType } from '@/lib/types'
 
 interface LightboxProps {
-  images: Image[]
+  images: ImageType[]
   currentIndex: number
   onClose: () => void
   onPrev: () => void
@@ -28,6 +29,23 @@ export default function Lightbox({ images, currentIndex, onClose, onPrev, onNext
       document.body.style.overflow = 'unset'
     }
   }, [handleKeyDown])
+
+  // Preload adjacent images for smoother navigation
+  useEffect(() => {
+    if (images.length <= 1) return
+    
+    const preloadIndices = [
+      (currentIndex + 1) % images.length,
+      (currentIndex - 1 + images.length) % images.length
+    ]
+    
+    preloadIndices.forEach(idx => {
+      if (idx !== currentIndex) {
+        const img = new window.Image()
+        img.src = images[idx].url
+      }
+    })
+  }, [currentIndex, images])
 
   return (
     <div className="fixed inset-0 z-50 bg-white flex items-center justify-center">
@@ -64,11 +82,15 @@ export default function Lightbox({ images, currentIndex, onClose, onPrev, onNext
       )}
 
       {/* Image */}
-      <div className="max-w-[85vw] max-h-[85vh]">
-        <img
+      <div className="relative w-[85vw] h-[85vh]">
+        <Image
           src={currentImage.url}
           alt={currentImage.filename}
-          className="max-w-full max-h-[85vh] object-contain"
+          fill
+          quality={100}
+          className="object-contain"
+          sizes="85vw"
+          priority
         />
       </div>
 

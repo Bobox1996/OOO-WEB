@@ -28,7 +28,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const [project, setProject] = useState<Project | null>(null)
   const [images, setImages] = useState<Image[]>([])
   const [editing, setEditing] = useState(false)
-  const [formData, setFormData] = useState({ index: '', title: '', description: '', category: '' })
+  const [formData, setFormData] = useState({ index: '', title: '', description: '', category: '', team: '' })
   const [saving, setSaving] = useState(false)
   const [settingCover, setSettingCover] = useState(false)
   const router = useRouter()
@@ -63,6 +63,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         title: projectData.title,
         description: projectData.description || '',
         category: projectData.category || '',
+        team: projectData.team || '',
       })
     }
 
@@ -84,6 +85,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         title: formData.title,
         description: formData.description || null,
         category: formData.category || null,
+        team: formData.team || null,
       })
       .eq('id', id)
 
@@ -149,6 +151,23 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       setProject({ ...project!, cover_image_id: imageId })
     }
     setSettingCover(false)
+  }
+
+  const toggleSideBySide = async (imageId: string) => {
+    const image = images.find(img => img.id === imageId)
+    if (!image) return
+
+    const newValue = !image.side_by_side
+    const { error } = await supabase
+      .from('images')
+      .update({ side_by_side: newValue })
+      .eq('id', imageId)
+
+    if (!error) {
+      setImages(images.map(img => 
+        img.id === imageId ? { ...img, side_by_side: newValue } : img
+      ))
+    }
   }
 
   if (!project) {
@@ -221,6 +240,16 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                         rows={4}
                         placeholder="Brief description..."
                         className="w-full px-3 py-3 bg-neutral-50 border border-black/20 text-black placeholder-neutral-400 focus:outline-none focus:border-black focus:bg-white resize-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm uppercase tracking-wider text-neutral-500 mb-2">Team</label>
+                      <input
+                        type="text"
+                        value={formData.team}
+                        onChange={(e) => setFormData({ ...formData, team: e.target.value })}
+                        placeholder="e.g., John Doe, Jane Smith"
+                        className="w-full px-3 py-3 bg-neutral-50 border border-black/20 text-black placeholder-neutral-400 focus:outline-none focus:border-black focus:bg-white"
                       />
                     </div>
                     <div className="flex gap-3 pt-4">
@@ -302,6 +331,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                           project={project}
                           onSetCover={setCoverImage}
                           onDelete={deleteImage}
+                          onToggleSideBySide={toggleSideBySide}
                           settingCover={settingCover}
                         />
                       ))}
