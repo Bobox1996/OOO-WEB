@@ -4,11 +4,12 @@ import { useRef, useEffect, useState } from 'react'
 
 interface SwimmingTitleProps {
   title: string
+  textColor?: string
 }
 
 const MOBILE_BREAKPOINT = 768
 
-export default function SwimmingTitle({ title }: SwimmingTitleProps) {
+export default function SwimmingTitle({ title, textColor = '#ffffff' }: SwimmingTitleProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const titleRef = useRef<HTMLHeadingElement>(null)
   const [position, setPosition] = useState({ x: 0, y: 0 })
@@ -228,10 +229,11 @@ export default function SwimmingTitle({ title }: SwimmingTitleProps) {
     >
       <h3
         ref={titleRef}
-        className="text-[clamp(1rem,3.33vw,2.67rem)] font-bold leading-[0.9] tracking-tighter uppercase text-white whitespace-nowrap"
+        className="text-[clamp(1rem,3.33vw,2.67rem)] font-bold leading-[0.9] tracking-tighter uppercase whitespace-nowrap transition-colors duration-300"
         style={{ 
           transform: `translate(${position.x}px, ${position.y}px)`,
           willChange: 'transform',
+          color: textColor,
         }}
       >
         {title}

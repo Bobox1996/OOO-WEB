@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useEffect, useState, useMemo } from 'react'
+import { useRef, useEffect, useState, useMemo, useCallback } from 'react'
 import Link from 'next/link'
 import { useGravityTitle } from '@/hooks/useGravityTitle'
 import SwimmingTitle from '@/components/SwimmingTitle'
@@ -62,6 +62,18 @@ export default function HomePageClient({ projects }: HomePageClientProps) {
 
   // Shuffle projects on mount (client-side only for random order)
   const shuffledProjects = useMemo(() => shuffleWithPriority([...projects]), [projects])
+
+  // Store text colors per project (based on cover image contrast)
+  const [textColors, setTextColors] = useState<Record<string, string>>({})
+
+  // Callback to update text color for a specific project
+  const handleColorExtracted = useCallback((projectId: string, color: string) => {
+    setTextColors(prev => {
+      // Only update if color changed to avoid unnecessary re-renders
+      if (prev[projectId] === color) return prev
+      return { ...prev, [projectId]: color }
+    })
+  }, [])
 
   // Calculate max offset to show only half of the last text row (2 lines)
   useEffect(() => {
@@ -158,6 +170,7 @@ export default function HomePageClient({ projects }: HomePageClientProps) {
                             src={displayImage.url}
                             alt={project.title}
                             priority={index < 2}
+                            onColorExtracted={(color) => handleColorExtracted(project.id, color)}
                           />
                         )
                       }
@@ -170,7 +183,7 @@ export default function HomePageClient({ projects }: HomePageClientProps) {
                       )
                     })()}
                     {/* Title Overlay */}
-                    <SwimmingTitle title={project.title} />
+                    <SwimmingTitle title={project.title} textColor={textColors[project.id]} />
                   </div>
                   
                   {/* Info */}
