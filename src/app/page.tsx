@@ -41,6 +41,12 @@ export default async function HomePage() {
               Architecture & Design
             </p>
             <Link 
+              href="/app/login" 
+              className="text-sm text-neutral-400 hover:text-neutral-600 transition-opacity uppercase tracking-widest"
+            >
+              App
+            </Link>
+            <Link 
               href="/admin/login" 
               className="text-sm text-neutral-400 hover:text-neutral-600 transition-opacity uppercase tracking-widest"
             >

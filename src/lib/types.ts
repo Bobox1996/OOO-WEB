@@ -42,3 +42,17 @@ export interface TeamDescription {
   updated_at: string
   updated_by: string | null
 }
+
+export interface AppUser {
+  id: string
+  email: string
+  name: string | null
+  stopped: boolean
+  created_at: string
+}
+
+export interface AdminUser {
+  id: string
+  email: string
+  created_at: string
+}

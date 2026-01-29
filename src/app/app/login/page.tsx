@@ -5,9 +5,9 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 
-const SAVED_EMAILS_KEY = 'ooo_admin_saved_emails'
+const SAVED_EMAILS_KEY = 'ooo_app_saved_emails'
 
-export default function LoginPage() {
+export default function AppLoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -20,10 +20,13 @@ export default function LoginPage() {
   const searchParams = useSearchParams()
   const supabase = createClient()
 
-  // Check for unauthorized error from middleware redirect
+  // Check for error from middleware redirect
   useEffect(() => {
-    if (searchParams.get('error') === 'unauthorized') {
-      setError('You are not authorized to access the admin area. Please contact an administrator.')
+    const errorParam = searchParams.get('error')
+    if (errorParam === 'unauthorized') {
+      setError('You are not authorized to access this app. Please contact an administrator.')
+    } else if (errorParam === 'stopped') {
+      setError('Your access has been suspended. Please contact an administrator.')
     }
   }, [searchParams])
 
@@ -103,24 +106,32 @@ export default function LoginPage() {
       return
     }
 
-    // Check if user is authorized as admin
-    const { data: adminUser } = await supabase
-      .from('admin_users')
-      .select('id')
+    // Check if user is authorized as app user
+    const { data: appUser } = await supabase
+      .from('app_users')
+      .select('id, stopped')
       .eq('email', email)
       .single()
 
-    if (!adminUser) {
+    if (!appUser) {
       // Sign out the user since they're not authorized
       await supabase.auth.signOut()
-      setError('You are not authorized to access the admin area. Please contact an administrator.')
+      setError('You are not authorized to access this app. Please contact an administrator.')
+      setLoading(false)
+      return
+    }
+
+    if (appUser.stopped) {
+      // Sign out the user since their access is suspended
+      await supabase.auth.signOut()
+      setError('Your access has been suspended. Please contact an administrator.')
       setLoading(false)
       return
     }
 
     // Save the email on successful login
     saveEmail(email)
-    router.push('/admin/dashboard')
+    router.push('/app')
     router.refresh()
   }
 
@@ -148,7 +159,7 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
           <div className="mb-12">
             <h1 className="text-[clamp(2rem,5vw,3.5rem)] font-bold leading-[0.95] tracking-tighter uppercase">
-              Admin
+              APP
               <br />
               Login
             </h1>
@@ -175,7 +186,7 @@ export default function LoginPage() {
                 required
                 autoComplete="off"
                 className="w-full px-0 py-3 bg-transparent border-0 border-b border-black text-black placeholder-neutral-400 focus:outline-none focus:border-black text-lg"
-                placeholder="admin@example.com"
+                placeholder="user@example.com"
               />
               
               {/* Saved emails dropdown */}

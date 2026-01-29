@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
-export default function AdminNav() {
+export default function AppNav() {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
@@ -13,24 +13,20 @@ export default function AdminNav() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
-    router.push('/admin/login')
+    router.push('/app/login')
     router.refresh()
   }
 
   const navItems = [
-    { href: '/admin/dashboard', label: 'Dashboard' },
-    { href: '/admin/upload', label: 'Upload' },
-    { href: '/admin/projects', label: 'Projects' },
-    { href: '/admin/team', label: 'Team' },
-    { href: '/admin/vision', label: 'Vision' },
-    { href: '/admin/app-users', label: 'APP Users' },
+    { href: '/app', label: 'Generate' },
+    { href: '/app/history', label: 'History' },
   ]
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-black/10">
       <div className="flex items-center justify-between px-6 py-4">
         <div className="flex items-center gap-6 md:gap-12">
-          <Link href="/admin/dashboard" className="text-2xl font-bold tracking-tight">
+          <Link href="/app" className="text-2xl font-bold tracking-tight">
             OOO
           </Link>
           
