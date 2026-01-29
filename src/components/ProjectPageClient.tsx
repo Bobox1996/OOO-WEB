@@ -99,16 +99,16 @@ export default function ProjectPageClient({ project, images, imageGroups }: Proj
                     />
                   </div>
                 )
-              } else if (group.type === 'pair' && group.images) {
+              }               else if (group.type === 'pair' && group.images) {
                 // Paired side-by-side images
                 return (
                   <div
                     key={`pair-${group.images[0].id}-${group.images[1].id}`}
-                    className="w-full flex flex-col md:flex-row md:gap-4 gap-8"
+                    className="w-full flex flex-row gap-2 md:gap-4"
                   >
                     <div
                       onClick={() => openLightbox(group.originalIndices![0])}
-                      className="flex-1 cursor-pointer md:min-w-0"
+                      className="flex-1 cursor-pointer min-w-0"
                     >
                       <Image
                         src={group.images[0].url}
@@ -116,13 +116,13 @@ export default function ProjectPageClient({ project, images, imageGroups }: Proj
                         width={960}
                         height={640}
                         quality={90}
-                        className="w-full h-auto md:h-full md:object-cover block"
-                        sizes="(max-width: 768px) 100vw, 50vw"
+                        className="w-full h-full object-cover block"
+                        sizes="50vw"
                       />
                     </div>
                     <div
                       onClick={() => openLightbox(group.originalIndices![1])}
-                      className="flex-1 cursor-pointer md:min-w-0"
+                      className="flex-1 cursor-pointer min-w-0"
                     >
                       <Image
                         src={group.images[1].url}
@@ -130,8 +130,8 @@ export default function ProjectPageClient({ project, images, imageGroups }: Proj
                         width={960}
                         height={640}
                         quality={90}
-                        className="w-full h-auto md:h-full md:object-cover block"
-                        sizes="(max-width: 768px) 100vw, 50vw"
+                        className="w-full h-full object-cover block"
+                        sizes="50vw"
                       />
                     </div>
                   </div>
