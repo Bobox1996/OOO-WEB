@@ -17,9 +17,10 @@ interface ProjectPageClientProps {
   project: Project
   images: ImageType[]
   imageGroups: ImageGroup[]
+  children?: React.ReactNode
 }
 
-export default function ProjectPageClient({ project, images, imageGroups }: ProjectPageClientProps) {
+export default function ProjectPageClient({ project, images, imageGroups, children }: ProjectPageClientProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
 
@@ -75,6 +76,9 @@ export default function ProjectPageClient({ project, images, imageGroups }: Proj
           </div>
         </section>
       )}
+
+      {/* Description Section (passed as children) */}
+      {children}
 
       {/* Remaining Images - Contained */}
       {imageGroups.length > 0 && (

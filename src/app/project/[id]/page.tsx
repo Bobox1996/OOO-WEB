@@ -86,49 +86,49 @@ export default async function ProjectPage({ params }: Props) {
       <SiteHeader variant="floating" />
 
       {/* Client component handles hero, gallery, and lightbox */}
-      <ProjectPageClient project={project} images={images} imageGroups={imageGroups} />
-
-      {/* Description Section - Server rendered */}
-      {project.description && (
-        <section className="border-b border-black/10">
-          <div className="max-w-screen-2xl mx-auto px-6 md:px-12 py-16 md:py-24">
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-16">
-              {/* Left Column - Meta */}
-              <div className="md:col-span-2">
-                <div className="space-y-6">
-                  {project.category && (
+      <ProjectPageClient project={project} images={images} imageGroups={imageGroups}>
+        {/* Description Section - passed as children to render between hero and gallery */}
+        {project.description && (
+          <section className="border-b border-black/10">
+            <div className="max-w-screen-2xl mx-auto px-6 md:px-12 py-16 md:py-24">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-16">
+                {/* Left Column - Meta */}
+                <div className="md:col-span-2">
+                  <div className="space-y-6">
+                    {project.category && (
+                      <div>
+                        <p className="text-xs uppercase tracking-widest text-neutral-400 mb-1">Category</p>
+                        <p className="text-sm uppercase tracking-wider">{project.category}</p>
+                      </div>
+                    )}
                     <div>
-                      <p className="text-xs uppercase tracking-widest text-neutral-400 mb-1">Category</p>
-                      <p className="text-sm uppercase tracking-wider">{project.category}</p>
+                      <p className="text-xs uppercase tracking-widest text-neutral-400 mb-1">Date</p>
+                      <p className="text-sm">
+                        {new Date(project.created_at).toLocaleDateString('en-US', { 
+                          year: 'numeric', 
+                          month: 'long'
+                        })}
+                      </p>
                     </div>
-                  )}
-                  <div>
-                    <p className="text-xs uppercase tracking-widest text-neutral-400 mb-1">Date</p>
-                    <p className="text-sm">
-                      {new Date(project.created_at).toLocaleDateString('en-US', { 
-                        year: 'numeric', 
-                        month: 'long'
-                      })}
-                    </p>
+                    {project.team && (
+                      <div>
+                        <p className="text-xs uppercase tracking-widest text-neutral-400 mb-1">Team</p>
+                        <p className="text-sm">{project.team}</p>
+                      </div>
+                    )}
                   </div>
-                  {project.team && (
-                    <div>
-                      <p className="text-xs uppercase tracking-widest text-neutral-400 mb-1">Team</p>
-                      <p className="text-sm">{project.team}</p>
-                    </div>
-                  )}
+                </div>
+                {/* Right Column - Description */}
+                <div className="md:col-span-10">
+                  <p className="text-sm whitespace-pre-wrap">
+                    {project.description}
+                  </p>
                 </div>
               </div>
-              {/* Right Column - Description */}
-              <div className="md:col-span-10">
-                <p className="text-sm whitespace-pre-wrap">
-                  {project.description}
-                </p>
-              </div>
             </div>
-          </div>
-        </section>
-      )}
+          </section>
+        )}
+      </ProjectPageClient>
 
       {/* No Images State */}
       {images.length === 0 && (
