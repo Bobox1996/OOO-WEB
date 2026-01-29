@@ -35,7 +35,7 @@ export default function ProjectPageClient({ project, images, imageGroups }: Proj
       {/* Hero Section with First Image */}
       {heroImage ? (
         <section 
-          className="relative w-full h-[40vh] md:h-screen cursor-pointer"
+          className="relative w-full h-[40vh] md:h-[66.67vh] cursor-pointer"
           onClick={() => openLightbox(0)}
         >
           <Image
