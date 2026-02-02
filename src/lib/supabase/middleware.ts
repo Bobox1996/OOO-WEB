@@ -41,7 +41,7 @@ export async function updateSession(request: NextRequest) {
         const { data: adminUser } = await supabase
           .from('admin_users')
           .select('id')
-          .ilike('email', user.email)
+          .ilike('email', user.email ?? '')
           .single()
 
         if (adminUser) {
@@ -63,7 +63,7 @@ export async function updateSession(request: NextRequest) {
         const { data: adminUser } = await supabase
           .from('admin_users')
           .select('id')
-          .ilike('email', user.email)
+          .ilike('email', user.email ?? '')
           .single()
 
         if (!adminUser) {
