@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     if (patternImage) {
       parts.push({
         inlineData: {
-          mimeType: 'image/png',
+          mimeType: 'image/jpeg',
           data: patternImage,
         },
       })
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     if (packageImage) {
       parts.push({
         inlineData: {
-          mimeType: 'image/png',
+          mimeType: 'image/jpeg',
           data: packageImage,
         },
       })

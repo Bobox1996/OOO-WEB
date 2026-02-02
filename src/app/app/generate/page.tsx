@@ -15,8 +15,8 @@ interface Generation {
   created_at: string
 }
 
-// Convert SVG string to PNG base64 with transparent background
-const svgToPng = async (svgString: string, width: number = 800, height: number = 800): Promise<string> => {
+// Convert SVG string to PNG base64 with transparent background (compressed)
+const svgToPng = async (svgString: string, width: number = 512, height: number = 512): Promise<string> => {
   return new Promise((resolve, reject) => {
     // Remove white background rect from SVG to keep transparency
     const cleanedSvg = svgString.replace(/<rect[^>]*fill="white"[^>]*\/?>/gi, '')
@@ -35,8 +35,9 @@ const svgToPng = async (svgString: string, width: number = 800, height: number =
     const img = new window.Image()
     img.onload = () => {
       ctx.drawImage(img, 0, 0, width, height)
-      const dataUrl = canvas.toDataURL('image/png')
-      // Return just the base64 part without the data:image/png;base64, prefix
+      // Use JPEG for smaller file size (0.8 quality)
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.8)
+      // Return just the base64 part without the data:image/...;base64, prefix
       resolve(dataUrl.split(',')[1])
     }
     img.onerror = () => reject(new Error('Failed to load SVG image'))
@@ -44,8 +45,8 @@ const svgToPng = async (svgString: string, width: number = 800, height: number =
   })
 }
 
-// Convert image URL to base64 using fetch
-const urlToBase64 = async (url: string): Promise<string> => {
+// Convert image URL to compressed base64 using canvas
+const urlToBase64 = async (url: string, maxSize: number = 512): Promise<string> => {
   const response = await fetch(url, {
     cache: 'no-store',
   })
@@ -53,15 +54,43 @@ const urlToBase64 = async (url: string): Promise<string> => {
     throw new Error('Failed to fetch image')
   }
   const blob = await response.blob()
+  
   return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onloadend = () => {
-      const dataUrl = reader.result as string
-      // Remove the data:image/...;base64, prefix
+    const img = new window.Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => {
+      // Calculate new dimensions maintaining aspect ratio
+      let width = img.width
+      let height = img.height
+      if (width > maxSize || height > maxSize) {
+        if (width > height) {
+          height = Math.round((height * maxSize) / width)
+          width = maxSize
+        } else {
+          width = Math.round((width * maxSize) / height)
+          height = maxSize
+        }
+      }
+      
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+      const ctx = canvas.getContext('2d')
+      if (!ctx) {
+        reject(new Error('Could not get canvas context'))
+        return
+      }
+      ctx.drawImage(img, 0, 0, width, height)
+      // Use JPEG with 0.8 quality for smaller file size
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.8)
       resolve(dataUrl.split(',')[1])
+      URL.revokeObjectURL(img.src)
     }
-    reader.onerror = () => reject(new Error('Failed to read image'))
-    reader.readAsDataURL(blob)
+    img.onerror = () => {
+      URL.revokeObjectURL(img.src)
+      reject(new Error('Failed to load image'))
+    }
+    img.src = URL.createObjectURL(blob)
   })
 }
 
@@ -173,6 +202,13 @@ export default function GeneratePage() {
           packageImage,
         }),
       })
+
+      // Check content-type before parsing as JSON
+      const contentType = response.headers.get('content-type')
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text()
+        throw new Error(text || `Server error: ${response.status}`)
+      }
 
       const data = await response.json()
 

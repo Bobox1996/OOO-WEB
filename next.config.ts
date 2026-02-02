@@ -13,6 +13,12 @@ const nextConfig: NextConfig = {
     // Enable modern image formats for better compression
     formats: ['image/avif', 'image/webp'],
   },
+  // Increase body size limit for API routes (for base64 image uploads)
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '10mb',
+    },
+  },
 };
 
 export default nextConfig;
