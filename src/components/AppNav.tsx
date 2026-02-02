@@ -18,7 +18,8 @@ export default function AppNav() {
   }
 
   const navItems = [
-    { href: '/app', label: 'Generate' },
+    { href: '/app', label: 'Pattern' },
+    { href: '/app/generate', label: 'AI Generate' },
     { href: '/app/history', label: 'History' },
   ]
 

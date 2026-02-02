@@ -12,10 +12,20 @@ export async function POST(request: NextRequest) {
     }
 
     // Parse request body
-    const { prompt } = await request.json()
+    const { prompt, patternImage, packageImage } = await request.json()
     
     if (!prompt || typeof prompt !== 'string') {
       return NextResponse.json({ error: 'Prompt is required' }, { status: 400 })
+    }
+
+    // Validate patternImage if provided
+    if (patternImage && typeof patternImage !== 'string') {
+      return NextResponse.json({ error: 'Invalid pattern image format' }, { status: 400 })
+    }
+
+    // Validate packageImage if provided
+    if (packageImage && typeof packageImage !== 'string') {
+      return NextResponse.json({ error: 'Invalid package image format' }, { status: 400 })
     }
 
     // Check for Gemini API key
@@ -24,101 +34,141 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Gemini API key not configured' }, { status: 500 })
     }
 
-    // Call Gemini API for image generation (gemini-2.0-flash-exp-image-generation)
-    const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+    // Build parts array for Gemini API
+    const parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = []
+    
+    // Add pattern image as first part if provided (FIRST image in prompt)
+    if (patternImage) {
+      parts.push({
+        inlineData: {
+          mimeType: 'image/png',
+          data: patternImage,
         },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: prompt,
-                },
-              ],
-            },
-          ],
-          generationConfig: {
-            responseModalities: ['TEXT', 'IMAGE'],
-          },
-        }),
+      })
+    }
+    
+    // Add package image as second part if provided (SECOND image in prompt)
+    if (packageImage) {
+      parts.push({
+        inlineData: {
+          mimeType: 'image/png',
+          data: packageImage,
+        },
+      })
+    }
+    
+    // Add text prompt
+    parts.push({ text: prompt })
+
+    // Gemini API URL
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent?key=${apiKey}`
+    const requestBody = JSON.stringify({
+      contents: [
+        {
+          parts,
+        },
+      ],
+      generationConfig: {
+        responseModalities: ['TEXT', 'IMAGE'],
+      },
+    })
+
+    // Make 2 parallel API calls for variations
+    const [geminiResponse1, geminiResponse2] = await Promise.all([
+      fetch(geminiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: requestBody,
+      }),
+      fetch(geminiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: requestBody,
+      }),
+    ])
+
+    // Helper function to extract image from Gemini response
+    const extractImage = async (response: Response, index: number) => {
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        console.error(`Gemini API error (variation ${index}):`, errorData)
+        throw new Error(errorData.error?.message || 'Failed to generate image')
       }
-    )
 
-    if (!geminiResponse.ok) {
-      const errorData = await geminiResponse.json().catch(() => ({}))
-      console.error('Gemini API error:', errorData)
-      return NextResponse.json(
-        { error: errorData.error?.message || 'Failed to generate image' },
-        { status: geminiResponse.status }
+      const geminiData = await response.json()
+      const responseParts = geminiData.candidates?.[0]?.content?.parts || []
+      const imagePart = responseParts.find((part: { inlineData?: { mimeType: string; data: string } }) => 
+        part.inlineData?.mimeType?.startsWith('image/')
       )
+      const imageBase64 = imagePart?.inlineData?.data
+
+      if (!imageBase64) {
+        console.error(`No image in response (variation ${index}):`, JSON.stringify(geminiData, null, 2))
+        throw new Error('No image generated')
+      }
+
+      return imageBase64
     }
 
-    const geminiData = await geminiResponse.json()
-    
-    // Extract base64 image from response
-    // The response structure: candidates[0].content.parts[] - find the part with inlineData
-    const parts = geminiData.candidates?.[0]?.content?.parts || []
-    const imagePart = parts.find((part: { inlineData?: { mimeType: string; data: string } }) => part.inlineData?.mimeType?.startsWith('image/'))
-    const imageBase64 = imagePart?.inlineData?.data
-    
-    if (!imageBase64) {
-      console.error('No image in response:', JSON.stringify(geminiData, null, 2))
-      return NextResponse.json({ error: 'No image generated' }, { status: 500 })
+    // Extract images from both responses
+    let imageBase64_1: string
+    let imageBase64_2: string
+    try {
+      [imageBase64_1, imageBase64_2] = await Promise.all([
+        extractImage(geminiResponse1, 1),
+        extractImage(geminiResponse2, 2),
+      ])
+    } catch (error) {
+      return NextResponse.json({ error: error instanceof Error ? error.message : 'Failed to generate images' }, { status: 500 })
     }
 
-    // Convert base64 to blob
-    const imageBuffer = Buffer.from(imageBase64, 'base64')
-    const fileName = `${user.id}/${Date.now()}.png`
+    // Upload both images to Supabase Storage
+    const timestamp = Date.now()
+    const fileName1 = `${user.id}/${timestamp}-1.png`
+    const fileName2 = `${user.id}/${timestamp}-2.png`
 
-    // Upload to Supabase Storage
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('generations')
-      .upload(fileName, imageBuffer, {
+    const [upload1, upload2] = await Promise.all([
+      supabase.storage.from('generations').upload(fileName1, Buffer.from(imageBase64_1, 'base64'), {
         contentType: 'image/png',
         upsert: false,
-      })
+      }),
+      supabase.storage.from('generations').upload(fileName2, Buffer.from(imageBase64_2, 'base64'), {
+        contentType: 'image/png',
+        upsert: false,
+      }),
+    ])
 
-    if (uploadError) {
-      console.error('Upload error:', uploadError)
-      return NextResponse.json({ error: 'Failed to save image' }, { status: 500 })
+    if (upload1.error || upload2.error) {
+      console.error('Upload errors:', upload1.error, upload2.error)
+      return NextResponse.json({ error: 'Failed to save images' }, { status: 500 })
     }
 
-    // Get public URL
-    const { data: urlData } = supabase.storage
-      .from('generations')
-      .getPublicUrl(fileName)
+    // Get public URLs
+    const imageUrl1 = supabase.storage.from('generations').getPublicUrl(fileName1).data.publicUrl
+    const imageUrl2 = supabase.storage.from('generations').getPublicUrl(fileName2).data.publicUrl
 
-    const imageUrl = urlData.publicUrl
-
-    // Save to database
-    const { data: generation, error: dbError } = await supabase
+    // Save both to database
+    const { data: generations, error: dbError } = await supabase
       .from('app_generations')
-      .insert({
-        user_id: user.id,
-        prompt: prompt,
-        image_url: imageUrl,
-      })
+      .insert([
+        { user_id: user.id, prompt: prompt, image_url: imageUrl1 },
+        { user_id: user.id, prompt: prompt, image_url: imageUrl2 },
+      ])
       .select()
-      .single()
 
     if (dbError) {
       console.error('Database error:', dbError)
-      return NextResponse.json({ error: 'Failed to save generation record' }, { status: 500 })
+      return NextResponse.json({ error: 'Failed to save generation records' }, { status: 500 })
     }
 
     return NextResponse.json({
       success: true,
-      generation: {
-        id: generation.id,
-        prompt: generation.prompt,
-        image_url: generation.image_url,
-        created_at: generation.created_at,
-      },
+      generations: generations.map((gen) => ({
+        id: gen.id,
+        prompt: gen.prompt,
+        image_url: gen.image_url,
+        created_at: gen.created_at,
+      })),
     })
   } catch (error) {
     console.error('Generate error:', error)

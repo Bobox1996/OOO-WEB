@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import type { AppUser } from '@/lib/types'
 
 interface EditAppUserFormProps {
@@ -58,21 +59,21 @@ export default function EditAppUserForm({ user }: EditAppUserFormProps) {
   return (
     <>
       {/* Header */}
-      <div className="flex items-center gap-4 mb-12">
-        <button
-          onClick={() => router.back()}
+      <div className="flex items-center gap-4 mb-8">
+        <Link
+          href="/admin/app/users"
           className="text-sm uppercase tracking-widest text-neutral-400 hover:text-black transition-colors"
         >
-          ← Back
-        </button>
+          ← Back to Users
+        </Link>
       </div>
 
-      <h1 className="text-[clamp(2rem,5vw,4rem)] font-bold leading-[0.95] tracking-tighter uppercase mb-12">
+      <h2 className="text-2xl font-bold tracking-tight uppercase mb-8">
         Edit User
-      </h1>
+      </h2>
 
       {/* Form Fields */}
-      <div className="border border-black/10 p-8 space-y-6">
+      <div className="border border-black/10 p-8 space-y-6 max-w-screen-md">
         <div>
           <label className="block text-sm uppercase tracking-wider text-neutral-500 mb-2">
             Email *
@@ -103,7 +104,7 @@ export default function EditAppUserForm({ user }: EditAppUserFormProps) {
       </div>
 
       {/* Info */}
-      <div className="mt-6 p-4 border border-black/10 bg-neutral-50">
+      <div className="mt-6 p-4 border border-black/10 bg-neutral-50 max-w-screen-md">
         <p className="text-sm text-neutral-500">
           <strong>Added:</strong> {new Date(user.created_at).toLocaleString()}
         </p>
@@ -111,20 +112,20 @@ export default function EditAppUserForm({ user }: EditAppUserFormProps) {
 
       {/* Success Message */}
       {success && (
-        <div className="border border-green-500 bg-green-50 p-4 text-sm mt-6 text-green-700">
+        <div className="border border-green-500 bg-green-50 p-4 text-sm mt-6 text-green-700 max-w-screen-md">
           User updated successfully
         </div>
       )}
 
       {/* Error Message */}
       {error && (
-        <div className="border border-black p-4 text-sm mt-6">
+        <div className="border border-black p-4 text-sm mt-6 max-w-screen-md">
           {error}
         </div>
       )}
 
       {/* Actions */}
-      <div className="flex gap-4 mt-8">
+      <div className="flex gap-4 mt-8 max-w-screen-md">
         <button
           onClick={handleSubmit}
           disabled={saving}
@@ -132,12 +133,12 @@ export default function EditAppUserForm({ user }: EditAppUserFormProps) {
         >
           {saving ? 'Saving...' : 'Save Changes'}
         </button>
-        <button
-          onClick={() => router.back()}
-          className="px-8 py-4 border border-black/30 text-neutral-500 text-sm uppercase tracking-widest hover:border-black hover:text-black transition-colors"
+        <Link
+          href="/admin/app/users"
+          className="px-8 py-4 border border-black/30 text-neutral-500 text-sm uppercase tracking-widest hover:border-black hover:text-black transition-colors text-center"
         >
           Cancel
-        </button>
+        </Link>
       </div>
     </>
   )

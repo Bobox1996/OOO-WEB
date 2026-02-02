@@ -23,7 +23,7 @@ export default function AdminNav() {
     { href: '/admin/projects', label: 'Projects' },
     { href: '/admin/team', label: 'Team' },
     { href: '/admin/vision', label: 'Vision' },
-    { href: '/admin/app-users', label: 'APP Users' },
+    { href: '/admin/app', label: 'APP' },
   ]
 
   return (
@@ -41,7 +41,7 @@ export default function AdminNav() {
                 key={item.href}
                 href={item.href}
                 className={`text-sm uppercase tracking-widest transition-opacity ${
-                  pathname === item.href
+                  pathname === item.href || pathname.startsWith(item.href + '/')
                     ? 'text-black'
                     : 'text-neutral-400 hover:text-black'
                 }`}
@@ -89,7 +89,7 @@ export default function AdminNav() {
                 href={item.href}
                 onClick={() => setMobileMenuOpen(false)}
                 className={`text-sm uppercase tracking-widest transition-opacity ${
-                  pathname === item.href
+                  pathname === item.href || pathname.startsWith(item.href + '/')
                     ? 'text-black'
                     : 'text-neutral-400 hover:text-black'
                 }`}

@@ -1,72 +1,152 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { useState, useRef, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import AppNav from '@/components/AppNav'
-import Image from 'next/image'
-
-interface Generation {
-  id: string
-  prompt: string
-  image_url: string
-  created_at: string
-}
+import PatternViewer from '@/components/PatternViewer'
+import PatternControls, { GridParams } from '@/components/PatternControls'
+import ViewerContainer from '@/components/ViewerContainer'
+import { createClient } from '@/lib/supabase/client'
+import { AppPattern } from '@/lib/types'
 
 export default function AppPage() {
-  const [prompt, setPrompt] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [currentImage, setCurrentImage] = useState<Generation | null>(null)
-  const [recentGenerations, setRecentGenerations] = useState<Generation[]>([])
+  const router = useRouter()
+  const svgRef = useRef<SVGSVGElement>(null)
   const supabase = createClient()
 
-  // Fetch recent generations on mount
-  useEffect(() => {
-    const fetchRecent = async () => {
-      const { data } = await supabase
-        .from('app_generations')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(6)
+  // Grid parameters state
+  const [params, setParams] = useState<GridParams>({
+    columns: 8,
+    rows: 8,
+    strokeWeight: 0.5,
+    strokeColor: '#000000',
+    slogan: '',
+    sloganWeight: 400,
+    sloganColor: '#000000',
+  })
 
-      if (data) {
-        setRecentGenerations(data)
+  // Recent patterns state
+  const [recentPatterns, setRecentPatterns] = useState<AppPattern[]>([])
+  const [patternsLoading, setPatternsLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+
+  // Fetch recent patterns on mount
+  useEffect(() => {
+    const fetchPatterns = async () => {
+      setPatternsLoading(true)
+      
+      // Fetch pinned patterns first, then recent non-pinned, limit to 6 total
+      const { data: pinnedData } = await supabase
+        .from('app_patterns')
+        .select('*')
+        .eq('pinned', true)
+        .order('created_at', { ascending: false })
+
+      const pinnedPatterns = pinnedData || []
+      const remainingSlots = Math.max(0, 6 - pinnedPatterns.length)
+
+      let recentNonPinned: AppPattern[] = []
+      if (remainingSlots > 0) {
+        const { data: recentData } = await supabase
+          .from('app_patterns')
+          .select('*')
+          .eq('pinned', false)
+          .order('created_at', { ascending: false })
+          .limit(remainingSlots)
+
+        recentNonPinned = recentData || []
       }
+
+      setRecentPatterns([...pinnedPatterns, ...recentNonPinned])
+      setPatternsLoading(false)
     }
-    fetchRecent()
+
+    fetchPatterns()
   }, [supabase])
 
-  const handleGenerate = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!prompt.trim() || loading) return
+  const handleParamChange = (newParams: Partial<GridParams>) => {
+    setParams((prev) => ({ ...prev, ...newParams }))
+  }
 
-    setLoading(true)
-    setError(null)
+  const handleNext = async () => {
+    if (!svgRef.current) return
 
-    try {
-      const response = await fetch('/api/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ prompt: prompt.trim() }),
-      })
+    setSaving(true)
+    const serializer = new XMLSerializer()
+    const svgString = serializer.serializeToString(svgRef.current)
+    const base64 = btoa(unescape(encodeURIComponent(svgString)))
 
-      const data = await response.json()
+    // Save to localStorage for the generate page
+    localStorage.setItem('patternSVG', base64)
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to generate image')
+    // Save to database
+    const { data: userData } = await supabase.auth.getUser()
+    if (userData.user) {
+      // Check if we need to delete old non-pinned patterns to maintain limit
+      const { data: existingPatterns } = await supabase
+        .from('app_patterns')
+        .select('id, pinned')
+        .eq('pinned', false)
+        .order('created_at', { ascending: false })
+
+      // If we have 6+ non-pinned patterns, delete the oldest ones
+      if (existingPatterns && existingPatterns.length >= 6) {
+        const patternsToDelete = existingPatterns.slice(5) // Keep only 5, new one will make 6
+        for (const pattern of patternsToDelete) {
+          await supabase.from('app_patterns').delete().eq('id', pattern.id)
+        }
       }
 
-      setCurrentImage(data.generation)
-      // Add to recent generations
-      setRecentGenerations(prev => [data.generation, ...prev.slice(0, 5)])
-      setPrompt('')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong')
-    } finally {
-      setLoading(false)
+      // Insert the new pattern
+      await supabase.from('app_patterns').insert({
+        user_id: userData.user.id,
+        columns: params.columns,
+        rows: params.rows,
+        stroke_weight: params.strokeWeight,
+        stroke_color: params.strokeColor,
+        slogan: params.slogan || null,
+        slogan_weight: params.sloganWeight,
+        slogan_color: params.sloganColor,
+        svg_preview: base64,
+        pinned: false,
+      })
     }
+
+    setSaving(false)
+    router.push('/app/generate')
+  }
+
+  const handleLoadPattern = (pattern: AppPattern) => {
+    setParams({
+      columns: pattern.columns,
+      rows: pattern.rows,
+      strokeWeight: pattern.stroke_weight,
+      strokeColor: pattern.stroke_color,
+      slogan: pattern.slogan || '',
+      sloganWeight: pattern.slogan_weight || 400,
+      sloganColor: pattern.slogan_color || '#000000',
+    })
+  }
+
+  const handleTogglePin = async (pattern: AppPattern) => {
+    const newPinned = !pattern.pinned
+
+    await supabase
+      .from('app_patterns')
+      .update({ pinned: newPinned })
+      .eq('id', pattern.id)
+
+    // Update local state
+    setRecentPatterns((prev) =>
+      prev.map((p) => (p.id === pattern.id ? { ...p, pinned: newPinned } : p))
+    )
+  }
+
+  const handleDeletePattern = async (patternId: string) => {
+    await supabase.from('app_patterns').delete().eq('id', patternId)
+
+    // Update local state
+    setRecentPatterns((prev) => prev.filter((p) => p.id !== patternId))
   }
 
   return (
@@ -77,129 +157,209 @@ export default function AppPage() {
           {/* Header */}
           <div className="mb-12">
             <h1 className="text-[clamp(2rem,5vw,4rem)] font-bold leading-[0.95] tracking-tighter uppercase">
-              AI Image
+              Pattern
               <br />
               Generator
             </h1>
-            <p className="text-neutral-500 mt-4 text-lg">Generate images with Gemini AI</p>
+            <p className="text-neutral-500 mt-4 text-lg">
+              Create parametric SVG patterns for AI generation
+            </p>
           </div>
 
-          {/* Generator Form */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-16">
-            {/* Input Section */}
-            <div>
-              <form onSubmit={handleGenerate} className="space-y-6">
-                <div>
-                  <label htmlFor="prompt" className="block text-sm uppercase tracking-wider text-neutral-500 mb-4">
-                    Enter your prompt
-                  </label>
-                  <textarea
-                    id="prompt"
-                    value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    placeholder="Describe the image you want to generate..."
-                    rows={6}
-                    className="w-full px-4 py-4 bg-white border border-black/20 text-black placeholder-neutral-400 focus:outline-none focus:border-black text-lg resize-none"
-                    disabled={loading}
-                  />
-                </div>
-
-                {error && (
-                  <div className="border border-red-500 bg-red-50 p-4 text-sm text-red-600">
-                    {error}
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={loading || !prompt.trim()}
-                  className="w-full py-4 bg-black text-white text-sm uppercase tracking-widest font-medium hover:bg-neutral-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
-                >
-                  {loading ? (
-                    <>
-                      <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                          fill="none"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        />
-                      </svg>
-                      Generating...
-                    </>
-                  ) : (
-                    'Generate Image'
-                  )}
-                </button>
-              </form>
+          {/* Step Indicator */}
+          <div className="flex items-center gap-4 mb-8">
+            <div className="flex items-center gap-2">
+              <span className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-sm font-medium">
+                1
+              </span>
+              <span className="text-sm uppercase tracking-wider font-medium">Create Pattern</span>
             </div>
-
-            {/* Result Section */}
-            <div>
-              <p className="block text-sm uppercase tracking-wider text-neutral-500 mb-4">
-                Generated Image
-              </p>
-              <div className="aspect-square bg-neutral-100 border border-black/10 flex items-center justify-center overflow-hidden">
-                {currentImage ? (
-                  <Image
-                    src={currentImage.image_url}
-                    alt={currentImage.prompt}
-                    width={800}
-                    height={800}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="text-center text-neutral-400 p-8">
-                    <svg className="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <p className="text-sm uppercase tracking-wider">
-                      Your generated image will appear here
-                    </p>
-                  </div>
-                )}
-              </div>
-              {currentImage && (
-                <p className="mt-4 text-sm text-neutral-500 italic">
-                  &quot;{currentImage.prompt}&quot;
-                </p>
-              )}
+            <div className="h-px bg-neutral-300 flex-1 max-w-24" />
+            <div className="flex items-center gap-2">
+              <span className="w-8 h-8 rounded-full bg-neutral-200 text-neutral-400 flex items-center justify-center text-sm font-medium">
+                2
+              </span>
+              <span className="text-sm uppercase tracking-wider text-neutral-400">AI Generate</span>
             </div>
           </div>
 
-          {/* Recent Generations */}
-          {recentGenerations.length > 0 && (
-            <div>
-              <h2 className="text-xl font-semibold tracking-tight mb-6 uppercase">Recent Generations</h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-px bg-black/10">
-                {recentGenerations.map((gen) => (
-                  <button
-                    key={gen.id}
-                    onClick={() => setCurrentImage(gen)}
-                    className="bg-white aspect-square relative group overflow-hidden"
-                  >
-                    <Image
-                      src={gen.image_url}
-                      alt={gen.prompt}
-                      fill
-                      className="object-cover group-hover:opacity-80 transition-opacity"
-                    />
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
-                      <p className="text-white text-xs line-clamp-3">{gen.prompt}</p>
-                    </div>
-                  </button>
+          {/* SVG Viewer */}
+          <div className="mb-8">
+            <p className="block text-sm uppercase tracking-wider text-neutral-500 mb-4">
+              Pattern Preview
+            </p>
+            <div className="aspect-square max-w-2xl bg-white border border-black/10 overflow-hidden relative">
+              <ViewerContainer>
+                <PatternViewer
+                  ref={svgRef}
+                  columns={params.columns}
+                  rows={params.rows}
+                  strokeWeight={params.strokeWeight}
+                  strokeColor={params.strokeColor}
+                  slogan={params.slogan}
+                  sloganWeight={params.sloganWeight}
+                  sloganColor={params.sloganColor}
+                />
+              </ViewerContainer>
+            </div>
+          </div>
+
+          {/* Controls */}
+          <div className="mb-12">
+            <p className="block text-sm uppercase tracking-wider text-neutral-500 mb-4">
+              Pattern Parameters
+            </p>
+            <PatternControls
+              columns={params.columns}
+              rows={params.rows}
+              strokeWeight={params.strokeWeight}
+              strokeColor={params.strokeColor}
+              slogan={params.slogan}
+              sloganWeight={params.sloganWeight}
+              sloganColor={params.sloganColor}
+              onChange={handleParamChange}
+            />
+          </div>
+
+          {/* Recent Patterns */}
+          <div className="mb-12">
+            <p className="block text-sm uppercase tracking-wider text-neutral-500 mb-4">
+              Recent Patterns
+            </p>
+            {patternsLoading ? (
+              <div className="flex gap-4 overflow-x-auto pb-4">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div
+                    key={i}
+                    className="flex-shrink-0 w-24 h-24 bg-neutral-200 animate-pulse"
+                  />
                 ))}
               </div>
-            </div>
-          )}
+            ) : recentPatterns.length === 0 ? (
+              <div className="bg-neutral-100 border border-black/10 p-8 text-center">
+                <p className="text-neutral-500 text-sm">No saved patterns yet. Create one and click Next to save.</p>
+              </div>
+            ) : (
+              <div className="flex gap-4 overflow-x-auto pb-4">
+                {recentPatterns.map((pattern) => (
+                  <div
+                    key={pattern.id}
+                    className="flex-shrink-0 w-24 h-24 relative group"
+                  >
+                    {/* Pattern Preview */}
+                    <button
+                      onClick={() => handleLoadPattern(pattern)}
+                      className="w-full h-full bg-white border border-black/10 overflow-hidden hover:border-black transition-colors"
+                      title="Load this pattern"
+                    >
+                      <div
+                        className="w-full h-full"
+                        dangerouslySetInnerHTML={{
+                          __html: decodeURIComponent(escape(atob(pattern.svg_preview))),
+                        }}
+                      />
+                    </button>
+
+                    {/* Pin Button */}
+                    <button
+                      onClick={() => handleTogglePin(pattern)}
+                      className={`absolute top-1 left-1 w-6 h-6 rounded-full flex items-center justify-center transition-all ${
+                        pattern.pinned
+                          ? 'bg-black text-white'
+                          : 'bg-white/80 text-neutral-400 opacity-0 group-hover:opacity-100'
+                      }`}
+                      title={pattern.pinned ? 'Unpin' : 'Pin'}
+                    >
+                      <svg
+                        className="w-3 h-3"
+                        fill={pattern.pinned ? 'currentColor' : 'none'}
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                        />
+                      </svg>
+                    </button>
+
+                    {/* Delete Button */}
+                    {!pattern.pinned && (
+                      <button
+                        onClick={() => handleDeletePattern(pattern.id)}
+                        className="absolute top-1 right-1 w-6 h-6 rounded-full bg-white/80 text-neutral-400 hover:text-red-500 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
+                        title="Delete"
+                      >
+                        <svg
+                          className="w-3 h-3"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M6 18L18 6M6 6l12 12"
+                          />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Next Button */}
+          <div className="flex justify-end">
+            <button
+              onClick={handleNext}
+              disabled={saving}
+              className="px-8 py-4 bg-black text-white text-sm uppercase tracking-widest font-medium hover:bg-neutral-800 transition-colors flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {saving ? (
+                <>
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      fill="none"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                  Saving...
+                </>
+              ) : (
+                <>
+                  Next
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M17 8l4 4m0 0l-4 4m4-4H3"
+                    />
+                  </svg>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </main>
     </>
