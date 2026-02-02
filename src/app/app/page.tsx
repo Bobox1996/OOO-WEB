@@ -159,7 +159,7 @@ export default function AppPage() {
             <h1 className="text-[clamp(2rem,5vw,4rem)] font-bold leading-[0.95] tracking-tighter uppercase">
               Pattern
               <br />
-              Generator
+              Designer
             </h1>
             <p className="text-neutral-500 mt-4 text-lg">
               Create parametric SVG patterns for AI generation
