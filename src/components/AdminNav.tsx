@@ -38,7 +38,7 @@ export default function AdminNav() {
   // Filter nav items - only show Team link for shimin@out-of-office.design
   const navItems = allNavItems.filter(item => {
     if (item.href === '/admin/team') {
-      return userEmail === 'shimin@out-of-office.design'
+      return userEmail?.toLowerCase() === 'shimin@out-of-office.design'
     }
     return true
   })

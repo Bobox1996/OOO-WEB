@@ -26,7 +26,7 @@ export default function AdminVisionPage() {
     const { data: { user } } = await supabase.auth.getUser()
     setUser(user)
     
-    if (user?.email === ALLOWED_EMAIL) {
+    if (user?.email?.toLowerCase() === ALLOWED_EMAIL) {
       setHasAccess(true)
       fetchVision()
     } else {

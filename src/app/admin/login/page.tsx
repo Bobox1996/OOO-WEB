@@ -107,7 +107,7 @@ function LoginForm() {
     const { data: adminUser } = await supabase
       .from('admin_users')
       .select('id')
-      .eq('email', email)
+      .ilike('email', email)
       .single()
 
     if (!adminUser) {

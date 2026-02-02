@@ -41,7 +41,7 @@ export async function updateSession(request: NextRequest) {
         const { data: adminUser } = await supabase
           .from('admin_users')
           .select('id')
-          .eq('email', user.email)
+          .ilike('email', user.email)
           .single()
 
         if (adminUser) {
@@ -63,7 +63,7 @@ export async function updateSession(request: NextRequest) {
         const { data: adminUser } = await supabase
           .from('admin_users')
           .select('id')
-          .eq('email', user.email)
+          .ilike('email', user.email)
           .single()
 
         if (!adminUser) {
@@ -76,7 +76,7 @@ export async function updateSession(request: NextRequest) {
 
         // Special protection for /admin/team routes - only shimin can access
         if (request.nextUrl.pathname.startsWith('/admin/team')) {
-          if (user?.email !== 'shimin@out-of-office.design') {
+          if (user?.email?.toLowerCase() !== 'shimin@out-of-office.design') {
             const url = request.nextUrl.clone()
             url.pathname = '/admin/dashboard'
             return NextResponse.redirect(url)

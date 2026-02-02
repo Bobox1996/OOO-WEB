@@ -12,7 +12,7 @@ export default async function ProjectsPage() {
   
   // Get current user
   const { data: { user } } = await supabase.auth.getUser()
-  const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL
+  const isSuperAdmin = user?.email?.toLowerCase() === SUPER_ADMIN_EMAIL
   
   const { data: projects } = await supabase
     .from('projects')
