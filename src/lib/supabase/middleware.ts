@@ -73,6 +73,15 @@ export async function updateSession(request: NextRequest) {
           url.searchParams.set('error', 'unauthorized')
           return NextResponse.redirect(url)
         }
+
+        // Special protection for /admin/team routes - only shimin can access
+        if (request.nextUrl.pathname.startsWith('/admin/team')) {
+          if (user?.email !== 'shimin@out-of-office.design') {
+            const url = request.nextUrl.clone()
+            url.pathname = '/admin/dashboard'
+            return NextResponse.redirect(url)
+          }
+        }
       }
     }
   }

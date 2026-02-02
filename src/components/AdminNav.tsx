@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -10,6 +10,15 @@ export default function AdminNav() {
   const router = useRouter()
   const supabase = createClient()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [userEmail, setUserEmail] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      setUserEmail(user?.email ?? null)
+    }
+    fetchUser()
+  }, [supabase.auth])
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -17,7 +26,7 @@ export default function AdminNav() {
     router.refresh()
   }
 
-  const navItems = [
+  const allNavItems = [
     { href: '/admin/dashboard', label: 'Dashboard' },
     { href: '/admin/upload', label: 'Upload' },
     { href: '/admin/projects', label: 'Projects' },
@@ -25,6 +34,14 @@ export default function AdminNav() {
     { href: '/admin/vision', label: 'Vision' },
     { href: '/admin/app', label: 'APP' },
   ]
+
+  // Filter nav items - only show Team link for shimin@out-of-office.design
+  const navItems = allNavItems.filter(item => {
+    if (item.href === '/admin/team') {
+      return userEmail === 'shimin@out-of-office.design'
+    }
+    return true
+  })
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-black/10">

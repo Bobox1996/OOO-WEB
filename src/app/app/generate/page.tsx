@@ -262,6 +262,27 @@ export default function GeneratePage() {
     URL.revokeObjectURL(url)
   }
 
+  const handleDeleteGeneration = async (e: React.MouseEvent, generation: Generation) => {
+    e.stopPropagation()
+    
+    // Extract storage path from image_url
+    // URL format: https://xxx.supabase.co/storage/v1/object/public/generations/user_id/timestamp.png
+    const urlParts = generation.image_url.split('/generations/')
+    const storagePath = urlParts[1] // e.g., "user_id/timestamp.png"
+    
+    if (storagePath) {
+      // Delete from storage
+      await supabase.storage.from('generations').remove([storagePath])
+    }
+    
+    // Delete from database
+    await supabase.from('app_generations').delete().eq('id', generation.id)
+    
+    // Update local state
+    setRecentGenerations((prev) => prev.filter((g) => g.id !== generation.id))
+    setCurrentImages((prev) => prev.filter((g) => g.id !== generation.id))
+  }
+
   return (
     <>
       <AppNav />
@@ -551,7 +572,7 @@ export default function GeneratePage() {
                       className="object-cover group-hover:opacity-80 transition-opacity"
                     />
                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-3">
-                      <div className="flex justify-end">
+                      <div className="flex justify-end gap-1">
                         <button
                           onClick={(e) => handleDownloadImage(e, gen.image_url, `generation-${gen.id}.png`)}
                           className="w-8 h-8 bg-white/20 hover:bg-white/40 rounded-full flex items-center justify-center transition-colors"
@@ -568,6 +589,25 @@ export default function GeneratePage() {
                               strokeLinejoin="round"
                               strokeWidth={2}
                               d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                            />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={(e) => handleDeleteGeneration(e, gen)}
+                          className="w-8 h-8 bg-red-500/60 hover:bg-red-500 rounded-full flex items-center justify-center transition-colors"
+                          title="Delete image"
+                        >
+                          <svg
+                            className="w-4 h-4 text-white"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
                             />
                           </svg>
                         </button>
