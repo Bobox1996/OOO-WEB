@@ -332,7 +332,7 @@ const TeamOField = forwardRef<TeamOFieldRef, TeamOFieldProps>(({ oCount, members
       {/* Hidden element to measure character dimensions */}
       <span
         ref={measureRef}
-        className="absolute opacity-0 pointer-events-none font-cjk-mono font-bold text-[clamp(1rem,2.5vw,1.5rem)] leading-[1.1]"
+        className="absolute opacity-0 pointer-events-none font-cjk-mono font-bold text-[clamp(0.9rem,2.25vw,1.35rem)] md:text-[clamp(1rem,2.5vw,1.5rem)] leading-[1.1]"
         aria-hidden="true"
       >
         O
@@ -349,7 +349,7 @@ const TeamOField = forwardRef<TeamOFieldRef, TeamOFieldProps>(({ oCount, members
         {/* Layer 1: O characters (affected by cursor overlay) */}
         <div
           ref={gridContainerRef}
-          className="w-full font-cjk-mono font-bold text-[clamp(1rem,2.5vw,1.5rem)] leading-[1.1] select-none relative"
+          className="w-full font-cjk-mono font-bold text-[clamp(0.9rem,2.25vw,1.35rem)] md:text-[clamp(1rem,2.5vw,1.5rem)] leading-[1.1] select-none relative"
           style={{ height: totalHeight, zIndex: 1 }}
         >
           {visibleGridRows.map(({ row, rowIndex, isSecondSet }) =>
@@ -373,17 +373,12 @@ const TeamOField = forwardRef<TeamOFieldRef, TeamOFieldProps>(({ oCount, members
 
         {/* Layer 3: Content (names/descriptions, NOT affected by cursor overlay) */}
         <div
-          className="absolute top-0 left-0 w-full font-bold text-[clamp(1rem,2.5vw,1.5rem)] leading-[1.1] select-none pointer-events-none"
+          className="absolute top-0 left-0 w-full font-bold text-[clamp(0.9rem,2.25vw,1.35rem)] md:text-[clamp(1rem,2.5vw,1.5rem)] leading-[1.1] select-none pointer-events-none"
           style={{ height: totalHeight, zIndex: 100 }}
         >
           {visiblePlacements.map(({ placement, top, key, placementIndex }) => {
             const isName = placement.type === 'name' && placement.memberId
             const isHovered = isName && hoveredMemberId === placement.memberId
-
-            // Stagger: each subsequent line starts 1% later in the scroll timeline
-            // ~1% of total scroll ≈ 190px between each line's start; 5% window ≈ ~960px of scroll
-            const rangeStart = placementIndex * 1
-            const rangeEnd = rangeStart + 5
 
             return (
               <div
@@ -405,7 +400,6 @@ const TeamOField = forwardRef<TeamOFieldRef, TeamOFieldProps>(({ oCount, members
                       ? `txt cursor-pointer transition-colors pointer-events-auto ${isHovered ? 'text-orange-500' : 'text-black'}`
                       : `txt text-cyan-500 ${selectedMember ? 'pointer-events-auto cursor-pointer' : ''}`
                   }
-                  style={{ animationRange: `${rangeStart}% ${rangeEnd}%` }}
                   onClick={
                     isName
                       ? () => selectedMember ? setSelectedMember(null) : handleMemberClick(placement.memberId!)

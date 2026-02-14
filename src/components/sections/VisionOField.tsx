@@ -227,7 +227,7 @@ const VisionOField = forwardRef<VisionOFieldRef, VisionOFieldProps>(({ oCount, v
       {/* Hidden element to measure character dimensions */}
       <span
         ref={measureRef}
-        className="absolute opacity-0 pointer-events-none font-cjk-mono font-bold text-[clamp(1rem,2.5vw,1.5rem)] leading-[1.1]"
+        className="absolute opacity-0 pointer-events-none font-cjk-mono font-bold text-[clamp(0.9rem,2.25vw,1.35rem)] md:text-[clamp(1rem,2.5vw,1.5rem)] leading-[1.1]"
         aria-hidden="true"
       >
         O
@@ -244,7 +244,7 @@ const VisionOField = forwardRef<VisionOFieldRef, VisionOFieldProps>(({ oCount, v
         {/* Layer 1: O characters (affected by cursor overlay) */}
         <div
           ref={gridContainerRef}
-          className="w-full font-cjk-mono font-bold text-[clamp(1rem,2.5vw,1.5rem)] leading-[1.1] select-none relative"
+          className="w-full font-cjk-mono font-bold text-[clamp(0.9rem,2.25vw,1.35rem)] md:text-[clamp(1rem,2.5vw,1.5rem)] leading-[1.1] select-none relative"
           style={{ height: totalHeight, zIndex: 1 }}
         >
           {visibleGridRows.map(({ row, rowIndex, isSecondSet }) =>
@@ -268,7 +268,7 @@ const VisionOField = forwardRef<VisionOFieldRef, VisionOFieldProps>(({ oCount, v
 
         {/* Layer 3: Vision text (NOT affected by cursor overlay) */}
         <div
-          className="absolute top-0 left-0 w-full font-bold text-[clamp(1rem,2.5vw,1.5rem)] leading-[1.1] select-none pointer-events-none"
+          className="absolute top-0 left-0 w-full font-bold text-[clamp(0.9rem,2.25vw,1.35rem)] md:text-[clamp(1rem,2.5vw,1.5rem)] leading-[1.1] select-none pointer-events-none"
           style={{ height: totalHeight, zIndex: 100 }}
         >
           {visiblePlacements.map(({ placement, top, key, placementIndex }) => {
