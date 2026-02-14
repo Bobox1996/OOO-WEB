@@ -1,0 +1,276 @@
+'use client'
+
+import { useState, useRef, useEffect, useCallback, forwardRef, useImperativeHandle, useMemo } from 'react'
+import { throttle, placeText } from '@/lib/utils/grid.utils'
+
+interface GridCell {
+  char: string
+  type: 'o' | 'vision'
+  span: number
+}
+
+interface VisionOFieldProps {
+  oCount: number
+  visionContent: string
+  onScroll?: (scrollTop: number) => void
+  maxCols?: number
+}
+
+export interface VisionOFieldRef {
+  scrollContainer: HTMLDivElement | null
+}
+
+const RENDER_BUFFER = 5
+
+const VisionOField = forwardRef<VisionOFieldRef, VisionOFieldProps>(({ oCount, visionContent, onScroll, maxCols }, ref) => {
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const gridContainerRef = useRef<HTMLDivElement>(null)
+  const measureRef = useRef<HTMLSpanElement>(null)
+  const contentHeightRef = useRef(0)
+  const cursorOverlayRef = useRef<HTMLDivElement>(null)
+  const mouseClientPos = useRef<{ x: number; y: number } | null>(null)
+
+  // Only DOM-derived values need state (set by measurement effect)
+  const [gridCols, setGridCols] = useState(50)
+  const [cellWidth, setCellWidth] = useState(0)
+  const [cellHeight, setCellHeight] = useState(0)
+  const [visibleRows, setVisibleRows] = useState(0)
+  const [scrollTop, setScrollTop] = useState(0)
+
+  useImperativeHandle(ref, () => ({
+    scrollContainer: scrollContainerRef.current,
+  }))
+
+  // --- Derived values ---
+  const gridRows = gridCols > 0 ? Math.ceil(oCount / gridCols) : 0
+
+  // Sync content height ref (read by scroll handler, so must stay a ref)
+  useEffect(() => {
+    contentHeightRef.current = gridRows > 0 && cellHeight > 0 ? gridRows * cellHeight : 0
+  }, [gridRows, cellHeight])
+
+  // Build entire grid in a single pass — no cloning, no intermediate states
+  const grid = useMemo(() => {
+    if (gridRows === 0 || gridCols === 0) return []
+
+    // Allocate grid filled with O's
+    const g: GridCell[][] = Array.from({ length: gridRows }, () =>
+      Array.from({ length: gridCols }, (): GridCell => ({ char: 'O', type: 'o', span: 1 }))
+    )
+
+    // Place vision text starting at row 9
+    if (visionContent) {
+      let row = 9
+      for (const line of visionContent.split('\n')) {
+        if (row >= gridRows) break
+        placeText(
+          (r, c, char, span) => { g[r][c] = { char, type: 'vision', span } },
+          row, line, gridCols, 'center'
+        )
+        row++
+      }
+    }
+
+    return g
+  }, [gridRows, gridCols, visionContent])
+
+  // --- DOM measurement (the only real effect needed) ---
+  useEffect(() => {
+    const calculate = () => {
+      if (!gridContainerRef.current || !measureRef.current || !scrollContainerRef.current) return
+      const containerWidth = gridContainerRef.current.offsetWidth
+      const cw = measureRef.current.offsetWidth
+      const ch = measureRef.current.offsetHeight
+      const viewportHeight = scrollContainerRef.current.offsetHeight
+
+      if (cw > 0 && ch > 0) {
+        const calculated = Math.floor(containerWidth / cw)
+        const cols = maxCols ? Math.min(maxCols, calculated) : calculated
+        setGridCols(cols > 0 ? cols : 50)
+        setCellWidth(cw)
+        setCellHeight(ch)
+        setVisibleRows(Math.max(Math.floor(viewportHeight / ch), 10))
+      }
+    }
+
+    const timer = setTimeout(calculate, 50)
+    window.addEventListener('resize', calculate)
+    return () => { clearTimeout(timer); window.removeEventListener('resize', calculate) }
+  }, [visionContent, maxCols])
+
+  // --- Virtualization ---
+  const { visibleStart, visibleEnd, totalHeight } = useMemo(() => {
+    if (cellHeight === 0 || gridRows === 0) {
+      return { visibleStart: 0, visibleEnd: Math.min(20, gridRows), totalHeight: 0 }
+    }
+    const height = gridRows * cellHeight * 2
+    const start = Math.max(0, Math.floor(scrollTop / cellHeight) - RENDER_BUFFER)
+    const end = Math.min(gridRows * 2, Math.ceil((scrollTop + visibleRows * cellHeight) / cellHeight) + RENDER_BUFFER)
+    return { visibleStart: start, visibleEnd: end, totalHeight: height }
+  }, [scrollTop, cellHeight, gridRows, visibleRows])
+
+  const visibleGridRows = useMemo(() => {
+    const result: { row: GridCell[]; rowIndex: number; isSecondSet: boolean }[] = []
+    for (let i = visibleStart; i < visibleEnd; i++) {
+      const isSecondSet = i >= gridRows
+      const actualIndex = isSecondSet ? i - gridRows : i
+      if (actualIndex >= 0 && actualIndex < grid.length) {
+        result.push({ row: grid[actualIndex], rowIndex: i, isSecondSet })
+      }
+    }
+    return result
+  }, [visibleStart, visibleEnd, gridRows, grid])
+
+  // --- Cursor & scroll handlers ---
+  const updateCursorPos = useCallback(() => {
+    if (scrollContainerRef.current && mouseClientPos.current && cursorOverlayRef.current) {
+      const rect = scrollContainerRef.current.getBoundingClientRect()
+      const x = mouseClientPos.current.x - rect.left
+      const y = mouseClientPos.current.y - rect.top + scrollContainerRef.current.scrollTop
+      cursorOverlayRef.current.style.transform = `translate3d(${x - 250}px, ${y - 250}px, 0)`
+      cursorOverlayRef.current.style.display = 'block'
+    }
+  }, [])
+
+  const throttledSetScrollTop = useMemo(() => throttle((v: number) => setScrollTop(v), 16), [])
+
+  const handleScroll = useCallback(() => {
+    const el = scrollContainerRef.current
+    const ch = contentHeightRef.current
+    if (!el || ch === 0) return
+
+    let st = el.scrollTop
+    onScroll?.(st)
+    updateCursorPos()
+
+    if (st >= ch) {
+      st -= ch
+      el.scrollTop = st
+    }
+    throttledSetScrollTop(st)
+  }, [onScroll, updateCursorPos, throttledSetScrollTop])
+
+  const throttledUpdateCursor = useMemo(
+    () => throttle((x: number, y: number) => {
+      mouseClientPos.current = { x, y }
+      updateCursorPos()
+    }, 16),
+    [updateCursorPos]
+  )
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    throttledUpdateCursor(e.clientX, e.clientY)
+  }, [throttledUpdateCursor])
+
+  const handleMouseLeave = useCallback(() => {
+    mouseClientPos.current = null
+    if (cursorOverlayRef.current) cursorOverlayRef.current.style.display = 'none'
+  }, [])
+
+  // --- Row renderers ---
+  const renderOsOnlyRow = useCallback((row: GridCell[], rowIndex: number, isSecondSet: boolean) => (
+    <div
+      key={isSecondSet ? `o2-${rowIndex - gridRows}` : `o1-${rowIndex}`}
+      className="absolute left-0 right-0 grid"
+      style={{
+        height: cellHeight || 'auto',
+        top: rowIndex * cellHeight,
+        gridTemplateColumns: `repeat(${gridCols}, ${cellWidth}px)`,
+        willChange: 'transform',
+      }}
+    >
+      {row.map((cell, i) => {
+        if (cell.span === 0) return null
+        if (cell.type === 'vision') {
+          return <span key={i} className="invisible" style={{ gridColumn: `span ${cell.span}` }}>{cell.char}</span>
+        }
+        return <span key={i} className="text-gray-300">{cell.char}</span>
+      })}
+    </div>
+  ), [cellHeight, cellWidth, gridRows, gridCols])
+
+  const renderVisionOnlyRow = useCallback((row: GridCell[], rowIndex: number, isSecondSet: boolean) => {
+    if (!row.some(cell => cell.type === 'vision')) return null
+    return (
+      <div
+        key={isSecondSet ? `v2-${rowIndex - gridRows}` : `v1-${rowIndex}`}
+        className="absolute left-0 right-0 grid"
+        style={{
+          height: cellHeight || 'auto',
+          top: rowIndex * cellHeight,
+          gridTemplateColumns: `repeat(${gridCols}, ${cellWidth}px)`,
+          willChange: 'transform',
+        }}
+      >
+        {row.map((cell, i) => {
+          if (cell.span === 0) return null
+          if (cell.type === 'vision') {
+            return <span key={i} className="text-cyan-500" style={{ gridColumn: `span ${cell.span}` }}>{cell.char}</span>
+          }
+          return <span key={i} className="invisible">{cell.char}</span>
+        })}
+      </div>
+    )
+  }, [cellHeight, cellWidth, gridRows, gridCols])
+
+  return (
+    <div className="relative h-full w-full">
+      {/* Hidden element to measure character dimensions */}
+      <span
+        ref={measureRef}
+        className="absolute opacity-0 pointer-events-none font-cjk-mono font-bold text-[clamp(1rem,2.5vw,1.5rem)] leading-[1.1]"
+        aria-hidden="true"
+      >
+        O
+      </span>
+
+      {/* Infinite scroll container */}
+      <div
+        ref={scrollContainerRef}
+        className="infinite-scroll-container"
+        onScroll={handleScroll}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+      >
+        {/* Layer 1: O characters (affected by cursor overlay) */}
+        <div
+          ref={gridContainerRef}
+          className="w-full font-cjk-mono font-bold text-[clamp(1rem,2.5vw,1.5rem)] leading-[1.1] select-none relative"
+          style={{ height: totalHeight, zIndex: 1 }}
+        >
+          {visibleGridRows.map(({ row, rowIndex, isSecondSet }) =>
+            renderOsOnlyRow(row, rowIndex, isSecondSet)
+          )}
+        </div>
+
+        {/* Layer 2: Cursor mask overlay */}
+        <div
+          ref={cursorOverlayRef}
+          className="pointer-events-none absolute rounded-full top-0 left-0"
+          style={{
+            display: 'none',
+            width: 500,
+            height: 500,
+            background: 'radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 70%)',
+            zIndex: 50,
+            willChange: 'transform',
+          }}
+        />
+
+        {/* Layer 3: Vision text (NOT affected by cursor overlay) */}
+        <div
+          className="absolute top-0 left-0 w-full font-cjk-mono font-bold text-[clamp(1rem,2.5vw,1.5rem)] leading-[1.1] select-none pointer-events-none"
+          style={{ height: totalHeight, zIndex: 100 }}
+        >
+          {visibleGridRows.map(({ row, rowIndex, isSecondSet }) =>
+            renderVisionOnlyRow(row, rowIndex, isSecondSet)
+          )}
+        </div>
+      </div>
+    </div>
+  )
+})
+
+VisionOField.displayName = 'VisionOField'
+
+export default VisionOField

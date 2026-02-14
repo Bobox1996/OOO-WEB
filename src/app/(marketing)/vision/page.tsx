@@ -1,6 +1,6 @@
-import { createClient } from '@/lib/supabase/server'
-import VisionPageClient from '@/components/VisionPageClient'
-import type { VisionContent } from '@/lib/types'
+import { createClient } from '@/services/supabase/server'
+import VisionPageClient from '@/components/sections/VisionPageClient'
+import type { VisionContent } from '@/types'
 
 const O_COUNT = 4000
 

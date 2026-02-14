@@ -3,8 +3,8 @@
 import { useRef, useEffect, useState, useMemo, useCallback } from 'react'
 import Link from 'next/link'
 import { useGravityTitle } from '@/hooks/useGravityTitle'
-import SwimmingTitle from '@/components/SwimmingTitle'
-import ProjectImage from '@/components/ProjectImage'
+import SwimmingTitle from '@/components/sections/SwimmingTitle'
+import ProjectImage from '@/components/sections/ProjectImage'
 
 interface ProjectWithImages {
   id: string
@@ -132,7 +132,7 @@ export default function HomePageClient({ projects }: HomePageClientProps) {
         <div className="max-w-screen-2xl mx-auto">
           <h1 
             ref={titleTextRef}
-            className="text-[clamp(3rem,10vw,8rem)] font-bold leading-[0.9] tracking-tighter uppercase"
+            className="font-title text-[clamp(3rem,10vw,8rem)] font-bold leading-[0.9] tracking-tighter uppercase"
           >
             Selected
             <br />
@@ -148,7 +148,7 @@ export default function HomePageClient({ projects }: HomePageClientProps) {
       <section className="relative z-30 bg-white px-0 md:px-6 pb-24">
         <div className="max-w-screen-2xl mx-auto">
           {shuffledProjects && shuffledProjects.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-black/10">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-black/10">
               {shuffledProjects.map((project, index) => (
                 <Link
                   key={project.id}
@@ -169,7 +169,7 @@ export default function HomePageClient({ projects }: HomePageClientProps) {
                           <ProjectImage
                             src={displayImage.url}
                             alt={project.title}
-                            priority={index < 2}
+                            priority={index < 3}
                             onColorExtracted={(color) => handleColorExtracted(project.id, color)}
                           />
                         )

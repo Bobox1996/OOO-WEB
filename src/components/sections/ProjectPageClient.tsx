@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import Lightbox from '@/components/Lightbox'
-import type { Image as ImageType, Project } from '@/lib/types'
+import Lightbox from '@/components/ui/Lightbox'
+import type { Image as ImageType, Project } from '@/types'
 
 interface ImageGroup {
   type: 'single' | 'pair'
@@ -51,7 +51,7 @@ export default function ProjectPageClient({ project, images, imageGroups, childr
           {/* Title Overlay */}
           <div className="absolute bottom-0 left-0 right-0 p-8 md:p-12 bg-gradient-to-t from-black/60 via-black/20 to-transparent">
             <div className="max-w-screen-2xl mx-auto">
-              <h1 className="text-[clamp(2.5rem,8vw,6rem)] font-bold leading-[0.9] tracking-tighter uppercase text-white mb-3">
+              <h1 className="font-title text-[clamp(2.5rem,8vw,6rem)] font-bold leading-[0.9] tracking-tighter uppercase text-white mb-3">
                 {project.title}
               </h1>
               {project.category && (
@@ -65,7 +65,7 @@ export default function ProjectPageClient({ project, images, imageGroups, childr
       ) : (
         <section className="w-full h-[50vh] bg-neutral-100 flex items-end">
           <div className="p-8 md:p-12 w-full">
-            <h1 className="text-[clamp(2.5rem,8vw,6rem)] font-bold leading-[0.9] tracking-tighter uppercase">
+            <h1 className="font-title text-[clamp(2.5rem,8vw,6rem)] font-bold leading-[0.9] tracking-tighter uppercase">
               {project.title}
             </h1>
             {project.category && (

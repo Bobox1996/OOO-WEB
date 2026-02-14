@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef } from 'react'
 import Image from 'next/image'
-import { getContrastColorForImage } from '@/lib/colorUtils'
+import { getContrastColorForImage } from '@/lib/utils/color.utils'
 
 interface ProjectImageProps {
   src: string
@@ -49,7 +49,7 @@ export default function ProjectImage({ src, alt, priority = false, onColorExtrac
         quality={90}
         className={`object-cover transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
         onLoad={handleLoad}
-        sizes="(max-width: 768px) 100vw, 50vw"
+        sizes="(max-width: 768px) 100vw, 33vw"
         priority={priority}
         crossOrigin="anonymous"
       />

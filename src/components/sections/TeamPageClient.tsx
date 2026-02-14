@@ -1,10 +1,10 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import TeamOField, { TeamOFieldRef } from '@/components/TeamOField'
-import SiteHeader from '@/components/SiteHeader'
+import TeamOField, { TeamOFieldRef } from '@/components/sections/TeamOField'
+import SiteHeader from '@/components/layout/SiteHeader'
 import { useGravityTitle } from '@/hooks/useGravityTitle'
-import type { TeamMember, TeamDescription } from '@/lib/types'
+import type { TeamMember, TeamDescription } from '@/types'
 
 interface TeamPageClientProps {
   oCount: number
@@ -68,7 +68,7 @@ export default function TeamPageClient({ oCount, members, teamDescription }: Tea
         <div className="max-w-screen-2xl mx-auto">
           <h1 
             ref={titleTextRef}
-            className="text-[clamp(3rem,10vw,8rem)] font-bold leading-[0.9] tracking-tighter uppercase"
+            className="font-title text-[clamp(3rem,10vw,8rem)] font-bold leading-[0.9] tracking-tighter uppercase"
           >
             Team
           </h1>

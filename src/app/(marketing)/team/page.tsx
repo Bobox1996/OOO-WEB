@@ -1,6 +1,6 @@
-import { createClient } from '@/lib/supabase/server'
-import TeamPageClient from '@/components/TeamPageClient'
-import type { TeamMember, TeamDescription } from '@/lib/types'
+import { createClient } from '@/services/supabase/server'
+import TeamPageClient from '@/components/sections/TeamPageClient'
+import type { TeamMember, TeamDescription } from '@/types'
 
 const O_COUNT = 4000
 

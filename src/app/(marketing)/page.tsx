@@ -1,7 +1,7 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@/services/supabase/server'
 import Link from 'next/link'
-import HomePageClient from '@/components/HomePageClient'
-import SiteHeader from '@/components/SiteHeader'
+import HomePageClient from '@/components/sections/HomePageClient'
+import SiteHeader from '@/components/layout/SiteHeader'
 
 // Use ISR with 60 second revalidation for better caching
 // Shuffle is handled client-side for random order on each visit

@@ -1,10 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/services/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import type { AppUser } from '@/lib/types'
+import type { AppUser } from '@/types'
 
 interface EditAppUserFormProps {
   user: AppUser

@@ -1,11 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/services/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import type { AppAsset } from '@/lib/types'
+import type { AppAsset } from '@/types'
 
 interface EditAppAssetFormProps {
   asset: AppAsset

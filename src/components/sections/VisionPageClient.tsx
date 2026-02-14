@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import VisionOField, { VisionOFieldRef } from '@/components/VisionOField'
-import SiteHeader from '@/components/SiteHeader'
+import VisionOField, { VisionOFieldRef } from '@/components/sections/VisionOField'
+import SiteHeader from '@/components/layout/SiteHeader'
 import { useGravityTitle } from '@/hooks/useGravityTitle'
 
 interface VisionPageClientProps {
@@ -60,7 +60,7 @@ export default function VisionPageClient({ oCount, visionContent }: VisionPageCl
         <div className="max-w-screen-2xl mx-auto">
           <h1 
             ref={titleTextRef}
-            className="text-[clamp(3rem,10vw,8rem)] font-bold leading-[0.9] tracking-tighter uppercase"
+            className="font-title text-[clamp(3rem,10vw,8rem)] font-bold leading-[0.9] tracking-tighter uppercase"
           >
             Vision
           </h1>
