@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback, forwardRef, useImperativeHandle, useMemo } from 'react'
 import type { TeamMember, TeamDescription } from '@/types'
-import { throttle, placeText, visualWidth } from '@/lib/utils/grid.utils'
+import { throttle, placeText, visualWidth, wrapText } from '@/lib/utils/grid.utils'
 
 interface GridCell {
   char: string
@@ -110,22 +110,40 @@ const TeamOField = forwardRef<TeamOFieldRef, TeamOFieldProps>(({ oCount, members
       p.push({ row, startCol, totalSpan, text, type, memberId })
     }
 
+    // Helper: wrap text that overflows gridCols across multiple rows
+    const placeWrapped = (
+      type: TextPlacement['type'],
+      startRow: number,
+      text: string,
+      align: 'center' | 'left',
+      memberId?: string,
+      offset?: number,
+    ): number => {
+      const segments = wrapText(text, gridCols)
+      for (const segment of segments) {
+        if (startRow >= gridRows) break
+        placeAndRecord(type, startRow, segment, align, memberId, offset)
+        startRow++
+      }
+      return startRow
+    }
+
     if (selectedMember) {
       // --- Member detail view ---
       const fullName = `${selectedMember.first_name} ${selectedMember.last_name}`
 
-      // Place member name at row 7 (left-aligned)
-      if (7 < gridRows) {
-        placeAndRecord('name', 7, fullName, 'left', selectedMember.id)
+      // Place member name at row 7 (left-aligned, wraps if needed)
+      let nextRow = 7
+      if (nextRow < gridRows) {
+        nextRow = placeWrapped('name', nextRow, fullName, 'left', selectedMember.id)
       }
 
-      // Place description starting at row 10 (left-aligned)
+      // Place description starting at row 10 or after name if it wrapped past 10 (left-aligned)
       if (selectedMember.description) {
-        let row = 10
+        let row = Math.max(10, nextRow + 1)
         for (const line of selectedMember.description.split('\n')) {
           if (row >= gridRows) break
-          placeAndRecord('description', row, line, 'left')
-          row++
+          row = placeWrapped('description', row, line, 'left')
         }
       }
     } else {
@@ -135,14 +153,17 @@ const TeamOField = forwardRef<TeamOFieldRef, TeamOFieldProps>(({ oCount, members
       shuffledData.shuffled.forEach((member, idx) => {
         if (currentRow >= gridRows) return
         const fullName = `${member.first_name} ${member.last_name}`
-        const totalSpan = visualWidth(fullName)
+        // Compute offset based on the first (possibly only) wrapped segment
+        const firstSegment = wrapText(fullName, gridCols)[0]
+        const totalSpan = visualWidth(firstSegment)
         const centeredStart = Math.floor((gridCols - totalSpan) / 2)
         const n = centeredStart                        // O's on left when centered
         const m = gridCols - centeredStart - totalSpan // O's on right when centered
-        const maxShift = Math.floor(Math.min(n, m)*2 / 3)
+        const maxShift = Math.floor(Math.min(Math.max(n, 0), Math.max(m, 0))*2 / 3)
         const shift = Math.round(shuffledData.offsets[idx] * maxShift)
-        placeAndRecord('name', currentRow, fullName, 'center', member.id, shift)
-        currentRow += 1 + shuffledData.gaps[idx] // gap of 0-2 rows between names
+        const afterRow = placeWrapped('name', currentRow, fullName, 'center', member.id, shift)
+        const rowsUsed = afterRow - currentRow
+        currentRow += Math.max(rowsUsed, 1) + shuffledData.gaps[idx] // gap of 0-2 rows between names
       })
 
       // Place team description below all names (with 2-row gap)
@@ -150,8 +171,7 @@ const TeamOField = forwardRef<TeamOFieldRef, TeamOFieldProps>(({ oCount, members
         let row = currentRow + 2
         for (const line of teamDescription.content.split('\n')) {
           if (row >= gridRows) break
-          placeAndRecord('team_description', row, line, 'center')
-          row++
+          row = placeWrapped('team_description', row, line, 'center')
         }
       }
     }

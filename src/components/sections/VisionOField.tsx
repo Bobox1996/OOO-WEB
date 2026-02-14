@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback, forwardRef, useImperativeHandle, useMemo } from 'react'
-import { throttle, placeText } from '@/lib/utils/grid.utils'
+import { throttle, placeText, wrapText } from '@/lib/utils/grid.utils'
 
 interface GridCell {
   char: string
@@ -66,17 +66,21 @@ const VisionOField = forwardRef<VisionOFieldRef, VisionOFieldProps>(({ oCount, v
     )
     const p: TextPlacement[] = []
 
-    // Place vision text starting at row 9
+    // Place vision text starting at row 9 (with word-wrap for narrow screens)
     if (visionContent) {
       let row = 9
       for (const line of visionContent.split('\n')) {
         if (row >= gridRows) break
-        const { startCol, totalSpan } = placeText(
-          (r, c, _char, span) => { g[r][c] = { char: '', type: 'vision', span } },
-          row, line, gridCols, 'center'
-        )
-        p.push({ row, startCol, totalSpan, text: line })
-        row++
+        const segments = wrapText(line, gridCols)
+        for (const segment of segments) {
+          if (row >= gridRows) break
+          const { startCol, totalSpan } = placeText(
+            (r, c, _char, span) => { g[r][c] = { char: '', type: 'vision', span } },
+            row, segment, gridCols, 'center'
+          )
+          p.push({ row, startCol, totalSpan, text: segment })
+          row++
+        }
       }
     }
 

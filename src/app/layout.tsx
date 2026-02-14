@@ -1,10 +1,15 @@
 import type { Metadata } from "next";
-import { Roboto_Flex } from "next/font/google";
+import { Roboto_Flex, Montserrat } from "next/font/google";
 import "./globals.css";
 
 const robotoFlex = Roboto_Flex({
   subsets: ["latin"],
   variable: "--font-roboto-flex",
+});
+
+const montserrat = Montserrat({
+  subsets: ["latin"],
+  variable: "--font-montserrat",
 });
 
 export const metadata: Metadata = {
@@ -19,7 +24,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={robotoFlex.variable}>
+    <html lang="en" className={`${robotoFlex.variable} ${montserrat.variable}`}>
       <body className="antialiased">
         {children}
       </body>

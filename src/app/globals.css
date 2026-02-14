@@ -7,7 +7,7 @@
   --muted: #666666;
   --border: #e5e5e5;
   /* Title font — keep in sync with FONT_TITLE in src/lib/fonts.ts */
-  --font-title: "ITC Avant Garde Gothic", "Avant Garde Gothic", "Century Gothic", "Futura", sans-serif;
+  --font-title: var(--font-montserrat), "ITC Avant Garde Gothic", "Avant Garde Gothic", "Century Gothic", "Futura", sans-serif;
 }
 
 @theme inline {
@@ -158,8 +158,8 @@ body {
 
 /* CJK Monospace font for O-field — keep in sync with FONT_CJK_MONO in src/lib/fonts.ts */
 .font-cjk-mono {
-  /* ITC Avant Garde Gothic for English (circular O), fallback to CJK monospace */
-  font-family: "ITC Avant Garde Gothic", "Avant Garde Gothic", "Century Gothic", "Sarasa Mono SC", "Sarasa Mono", "等距更纱黑体 SC", "Source Han Mono SC", "Source Han Mono CN", "思源等宽", "Noto Sans Mono CJK SC", "HYZhengYuan", "STHeiti", "Microsoft YaHei Mono", "SimHei", monospace;
+  /* Montserrat (web font) for English (circular O), fallback to ITC Avant Garde Gothic / CJK monospace */
+  font-family: var(--font-montserrat), "ITC Avant Garde Gothic", "Avant Garde Gothic", "Century Gothic", "Sarasa Mono SC", "Sarasa Mono", "等距更纱黑体 SC", "Source Han Mono SC", "Source Han Mono CN", "思源等宽", "Noto Sans Mono CJK SC", "HYZhengYuan", "STHeiti", "Microsoft YaHei Mono", "SimHei", monospace;
   /* Force monospace metrics - all characters get same width */
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" 1; /* Tabular numbers */

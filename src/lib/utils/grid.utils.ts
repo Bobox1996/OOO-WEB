@@ -39,6 +39,49 @@ export function visualWidth(text: string): number {
 }
 
 /**
+ * Word-wrap a line of text so each segment fits within `maxCols` visual columns.
+ *
+ * Splits at whitespace boundaries when possible.
+ * If a single word exceeds `maxCols`, it is force-split mid-word.
+ * CJK-aware via `visualWidth()`.
+ */
+export function wrapText(text: string, maxCols: number): string[] {
+  if (maxCols <= 0) return [text]
+  if (visualWidth(text) <= maxCols) return [text]
+
+  const words = text.split(/(\s+)/)
+  const lines: string[] = []
+  let currentLine = ''
+
+  for (const word of words) {
+    const testLine = currentLine + word
+    if (visualWidth(testLine) <= maxCols) {
+      currentLine = testLine
+    } else {
+      if (currentLine.trim()) lines.push(currentLine.trimEnd())
+      // Force-split a single token that exceeds maxCols
+      if (visualWidth(word.trim()) > maxCols) {
+        let remaining = word.trimStart()
+        while (visualWidth(remaining) > maxCols) {
+          let chunk = ''
+          for (const ch of remaining) {
+            if (visualWidth(chunk + ch) > maxCols) break
+            chunk += ch
+          }
+          lines.push(chunk)
+          remaining = remaining.slice(chunk.length)
+        }
+        currentLine = remaining
+      } else {
+        currentLine = word.trimStart()
+      }
+    }
+  }
+  if (currentLine.trim()) lines.push(currentLine.trimEnd())
+  return lines.length > 0 ? lines : [text]
+}
+
+/**
  * Place a line of text into a grid, calling `setter` for each cell.
  *
  * The setter receives (row, col, char, span) and should write the cell.
