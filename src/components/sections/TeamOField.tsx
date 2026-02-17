@@ -380,6 +380,13 @@ const TeamOField = forwardRef<TeamOFieldRef, TeamOFieldProps>(({ oCount, members
             const isName = placement.type === 'name' && placement.memberId
             const isHovered = isName && hoveredMemberId === placement.memberId
 
+            // Position-based range: element starts animating proportional to its vertical position
+            const viewportHeight = visibleRows * cellHeight
+            const posPercent = (top / totalHeight) * 100
+            const slidePct = Math.max(2, (viewportHeight * 0.4 / totalHeight) * 100)
+            const rangeStart = posPercent
+            const rangeEnd = posPercent + slidePct
+
             return (
               <div
                 key={key}
@@ -400,6 +407,7 @@ const TeamOField = forwardRef<TeamOFieldRef, TeamOFieldProps>(({ oCount, members
                       ? `txt cursor-pointer transition-colors pointer-events-auto ${isHovered ? 'text-orange-500' : 'text-black'}`
                       : `txt text-cyan-500 ${selectedMember ? 'pointer-events-auto cursor-pointer' : ''}`
                   }
+                  style={{ animationRange: `${rangeStart}% ${rangeEnd}%` }}
                   onClick={
                     isName
                       ? () => selectedMember ? setSelectedMember(null) : handleMemberClick(placement.memberId!)

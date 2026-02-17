@@ -15,12 +15,9 @@ interface Generation {
   created_at: string
 }
 
-// Convert SVG string to PNG base64 with transparent background (compressed)
+// Convert SVG string to PNG base64 with white background (compressed)
 const svgToPng = async (svgString: string, width: number = 512, height: number = 512): Promise<string> => {
   return new Promise((resolve, reject) => {
-    // Remove white background rect from SVG to keep transparency
-    const cleanedSvg = svgString.replace(/<rect[^>]*fill="white"[^>]*\/?>/gi, '')
-
     const canvas = document.createElement('canvas')
     const ctx = canvas.getContext('2d')
     if (!ctx) {
@@ -30,10 +27,12 @@ const svgToPng = async (svgString: string, width: number = 512, height: number =
 
     canvas.width = width
     canvas.height = height
-    // No background fill - keep canvas transparent
 
     const img = new window.Image()
     img.onload = () => {
+      // Fill white background first so pattern lines are visible
+      ctx.fillStyle = 'white'
+      ctx.fillRect(0, 0, width, height)
       ctx.drawImage(img, 0, 0, width, height)
       // Use JPEG for smaller file size (0.8 quality)
       const dataUrl = canvas.toDataURL('image/jpeg', 0.8)
@@ -41,7 +40,7 @@ const svgToPng = async (svgString: string, width: number = 512, height: number =
       resolve(dataUrl.split(',')[1])
     }
     img.onerror = () => reject(new Error('Failed to load SVG image'))
-    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(cleanedSvg)))
+    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgString)))
   })
 }
 
@@ -169,13 +168,13 @@ export default function GeneratePage() {
 
       const promptToUse = latestPackage?.prompt || selectedPackage.prompt
 
-      let patternImage: string | undefined
-      let packageImage: string | undefined
+      let pattern_image: string | undefined
+      let package_image: string | undefined
 
       // Convert SVG to PNG if pattern exists
       if (patternSVG) {
         try {
-          patternImage = await svgToPng(patternSVG)
+          pattern_image = await svgToPng(patternSVG)
         } catch (e) {
           console.error('Failed to convert SVG to PNG:', e)
         }
@@ -183,7 +182,7 @@ export default function GeneratePage() {
 
       // Convert package image URL to base64
       try {
-        packageImage = await urlToBase64(selectedPackage.image_url)
+        package_image = await urlToBase64(selectedPackage.image_url)
       } catch (e) {
         console.error('Failed to convert package image to base64:', e)
         setError('Failed to load package image')
@@ -198,8 +197,8 @@ export default function GeneratePage() {
         },
         body: JSON.stringify({
           prompt: promptToUse,
-          patternImage,
-          packageImage,
+          pattern_image,
+          package_image,
         }),
       })
 
@@ -227,7 +226,8 @@ export default function GeneratePage() {
   }
 
   const handleBack = () => {
-    router.push('/app')
+    const source = localStorage.getItem('patternSource')
+    router.push(source === 'metaball' ? '/app/metaball' : '/app/pattern')
   }
 
   const handleClearPattern = () => {
@@ -304,12 +304,19 @@ export default function GeneratePage() {
               <span className="w-8 h-8 rounded-full bg-neutral-200 text-neutral-400 flex items-center justify-center text-sm font-medium">
                 1
               </span>
+              <span className="text-sm uppercase tracking-wider text-neutral-400">Select Design Model</span>
+            </div>
+            <div className="h-px bg-neutral-300 flex-1 max-w-24" />
+            <div className="flex items-center gap-2">
+              <span className="w-8 h-8 rounded-full bg-neutral-200 text-neutral-400 flex items-center justify-center text-sm font-medium">
+                2
+              </span>
               <span className="text-sm uppercase tracking-wider text-neutral-400">Create Pattern</span>
             </div>
             <div className="h-px bg-neutral-300 flex-1 max-w-24" />
             <div className="flex items-center gap-2">
               <span className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-sm font-medium">
-                2
+                3
               </span>
               <span className="text-sm uppercase tracking-wider font-medium">AI Generate</span>
             </div>

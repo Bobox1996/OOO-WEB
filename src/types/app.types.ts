@@ -35,3 +35,17 @@ export interface AppPattern {
   pinned: boolean
   created_at: string
 }
+
+export interface AppMetaballPattern {
+  id: string
+  user_id: string
+  total_points: number
+  charge_count: number
+  seed: number
+  accuracy: number
+  stroke_weight: number
+  stroke_color: string
+  svg_preview: string
+  pinned: boolean
+  created_at: string
+}

@@ -129,6 +129,10 @@ body {
 
 /* ---- Scroll-driven horizontal text slide (Team O-field) ---- */
 @supports (animation-timeline: scroll()) {
+  .infinite-scroll-container {
+    scroll-timeline: --team-scroll block;
+  }
+
   @keyframes slide-x {
     from { transform: translateX(0); }
     to   { transform: translateX(calc(var(--box-w) - 100%)); }
@@ -141,11 +145,8 @@ body {
     animation-name: slide-x;
     animation-timing-function: linear;
     animation-fill-mode: both;
-    /* Per-element viewport tracking instead of global scroll position */
-    animation-timeline: view(block);
-    /* Text starts sliding as row enters viewport from bottom,
-       finishes by the time the row reaches ~40% up the viewport */
-    animation-range: entry 0% cover 40%;
+    animation-timeline: --team-scroll;
+    /* animation-range set per-element via inline style */
   }
 }
 

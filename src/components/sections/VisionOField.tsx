@@ -272,9 +272,12 @@ const VisionOField = forwardRef<VisionOFieldRef, VisionOFieldProps>(({ oCount, v
           style={{ height: totalHeight, zIndex: 100 }}
         >
           {visiblePlacements.map(({ placement, top, key, placementIndex }) => {
-            // Stagger: each subsequent line starts 1% later in the scroll timeline
-            const rangeStart = placementIndex * 1
-            const rangeEnd = rangeStart + 5
+            // Position-based range: element starts animating proportional to its vertical position
+            const viewportHeight = visibleRows * cellHeight
+            const posPercent = (top / totalHeight) * 100
+            const slidePct = Math.max(2, (viewportHeight * 0.4 / totalHeight) * 100)
+            const rangeStart = posPercent
+            const rangeEnd = posPercent + slidePct
 
             return (
               <div

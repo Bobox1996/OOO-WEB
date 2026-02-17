@@ -12,19 +12,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Parse request body
-    const { prompt, patternImage, packageImage } = await request.json()
+    const { prompt, pattern_image, package_image } = await request.json()
     
     if (!prompt || typeof prompt !== 'string') {
       return NextResponse.json({ error: 'Prompt is required' }, { status: 400 })
     }
 
-    // Validate patternImage if provided
-    if (patternImage && typeof patternImage !== 'string') {
+    // Validate pattern_image if provided
+    if (pattern_image && typeof pattern_image !== 'string') {
       return NextResponse.json({ error: 'Invalid pattern image format' }, { status: 400 })
     }
 
-    // Validate packageImage if provided
-    if (packageImage && typeof packageImage !== 'string') {
+    // Validate package_image if provided
+    if (package_image && typeof package_image !== 'string') {
       return NextResponse.json({ error: 'Invalid package image format' }, { status: 400 })
     }
 
@@ -38,21 +38,21 @@ export async function POST(request: NextRequest) {
     const parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = []
     
     // Add pattern image as first part if provided (FIRST image in prompt)
-    if (patternImage) {
+    if (pattern_image) {
       parts.push({
         inlineData: {
           mimeType: 'image/jpeg',
-          data: patternImage,
+          data: pattern_image,
         },
       })
     }
     
     // Add package image as second part if provided (SECOND image in prompt)
-    if (packageImage) {
+    if (package_image) {
       parts.push({
         inlineData: {
           mimeType: 'image/jpeg',
-          data: packageImage,
+          data: package_image,
         },
       })
     }
@@ -70,6 +70,7 @@ export async function POST(request: NextRequest) {
       ],
       generationConfig: {
         responseModalities: ['TEXT', 'IMAGE'],
+      
       },
     })
 

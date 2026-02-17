@@ -37,6 +37,17 @@ export default function HistoryPage() {
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this generation?')) return
 
+    // Find the generation to get the image_url
+    const generation = generations.find(g => g.id === id)
+    if (generation) {
+      // Extract storage path from image_url
+      const urlParts = generation.image_url.split('/generations/')
+      const storagePath = urlParts[1]
+      if (storagePath) {
+        await supabase.storage.from('generations').remove([storagePath])
+      }
+    }
+
     const { error } = await supabase
       .from('app_generations')
       .delete()
@@ -48,6 +59,36 @@ export default function HistoryPage() {
         setSelectedImage(null)
       }
     }
+  }
+
+  const handleDeleteAll = async () => {
+    if (!confirm('Are you sure you want to delete ALL generations? This cannot be undone.')) return
+
+    // Extract storage paths from all generations
+    const storagePaths = generations
+      .map(g => {
+        const urlParts = g.image_url.split('/generations/')
+        return urlParts[1]
+      })
+      .filter(Boolean) as string[]
+
+    // Batch delete from storage
+    if (storagePaths.length > 0) {
+      await supabase.storage.from('generations').remove(storagePaths)
+    }
+
+    // Delete all from database (RLS ensures only user's own records)
+    const ids = generations.map(g => g.id)
+    if (ids.length > 0) {
+      await supabase
+        .from('app_generations')
+        .delete()
+        .in('id', ids)
+    }
+
+    // Clear local state
+    setGenerations([])
+    setSelectedImage(null)
   }
 
   return (
@@ -62,9 +103,19 @@ export default function HistoryPage() {
               <br />
               History
             </h1>
-            <p className="text-neutral-500 mt-4 text-lg">
-              {generations.length} {generations.length === 1 ? 'image' : 'images'} generated
-            </p>
+            <div className="flex items-center gap-4 mt-4">
+              <p className="text-neutral-500 text-lg">
+                {generations.length} {generations.length === 1 ? 'image' : 'images'} generated
+              </p>
+              {generations.length > 0 && (
+                <button
+                  onClick={handleDeleteAll}
+                  className="px-4 py-2 border border-red-300 text-red-500 text-xs uppercase tracking-widest font-medium hover:bg-red-500 hover:text-white transition-colors"
+                >
+                  Delete All
+                </button>
+              )}
+            </div>
           </div>
 
           {loading ? (

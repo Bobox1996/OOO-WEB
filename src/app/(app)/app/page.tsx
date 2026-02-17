@@ -1,153 +1,34 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import AppNav from '@/components/layout/AppNav'
-import PatternViewer from '@/components/sections/PatternViewer'
-import PatternControls, { GridParams } from '@/components/sections/PatternControls'
-import ViewerContainer from '@/components/sections/ViewerContainer'
-import { createClient } from '@/services/supabase/client'
-import { AppPattern } from '@/types'
 
-export default function AppPage() {
+export default function SelectDesignerPage() {
   const router = useRouter()
-  const svgRef = useRef<SVGSVGElement>(null)
-  const supabase = createClient()
 
-  // Grid parameters state
-  const [params, setParams] = useState<GridParams>({
-    columns: 8,
-    rows: 8,
-    strokeWeight: 0.5,
-    strokeColor: '#000000',
-    slogan: '',
-    sloganWeight: 400,
-    sloganColor: '#000000',
-  })
-
-  // Recent patterns state
-  const [recentPatterns, setRecentPatterns] = useState<AppPattern[]>([])
-  const [patternsLoading, setPatternsLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-
-  // Fetch recent patterns on mount
-  useEffect(() => {
-    const fetchPatterns = async () => {
-      setPatternsLoading(true)
-      
-      // Fetch pinned patterns first, then recent non-pinned, limit to 6 total
-      const { data: pinnedData } = await supabase
-        .from('app_patterns')
-        .select('*')
-        .eq('pinned', true)
-        .order('created_at', { ascending: false })
-
-      const pinnedPatterns = pinnedData || []
-      const remainingSlots = Math.max(0, 6 - pinnedPatterns.length)
-
-      let recentNonPinned: AppPattern[] = []
-      if (remainingSlots > 0) {
-        const { data: recentData } = await supabase
-          .from('app_patterns')
-          .select('*')
-          .eq('pinned', false)
-          .order('created_at', { ascending: false })
-          .limit(remainingSlots)
-
-        recentNonPinned = recentData || []
-      }
-
-      setRecentPatterns([...pinnedPatterns, ...recentNonPinned])
-      setPatternsLoading(false)
-    }
-
-    fetchPatterns()
-  }, [supabase])
-
-  const handleParamChange = (newParams: Partial<GridParams>) => {
-    setParams((prev) => ({ ...prev, ...newParams }))
-  }
-
-  const handleNext = async () => {
-    if (!svgRef.current) return
-
-    setSaving(true)
-    const serializer = new XMLSerializer()
-    const svgString = serializer.serializeToString(svgRef.current)
-    const base64 = btoa(unescape(encodeURIComponent(svgString)))
-
-    // Save to localStorage for the generate page
-    localStorage.setItem('patternSVG', base64)
-
-    // Save to database
-    const { data: userData } = await supabase.auth.getUser()
-    if (userData.user) {
-      // Check if we need to delete old non-pinned patterns to maintain limit
-      const { data: existingPatterns } = await supabase
-        .from('app_patterns')
-        .select('id, pinned')
-        .eq('pinned', false)
-        .order('created_at', { ascending: false })
-
-      // If we have 6+ non-pinned patterns, delete the oldest ones
-      if (existingPatterns && existingPatterns.length >= 6) {
-        const patternsToDelete = existingPatterns.slice(5) // Keep only 5, new one will make 6
-        for (const pattern of patternsToDelete) {
-          await supabase.from('app_patterns').delete().eq('id', pattern.id)
-        }
-      }
-
-      // Insert the new pattern
-      await supabase.from('app_patterns').insert({
-        user_id: userData.user.id,
-        columns: params.columns,
-        rows: params.rows,
-        stroke_weight: params.strokeWeight,
-        stroke_color: params.strokeColor,
-        slogan: params.slogan || null,
-        slogan_weight: params.sloganWeight,
-        slogan_color: params.sloganColor,
-        svg_preview: base64,
-        pinned: false,
-      })
-    }
-
-    setSaving(false)
-    router.push('/app/generate')
-  }
-
-  const handleLoadPattern = (pattern: AppPattern) => {
-    setParams({
-      columns: pattern.columns,
-      rows: pattern.rows,
-      strokeWeight: pattern.stroke_weight,
-      strokeColor: pattern.stroke_color,
-      slogan: pattern.slogan || '',
-      sloganWeight: pattern.slogan_weight || 400,
-      sloganColor: pattern.slogan_color || '#000000',
-    })
-  }
-
-  const handleTogglePin = async (pattern: AppPattern) => {
-    const newPinned = !pattern.pinned
-
-    await supabase
-      .from('app_patterns')
-      .update({ pinned: newPinned })
-      .eq('id', pattern.id)
-
-    // Update local state
-    setRecentPatterns((prev) =>
-      prev.map((p) => (p.id === pattern.id ? { ...p, pinned: newPinned } : p))
-    )
-  }
-
-  const handleDeletePattern = async (patternId: string) => {
-    await supabase.from('app_patterns').delete().eq('id', patternId)
-
-    // Update local state
-    setRecentPatterns((prev) => prev.filter((p) => p.id !== patternId))
-  }
+  const designers = [
+    {
+      id: 'pattern',
+      name: 'Jitter Lattice',
+      description: 'Create parametric SVG grid patterns with customizable parameters',
+      href: '/app/pattern',
+      available: true,
+    },
+    {
+      id: 'metaball',
+      name: 'Metaball Isocurve',
+      description: 'Generate 2D metaball isocurves through points with marching squares',
+      href: '/app/metaball',
+      available: true,
+    },
+    {
+      id: 'coming-soon',
+      name: 'Coming Soon',
+      description: 'More designers are on the way. Stay tuned for new creative tools.',
+      href: '#',
+      available: false,
+    },
+  ]
 
   return (
     <>
@@ -157,12 +38,12 @@ export default function AppPage() {
           {/* Header */}
           <div className="mb-12">
             <h1 className="text-[clamp(2rem,5vw,4rem)] font-bold leading-[0.95] tracking-tighter uppercase">
-              Pattern
+              Select
               <br />
-              Designer
+              Design Model
             </h1>
             <p className="text-neutral-500 mt-4 text-lg">
-              Create parametric SVG patterns for AI generation
+              Choose a design model to create patterns for AI generation
             </p>
           </div>
 
@@ -172,193 +53,142 @@ export default function AppPage() {
               <span className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-sm font-medium">
                 1
               </span>
-              <span className="text-sm uppercase tracking-wider font-medium">Create Pattern</span>
+              <span className="text-sm uppercase tracking-wider font-medium">Select Design Model</span>
             </div>
             <div className="h-px bg-neutral-300 flex-1 max-w-24" />
             <div className="flex items-center gap-2">
               <span className="w-8 h-8 rounded-full bg-neutral-200 text-neutral-400 flex items-center justify-center text-sm font-medium">
                 2
               </span>
+              <span className="text-sm uppercase tracking-wider text-neutral-400">Create Pattern</span>
+            </div>
+            <div className="h-px bg-neutral-300 flex-1 max-w-24" />
+            <div className="flex items-center gap-2">
+              <span className="w-8 h-8 rounded-full bg-neutral-200 text-neutral-400 flex items-center justify-center text-sm font-medium">
+                3
+              </span>
               <span className="text-sm uppercase tracking-wider text-neutral-400">AI Generate</span>
             </div>
           </div>
 
-          {/* SVG Viewer */}
-          <div className="mb-8">
-            <p className="block text-sm uppercase tracking-wider text-neutral-500 mb-4">
-              Pattern Preview
-            </p>
-            <div className="aspect-square max-w-2xl bg-white border border-black/10 overflow-hidden relative">
-              <ViewerContainer>
-                <PatternViewer
-                  ref={svgRef}
-                  columns={params.columns}
-                  rows={params.rows}
-                  strokeWeight={params.strokeWeight}
-                  strokeColor={params.strokeColor}
-                  slogan={params.slogan}
-                  sloganWeight={params.sloganWeight}
-                  sloganColor={params.sloganColor}
-                />
-              </ViewerContainer>
-            </div>
-          </div>
-
-          {/* Controls */}
-          <div className="mb-12">
-            <p className="block text-sm uppercase tracking-wider text-neutral-500 mb-4">
-              Pattern Parameters
-            </p>
-            <PatternControls
-              columns={params.columns}
-              rows={params.rows}
-              strokeWeight={params.strokeWeight}
-              strokeColor={params.strokeColor}
-              slogan={params.slogan}
-              sloganWeight={params.sloganWeight}
-              sloganColor={params.sloganColor}
-              onChange={handleParamChange}
-            />
-          </div>
-
-          {/* Recent Patterns */}
-          <div className="mb-12">
-            <p className="block text-sm uppercase tracking-wider text-neutral-500 mb-4">
-              Recent Patterns
-            </p>
-            {patternsLoading ? (
-              <div className="flex gap-4 overflow-x-auto pb-4">
-                {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <div
-                    key={i}
-                    className="flex-shrink-0 w-24 h-24 bg-neutral-200 animate-pulse"
-                  />
-                ))}
-              </div>
-            ) : recentPatterns.length === 0 ? (
-              <div className="bg-neutral-100 border border-black/10 p-8 text-center">
-                <p className="text-neutral-500 text-sm">No saved patterns yet. Create one and click Next to save.</p>
-              </div>
-            ) : (
-              <div className="flex gap-4 overflow-x-auto pb-4">
-                {recentPatterns.map((pattern) => (
-                  <div
-                    key={pattern.id}
-                    className="flex-shrink-0 w-24 h-24 relative group"
-                  >
-                    {/* Pattern Preview */}
-                    <button
-                      onClick={() => handleLoadPattern(pattern)}
-                      className="w-full h-full bg-white border border-black/10 overflow-hidden hover:border-black transition-colors"
-                      title="Load this pattern"
+          {/* Designer Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {designers.map((designer) => (
+              <button
+                key={designer.id}
+                onClick={() => designer.available && router.push(designer.href)}
+                disabled={!designer.available}
+                className={`group text-left border transition-all ${
+                  designer.available
+                    ? 'border-black/10 hover:border-black cursor-pointer'
+                    : 'border-dashed border-neutral-300 cursor-not-allowed opacity-60'
+                }`}
+              >
+                {/* Preview Area */}
+                <div
+                  className={`aspect-square w-full flex items-center justify-center overflow-hidden ${
+                    designer.available ? 'bg-white' : 'bg-neutral-50'
+                  }`}
+                >
+                  {designer.id === 'pattern' ? (
+                    <svg
+                      viewBox="0 0 200 200"
+                      className="w-3/4 h-3/4 text-black/80 group-hover:text-black transition-colors"
                     >
-                      <div
-                        className="w-full h-full"
-                        dangerouslySetInnerHTML={{
-                          __html: decodeURIComponent(escape(atob(pattern.svg_preview))),
-                        }}
+                      {/* Grid lines */}
+                      {[0, 40, 80, 120, 160, 200].map((pos) => (
+                        <line
+                          key={`v-${pos}`}
+                          x1={pos}
+                          y1={0}
+                          x2={pos}
+                          y2={200}
+                          stroke="currentColor"
+                          strokeWidth={1}
+                        />
+                      ))}
+                      {[0, 40, 80, 120, 160, 200].map((pos) => (
+                        <line
+                          key={`h-${pos}`}
+                          x1={0}
+                          y1={pos}
+                          x2={200}
+                          y2={pos}
+                          stroke="currentColor"
+                          strokeWidth={1}
+                        />
+                      ))}
+                      {/* Sample text at vertices */}
+                      {[40, 120].map((x) =>
+                        [40, 120].map((y) => (
+                          <text
+                            key={`t-${x}-${y}`}
+                            x={x}
+                            y={y + 4}
+                            textAnchor="middle"
+                            fontSize={10}
+                            fill="currentColor"
+                            fontWeight={400}
+                          >
+                            OOO
+                          </text>
+                        ))
+                      )}
+                    </svg>
+                  ) : designer.id === 'metaball' ? (
+                    <svg
+                      viewBox="0 0 200 200"
+                      className="w-3/4 h-3/4 text-black/80 group-hover:text-black transition-colors"
+                    >
+                      {/* Metaball blob preview — two overlapping organic shapes */}
+                      <path
+                        d="M60 100 C60 65, 85 45, 100 45 C115 45, 130 55, 135 70 C140 55, 155 45, 170 55 C185 65, 185 90, 170 105 C185 115, 185 140, 170 150 C155 160, 140 150, 135 135 C130 150, 115 160, 100 160 C85 160, 60 140, 60 100Z"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={1.5}
                       />
-                    </button>
-
-                    {/* Pin Button */}
-                    <button
-                      onClick={() => handleTogglePin(pattern)}
-                      className={`absolute top-1 left-1 w-6 h-6 rounded-full flex items-center justify-center transition-all ${
-                        pattern.pinned
-                          ? 'bg-black text-white'
-                          : 'bg-white/80 text-neutral-400 opacity-0 group-hover:opacity-100'
-                      }`}
-                      title={pattern.pinned ? 'Unpin' : 'Pin'}
-                    >
+                      <path
+                        d="M30 110 C30 80, 50 60, 75 60 C90 60, 95 70, 95 80 C95 70, 100 60, 115 60 C135 60, 155 80, 155 110 C155 140, 135 160, 115 160 C100 160, 95 150, 95 140 C95 150, 90 160, 75 160 C50 160, 30 140, 30 110Z"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={1.5}
+                        opacity={0.4}
+                      />
+                      {/* Charge dots */}
+                      <circle cx={75} cy={100} r={3} fill="currentColor" opacity={0.3} />
+                      <circle cx={115} cy={100} r={3} fill="currentColor" opacity={0.3} />
+                      <circle cx={95} cy={75} r={3} fill="currentColor" opacity={0.3} />
+                    </svg>
+                  ) : (
+                    <div className="flex flex-col items-center gap-3 text-neutral-300">
                       <svg
-                        className="w-3 h-3"
-                        fill={pattern.pinned ? 'currentColor' : 'none'}
+                        className="w-16 h-16"
+                        fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
                       >
                         <path
                           strokeLinecap="round"
                           strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                          strokeWidth={1}
+                          d="M12 4v16m8-8H4"
                         />
                       </svg>
-                    </button>
+                    </div>
+                  )}
+                </div>
 
-                    {/* Delete Button */}
-                    {!pattern.pinned && (
-                      <button
-                        onClick={() => handleDeletePattern(pattern.id)}
-                        className="absolute top-1 right-1 w-6 h-6 rounded-full bg-white/80 text-neutral-400 hover:text-red-500 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
-                        title="Delete"
-                      >
-                        <svg
-                          className="w-3 h-3"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M6 18L18 6M6 6l12 12"
-                          />
-                        </svg>
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Next Button */}
-          <div className="flex justify-end">
-            <button
-              onClick={handleNext}
-              disabled={saving}
-              className="px-8 py-4 bg-black text-white text-sm uppercase tracking-widest font-medium hover:bg-neutral-800 transition-colors flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {saving ? (
-                <>
-                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                      fill="none"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    />
-                  </svg>
-                  Saving...
-                </>
-              ) : (
-                <>
-                  Next
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M17 8l4 4m0 0l-4 4m4-4H3"
-                    />
-                  </svg>
-                </>
-              )}
-            </button>
+                {/* Card Info */}
+                <div className="p-5 border-t border-black/10">
+                  <h3 className="text-sm uppercase tracking-wider font-medium mb-1">
+                    {designer.name}
+                  </h3>
+                  <p className="text-xs text-neutral-500 leading-relaxed">
+                    {designer.description}
+                  </p>
+                </div>
+              </button>
+            ))}
           </div>
         </div>
       </main>
