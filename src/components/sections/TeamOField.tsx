@@ -48,6 +48,14 @@ const TeamOField = forwardRef<TeamOFieldRef, TeamOFieldProps>(({ oCount, members
   const [cellHeight, setCellHeight] = useState(0)
   const [visibleRows, setVisibleRows] = useState(0)
   const [scrollTop, setScrollTop] = useState(0)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
 
   // Interactive state
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null)
@@ -380,12 +388,15 @@ const TeamOField = forwardRef<TeamOFieldRef, TeamOFieldProps>(({ oCount, members
             const isName = placement.type === 'name' && placement.memberId
             const isHovered = isName && hoveredMemberId === placement.memberId
 
-            // Position-based range: element starts animating proportional to its vertical position
             const viewportHeight = visibleRows * cellHeight
             const posPercent = (top / totalHeight) * 100
-            const slidePct = Math.max(2, (viewportHeight * 0.4 / totalHeight) * 100)
-            const rangeStart = posPercent
-            const rangeEnd = posPercent + slidePct
+            const baseSlidePct = Math.max(2, (viewportHeight * 0.4 / totalHeight) * 100)
+
+            const firstTop = placements[0] ? placements[0].row * cellHeight : 0
+            const headstart = isMobile ? (firstTop / totalHeight) * 100 : 0
+            const slidePct = isMobile ? baseSlidePct * 2 : baseSlidePct
+            const rangeStart = Math.max(0, posPercent - headstart)
+            const rangeEnd = rangeStart + slidePct
 
             return (
               <div
