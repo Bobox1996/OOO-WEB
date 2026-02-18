@@ -209,7 +209,7 @@ const VisionOField = forwardRef<VisionOFieldRef, VisionOFieldProps>(({ oCount, v
         {row.map((cell, i) => {
           if (cell.span === 0) return null
           if (cell.type === 'vision') {
-            return <span key={i} className="text-cyan-500" style={{ gridColumn: `span ${cell.span}` }}>{cell.char}</span>
+            return <span key={i} className="text-orange-500" style={{ gridColumn: `span ${cell.span}` }}>{cell.char}</span>
           }
           return <span key={i} className="invisible">{cell.char}</span>
         })}
