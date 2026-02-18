@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
     if (colors.length === 0) {
       const hexMatches = responseText.match(/#[0-9A-Fa-f]{6}/g)
       if (hexMatches) {
-        colors = [...new Set(hexMatches)]
+        colors = [...new Set<string>(hexMatches)]
       }
     }
 
