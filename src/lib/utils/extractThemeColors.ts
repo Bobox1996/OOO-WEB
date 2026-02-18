@@ -140,7 +140,7 @@ function makeCanvas(bitmap: ImageBitmap, maxSize: number) {
 
   if (typeof OffscreenCanvas !== "undefined") {
     canvas = new OffscreenCanvas(w, h);
-    ctx = canvas.getContext("2d", { willReadFrequently: true } as OffscreenCanvasRenderingContext2DSettings);
+    ctx = canvas.getContext("2d", { willReadFrequently: true });
   } else {
     const c = document.createElement("canvas");
     c.width = w;
