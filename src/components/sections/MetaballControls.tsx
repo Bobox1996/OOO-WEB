@@ -29,10 +29,10 @@ export default function MetaballControls({ params, onChange }: MetaballControlsP
       {/* ── Point generation inputs ──────────────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
         {/* Total Points */}
-        <div>
+        <div className="flex flex-col">
           <label
             htmlFor="totalPoints"
-            className="block text-sm uppercase tracking-wider text-neutral-500 mb-2"
+            className="text-sm uppercase tracking-wider text-neutral-500 mb-2 min-h-[2.5rem] flex items-end"
           >
             Total Points
           </label>
@@ -44,7 +44,6 @@ export default function MetaballControls({ params, onChange }: MetaballControlsP
             value={totalPoints}
             onChange={(e) => {
               const val = Math.max(2, Math.min(200, parseInt(e.target.value) || 2))
-              // If new total is less than or equal to chargeCount, clamp chargeCount
               const newChargeCount = Math.min(chargeCount, val - 1)
               onChange({ totalPoints: val, chargeCount: newChargeCount })
             }}
@@ -56,10 +55,10 @@ export default function MetaballControls({ params, onChange }: MetaballControlsP
         </div>
 
         {/* Charge Count */}
-        <div>
+        <div className="flex flex-col">
           <label
             htmlFor="chargeCount"
-            className="block text-sm uppercase tracking-wider text-neutral-500 mb-2"
+            className="text-sm uppercase tracking-wider text-neutral-500 mb-2 min-h-[2.5rem] flex items-end"
           >
             Charge Count (P)
           </label>
@@ -81,10 +80,10 @@ export default function MetaballControls({ params, onChange }: MetaballControlsP
         </div>
 
         {/* Seed */}
-        <div>
+        <div className="flex flex-col">
           <label
             htmlFor="seed"
-            className="block text-sm uppercase tracking-wider text-neutral-500 mb-2"
+            className="text-sm uppercase tracking-wider text-neutral-500 mb-2 min-h-[2.5rem] flex items-end"
           >
             Seed
           </label>

@@ -49,3 +49,17 @@ export interface AppMetaballPattern {
   pinned: boolean
   created_at: string
 }
+
+export interface AppUserLogo {
+  id: string
+  user_id: string
+  image_url: string
+  filename: string
+  created_at: string
+}
+
+export interface AppColorThemerConfig {
+  id: string
+  prompt_template: string
+  updated_at: string
+}

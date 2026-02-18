@@ -62,7 +62,7 @@ export async function updateSession(request: NextRequest) {
         // Check if user is authorized as admin
         const { data: adminUser } = await supabase
           .from('admin_users')
-          .select('id')
+          .select('id, role')
           .ilike('email', user.email ?? '')
           .single()
 
@@ -74,9 +74,10 @@ export async function updateSession(request: NextRequest) {
           return NextResponse.redirect(url)
         }
 
-        // Special protection for /admin/team routes - only shimin can access
-        if (request.nextUrl.pathname.startsWith('/admin/team')) {
-          if (user?.email?.toLowerCase() !== 'shimin@out-of-office.design') {
+        // Super-admin-only routes
+        const superAdminRoutes = ['/admin/team', '/admin/vision']
+        if (superAdminRoutes.some(route => request.nextUrl.pathname.startsWith(route))) {
+          if (adminUser.role !== 'super_admin') {
             const url = request.nextUrl.clone()
             url.pathname = '/admin/dashboard'
             return NextResponse.redirect(url)

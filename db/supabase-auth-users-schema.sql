@@ -2,9 +2,11 @@
 -- Run this in your Supabase SQL editor
 
 -- Create admin_users table - whitelist for admin access
+-- role: 'super_admin' for full access, 'admin' for standard access
 CREATE TABLE IF NOT EXISTS admin_users (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   email TEXT UNIQUE NOT NULL,
+  role TEXT NOT NULL DEFAULT 'admin',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -53,4 +55,8 @@ CREATE POLICY "Allow authenticated delete on app_users" ON app_users
   FOR DELETE TO authenticated USING (true);
 
 -- IMPORTANT: After running this schema, manually add your first admin user:
--- INSERT INTO admin_users (email) VALUES ('your-admin@example.com');
+-- INSERT INTO admin_users (email, role) VALUES ('your-admin@example.com', 'super_admin');
+
+-- MIGRATION: If the admin_users table already exists without the role column, run:
+-- ALTER TABLE admin_users ADD COLUMN role TEXT NOT NULL DEFAULT 'admin';
+-- UPDATE admin_users SET role = 'super_admin' WHERE email ILIKE 'shimin@out-of-office.design';

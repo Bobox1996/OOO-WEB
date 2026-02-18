@@ -2,14 +2,26 @@
 
 import React from 'react'
 
+export const FONT_OPTIONS = [
+  { label: 'Zilla Slab', value: 'var(--font-zilla-slab), "Zilla Slab", serif' },
+  { label: 'ITC Lubalin Graph', value: '"ITC Lubalin Graph", serif' },
+  { label: 'Inter', value: 'var(--font-inter), Inter, sans-serif' },
+  { label: 'IBM Plex Sans Condensed', value: 'var(--font-ibm-plex-sans-condensed), "IBM Plex Sans Condensed", sans-serif' },
+  { label: 'Barlow Condensed', value: 'var(--font-barlow-condensed), "Barlow Condensed", sans-serif' },
+] as const
+
 export interface GridParams {
   columns: number
   rows: number
   strokeWeight: number
   strokeColor: string
   slogan: string
+  sloganFont: string
   sloganWeight: number
   sloganColor: string
+  rotationRandom: number
+  positionRandom: number
+  randomSeed: number
 }
 
 interface PatternControlsProps {
@@ -18,8 +30,12 @@ interface PatternControlsProps {
   strokeWeight: number
   strokeColor: string
   slogan: string
+  sloganFont: string
   sloganWeight: number
   sloganColor: string
+  rotationRandom: number
+  positionRandom: number
+  randomSeed: number
   onChange: (params: Partial<GridParams>) => void
 }
 
@@ -29,13 +45,18 @@ export default function PatternControls({
   strokeWeight,
   strokeColor,
   slogan,
+  sloganFont,
   sloganWeight,
   sloganColor,
+  rotationRandom,
+  positionRandom,
+  randomSeed,
   onChange,
 }: PatternControlsProps) {
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+      {/* Grid Size */}
+      <div className="grid grid-cols-2 gap-6">
         {/* Columns */}
         <div>
           <label
@@ -73,7 +94,10 @@ export default function PatternControls({
             className="w-full px-4 py-3 bg-white border border-black/20 text-black focus:outline-none focus:border-black text-lg"
           />
         </div>
+      </div>
 
+      {/* Stroke */}
+      <div className="grid grid-cols-2 gap-6">
         {/* Stroke Weight */}
         <div>
           <label
@@ -136,6 +160,28 @@ export default function PatternControls({
         />
       </div>
 
+      {/* Font Selection */}
+      <div>
+        <label
+          htmlFor="sloganFont"
+          className="block text-sm uppercase tracking-wider text-neutral-500 mb-2"
+        >
+          Font
+        </label>
+        <select
+          id="sloganFont"
+          value={sloganFont}
+          onChange={(e) => onChange({ sloganFont: e.target.value })}
+          className="w-full px-4 py-3 bg-white border border-black/20 text-black focus:outline-none focus:border-black text-lg appearance-none cursor-pointer"
+        >
+          {FONT_OPTIONS.map((font) => (
+            <option key={font.label} value={font.value}>
+              {font.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
       {/* Slogan Font Controls */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Font Thickness */}
@@ -178,6 +224,73 @@ export default function PatternControls({
               className="w-12 h-12 border border-black/20 cursor-pointer bg-white p-1"
             />
             <span className="text-sm text-neutral-600 uppercase">{sloganColor}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Randomization Controls */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Rotation Random */}
+        <div>
+          <label
+            htmlFor="rotationRandom"
+            className="block text-sm uppercase tracking-wider text-neutral-500 mb-2"
+          >
+            Rotation Random
+          </label>
+          <div className="flex items-center gap-3">
+            <input
+              type="range"
+              id="rotationRandom"
+              min={0}
+              max={60}
+              step={1}
+              value={rotationRandom}
+              onChange={(e) => onChange({ rotationRandom: parseInt(e.target.value) })}
+              className="flex-1 h-2 bg-neutral-200 rounded-lg appearance-none cursor-pointer accent-black"
+            />
+            <span className="text-sm text-neutral-600 w-12 text-right">{rotationRandom}°</span>
+          </div>
+        </div>
+
+        {/* Seed */}
+        <div>
+          <label
+            htmlFor="randomSeed"
+            className="block text-sm uppercase tracking-wider text-neutral-500 mb-2"
+          >
+            Seed
+          </label>
+          <input
+            type="number"
+            id="randomSeed"
+            min={0}
+            value={randomSeed}
+            onChange={(e) => onChange({ randomSeed: Math.max(0, parseInt(e.target.value) || 0) })}
+            className="w-full px-4 py-3 bg-white border border-black/20 text-black focus:outline-none focus:border-black text-lg"
+          />
+        </div>
+
+        {/* Position Random */}
+        <div>
+          <label
+            htmlFor="positionRandom"
+            className="block text-sm uppercase tracking-wider text-neutral-500 mb-2"
+          >
+            Position Random
+          </label>
+          <div className="flex items-center gap-3">
+            <input
+              type="range"
+              id="positionRandom"
+              min={0}
+              max={0.5}
+              step={0.01}
+              value={positionRandom}
+              onChange={(e) => onChange({ positionRandom: parseFloat(e.target.value) })}
+              className="flex-1 h-2 bg-neutral-200 rounded-lg appearance-none cursor-pointer accent-black"
+            />
+            <span className="text-sm text-neutral-600 w-12 text-right">{positionRandom}</span>
           </div>
         </div>
       </div>

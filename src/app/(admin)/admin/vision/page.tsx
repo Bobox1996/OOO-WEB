@@ -2,11 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/services/supabase/client'
+import { getAdminRole } from '@/services/supabase/admin'
 import AdminNav from '@/components/layout/AdminNav'
 import type { VisionContent } from '@/types'
 import type { User } from '@supabase/supabase-js'
-
-const ALLOWED_EMAIL = 'shimin@out-of-office.design'
 
 export default function AdminVisionPage() {
   const [vision, setVision] = useState<VisionContent | null>(null)
@@ -26,13 +25,16 @@ export default function AdminVisionPage() {
     const { data: { user } } = await supabase.auth.getUser()
     setUser(user)
     
-    if (user?.email?.toLowerCase() === ALLOWED_EMAIL) {
-      setHasAccess(true)
-      fetchVision()
-    } else {
-      setHasAccess(false)
-      setLoading(false)
+    if (user?.email) {
+      const role = await getAdminRole(supabase, user.email)
+      if (role === 'super_admin') {
+        setHasAccess(true)
+        fetchVision()
+        return
+      }
     }
+    setHasAccess(false)
+    setLoading(false)
   }
 
   const fetchVision = async () => {

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/services/supabase/client'
@@ -10,6 +10,27 @@ export default function AppNav() {
   const router = useRouter()
   const supabase = createClient()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [profileOpen, setProfileOpen] = useState(false)
+  const [userEmail, setUserEmail] = useState<string | null>(null)
+  const profileRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user?.email) setUserEmail(user.email)
+    }
+    fetchUser()
+  }, [supabase])
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        setProfileOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -18,11 +39,15 @@ export default function AppNav() {
   }
 
   const navItems = [
-    { href: '/app', label: 'Designers' },
-    { href: '/app/pattern', label: 'Pattern' },
-    { href: '/app/generate', label: 'AI Generate' },
+    { href: '/app', label: 'Dashboard' },
+    { href: '/app/design', label: 'Design' },
     { href: '/app/history', label: 'History' },
   ]
+
+  const isActive = (href: string) => {
+    if (href === '/app') return pathname === '/app'
+    return pathname.startsWith(href)
+  }
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-black/10">
@@ -32,14 +57,13 @@ export default function AppNav() {
             OOO
           </Link>
           
-          {/* Desktop navigation - hidden on mobile */}
           <nav className="hidden md:flex items-center gap-6">
             {navItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
                 className={`text-sm uppercase tracking-widest transition-opacity ${
-                  pathname === item.href
+                  isActive(item.href)
                     ? 'text-black'
                     : 'text-neutral-400 hover:text-black'
                 }`}
@@ -57,14 +81,38 @@ export default function AppNav() {
           >
             View Site
           </Link>
-          <button
-            onClick={handleSignOut}
-            className="text-sm uppercase tracking-widest text-neutral-400 hover:text-black transition-opacity"
-          >
-            Sign Out
-          </button>
+
+          {/* Profile dropdown */}
+          <div className="relative" ref={profileRef}>
+            <button
+              onClick={() => setProfileOpen(!profileOpen)}
+              className="w-8 h-8 rounded-full border border-black/20 flex items-center justify-center hover:border-black transition-colors"
+              aria-label="Profile menu"
+            >
+              <svg className="w-4 h-4 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </button>
+
+            {profileOpen && (
+              <div className="absolute right-0 top-full mt-2 w-64 bg-white border border-black/10 shadow-lg">
+                {userEmail && (
+                  <div className="px-4 py-3 border-b border-black/10">
+                    <p className="text-xs uppercase tracking-wider text-neutral-400 mb-1">Signed in as</p>
+                    <p className="text-sm font-medium truncate">{userEmail}</p>
+                  </div>
+                )}
+                <button
+                  onClick={handleSignOut}
+                  className="w-full text-left px-4 py-3 text-sm uppercase tracking-widest text-neutral-400 hover:text-black hover:bg-neutral-50 transition-colors"
+                >
+                  Sign Out
+                </button>
+              </div>
+            )}
+          </div>
           
-          {/* Mobile hamburger button - visible only on mobile */}
+          {/* Mobile hamburger */}
           <button
             className="md:hidden flex flex-col justify-center items-center w-6 h-6 gap-1"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -87,7 +135,7 @@ export default function AppNav() {
                 href={item.href}
                 onClick={() => setMobileMenuOpen(false)}
                 className={`text-sm uppercase tracking-widest transition-opacity ${
-                  pathname === item.href
+                  isActive(item.href)
                     ? 'text-black'
                     : 'text-neutral-400 hover:text-black'
                 }`}

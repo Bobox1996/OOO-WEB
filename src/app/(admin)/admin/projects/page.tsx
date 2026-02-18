@@ -1,18 +1,17 @@
 import { createClient } from '@/services/supabase/server'
+import { getAdminRole } from '@/services/supabase/admin'
 import AdminNav from '@/components/layout/AdminNav'
 import Link from 'next/link'
 import Image from 'next/image'
 import DeleteProjectButton from '@/components/admin/DeleteProjectButton'
 import HideProjectToggle from '@/components/ui/HideProjectToggle'
 
-const SUPER_ADMIN_EMAIL = 'shimin@out-of-office.design'
-
 export default async function ProjectsPage() {
   const supabase = await createClient()
   
-  // Get current user
   const { data: { user } } = await supabase.auth.getUser()
-  const isSuperAdmin = user?.email?.toLowerCase() === SUPER_ADMIN_EMAIL
+  const role = user?.email ? await getAdminRole(supabase, user.email) : null
+  const isSuperAdmin = role === 'super_admin'
   
   const { data: projects } = await supabase
     .from('projects')

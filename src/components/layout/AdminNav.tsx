@@ -4,21 +4,25 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/services/supabase/client'
+import { getAdminRole, type AdminRole } from '@/services/supabase/admin'
 
 export default function AdminNav() {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [userEmail, setUserEmail] = useState<string | null>(null)
+  const [userRole, setUserRole] = useState<AdminRole | null>(null)
 
   useEffect(() => {
     const fetchUser = async () => {
       const { data: { user } } = await supabase.auth.getUser()
-      setUserEmail(user?.email ?? null)
+      if (user?.email) {
+        const role = await getAdminRole(supabase, user.email)
+        setUserRole(role)
+      }
     }
     fetchUser()
-  }, [supabase.auth])
+  }, [supabase])
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -35,10 +39,9 @@ export default function AdminNav() {
     { href: '/admin/app', label: 'APP' },
   ]
 
-  // Filter nav items - only show Team link for shimin@out-of-office.design
   const navItems = allNavItems.filter(item => {
-    if (item.href === '/admin/team') {
-      return userEmail?.toLowerCase() === 'shimin@out-of-office.design'
+    if (item.href === '/admin/team' || item.href === '/admin/vision') {
+      return userRole === 'super_admin'
     }
     return true
   })

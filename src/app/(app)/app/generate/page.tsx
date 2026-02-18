@@ -105,10 +105,15 @@ export default function GeneratePage() {
   const [packagesLoading, setPackagesLoading] = useState(true)
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(0)
+  const [patternSaved, setPatternSaved] = useState(false)
+  const [savingPattern, setSavingPattern] = useState(false)
+  const [hasPatternId, setHasPatternId] = useState(false)
   const supabase = createClient()
 
   // Load pattern SVG from localStorage and fetch recent generations on mount
   useEffect(() => {
+    setHasPatternId(!!localStorage.getItem('currentPatternId'))
+
     // Load pattern from localStorage
     const savedPattern = localStorage.getItem('patternSVG')
     if (savedPattern) {
@@ -260,6 +265,18 @@ export default function GeneratePage() {
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
+  }
+
+  const handleSavePattern = async () => {
+    const patternId = localStorage.getItem('currentPatternId')
+    const patternSource = localStorage.getItem('patternSource')
+    if (!patternId || !patternSource) return
+
+    setSavingPattern(true)
+    const table = patternSource === 'metaball' ? 'app_metaball_patterns' : 'app_patterns'
+    await supabase.from(table).update({ pinned: true }).eq('id', patternId)
+    setPatternSaved(true)
+    setSavingPattern(false)
   }
 
   const handleDeleteGeneration = async (e: React.MouseEvent, generation: Generation) => {
@@ -478,6 +495,40 @@ export default function GeneratePage() {
                       </>
                     ) : (
                       'Generate Image'
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSavePattern}
+                    disabled={patternSaved || savingPattern || !hasPatternId}
+                    className={`px-6 py-4 text-sm uppercase tracking-widest font-medium flex items-center gap-3 transition-colors ${
+                      patternSaved
+                        ? 'bg-green-600 text-white cursor-default'
+                        : 'border border-black text-black hover:bg-black hover:text-white disabled:opacity-50 disabled:cursor-not-allowed'
+                    }`}
+                  >
+                    {savingPattern ? (
+                      <>
+                        <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        Saving...
+                      </>
+                    ) : patternSaved ? (
+                      <>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Saved
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                        </svg>
+                        Save
+                      </>
                     )}
                   </button>
                 </div>

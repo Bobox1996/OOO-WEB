@@ -14,6 +14,7 @@ export default function AppLayout({
   const tabs = [
     { href: '/admin/app/users', label: 'Users' },
     { href: '/admin/app/assets', label: 'Assets' },
+    { href: '/admin/app/color-themer', label: 'Color Themer' },
   ]
 
   // Check if we're on a sub-page (new, edit, etc.)
