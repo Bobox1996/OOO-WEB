@@ -24,9 +24,12 @@ interface LogoImportProps {
   logoOverlay: LogoOverlay | null
   onLogoOverlayChange: (overlay: LogoOverlay | null) => void
   viewerDimensions: { width: number; height: number }
+  fillOpacityRandom?: boolean
+  onFillOpacityRandomChange?: (value: boolean) => void
+  hideFillColor?: boolean
 }
 
-function parseSvg(svgText: string): {
+export function parseSvg(svgText: string): {
   innerContent: string; width: number; height: number;
   minX: number; minY: number;
   defaultFill: string; defaultStroke: string; defaultStrokeWidth: number;
@@ -99,6 +102,9 @@ export default function LogoImport({
   logoOverlay,
   onLogoOverlayChange,
   viewerDimensions,
+  fillOpacityRandom,
+  onFillOpacityRandomChange,
+  hideFillColor,
 }: LogoImportProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -207,17 +213,19 @@ export default function LogoImport({
 
       {logoOverlay && (
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs uppercase tracking-wider text-neutral-500 mb-1">Fill</label>
-              <input
-                type="color"
-                value={logoOverlay.fillColor}
-                onChange={(e) => onLogoOverlayChange({ ...logoOverlay, fillColor: e.target.value })}
-                className="w-full h-9 border border-black/20 cursor-pointer bg-white p-0.5"
-                title="Fill color"
-              />
-            </div>
+          <div className={`grid ${hideFillColor ? 'grid-cols-1' : 'grid-cols-2'} gap-4`}>
+            {!hideFillColor && (
+              <div>
+                <label className="block text-xs uppercase tracking-wider text-neutral-500 mb-1">Fill</label>
+                <input
+                  type="color"
+                  value={logoOverlay.fillColor}
+                  onChange={(e) => onLogoOverlayChange({ ...logoOverlay, fillColor: e.target.value })}
+                  className="w-full h-9 border border-black/20 cursor-pointer bg-white p-0.5"
+                  title="Fill color"
+                />
+              </div>
+            )}
             <div>
               <label className="block text-xs uppercase tracking-wider text-neutral-500 mb-1">Stroke</label>
               <input
@@ -245,6 +253,23 @@ export default function LogoImport({
               <span className="text-xs text-neutral-600 w-10 text-right">{logoOverlay.strokeWidth.toFixed(1)}</span>
             </div>
           </div>
+
+          {onFillOpacityRandomChange && (
+            <div className="flex items-center justify-between">
+              <label className="text-xs uppercase tracking-wider text-neutral-500">Random Fill Opacity</label>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={fillOpacityRandom}
+                onClick={() => onFillOpacityRandomChange(!fillOpacityRandom)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${fillOpacityRandom ? 'bg-black' : 'bg-neutral-300'}`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${fillOpacityRandom ? 'translate-x-6' : 'translate-x-1'}`}
+                />
+              </button>
+            </div>
+          )}
 
           <p className="text-xs text-neutral-400">
             Click the logo in the viewer to select it. Drag to move, drag corners to scale, use the rotation handle to rotate.

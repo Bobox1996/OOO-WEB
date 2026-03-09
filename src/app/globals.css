@@ -153,9 +153,7 @@ body {
 /* Title font — keep in sync with FONT_TITLE in src/lib/fonts.ts */
 .font-title {
   font-family: var(--font-title);
-}
-
-/* CJK Monospace font for O-field — keep in sync with FONT_CJK_MONO in src/lib/fonts.ts */
+}/* CJK Monospace font for O-field — keep in sync with FONT_CJK_MONO in src/lib/fonts.ts */
 .font-cjk-mono {
   /* Montserrat (web font) for English (circular O), fallback to ITC Avant Garde Gothic / CJK monospace */
   font-family: var(--font-montserrat), "ITC Avant Garde Gothic", "Avant Garde Gothic", "Century Gothic", "Sarasa Mono SC", "Sarasa Mono", "等距更纱黑体 SC", "Source Han Mono SC", "Source Han Mono CN", "思源等宽", "Noto Sans Mono CJK SC", "HYZhengYuan", "STHeiti", "Microsoft YaHei Mono", "SimHei", monospace;

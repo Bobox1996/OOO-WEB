@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/services/supabase/server'
 
+export const maxDuration = 60
+
 export async function POST(request: NextRequest) {
   try {
     // Check authentication

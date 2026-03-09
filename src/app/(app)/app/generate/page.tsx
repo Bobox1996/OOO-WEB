@@ -232,7 +232,13 @@ export default function GeneratePage() {
 
   const handleBack = () => {
     const source = localStorage.getItem('patternSource')
-    router.push(source === 'metaball' ? '/app/metaball' : '/app/pattern')
+    const routeMap: Record<string, string> = {
+      'metaball': '/app/metaball',
+      'ruth-asawa': '/app/ruth-asawa',
+      'pattern': '/app/pattern',
+      'pixel-maker': '/app/pixelizer',
+    }
+    router.push(routeMap[source || 'pattern'] || '/app/pattern')
   }
 
   const handleClearPattern = () => {
@@ -273,7 +279,13 @@ export default function GeneratePage() {
     if (!patternId || !patternSource) return
 
     setSavingPattern(true)
-    const table = patternSource === 'metaball' ? 'app_metaball_patterns' : 'app_patterns'
+    const tableMap: Record<string, string> = {
+      'metaball': 'app_metaball_patterns',
+      'ruth-asawa': 'app_asawa_patterns',
+      'pattern': 'app_patterns',
+      'pixel-maker': 'app_pixelizer_patterns',
+    }
+    const table = tableMap[patternSource] || 'app_patterns'
     await supabase.from(table).update({ pinned: true }).eq('id', patternId)
     setPatternSaved(true)
     setSavingPattern(false)

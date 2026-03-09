@@ -4,9 +4,9 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/services/supabase/client'
 import AppNav from '@/components/layout/AppNav'
-import { AppPattern, AppMetaballPattern, AppUserLogo } from '@/types'
+import { AppPattern, AppMetaballPattern, AppAsawaPattern, AppUserLogo } from '@/types'
 
-type SavedPattern = (AppPattern & { type: 'pattern' }) | (AppMetaballPattern & { type: 'metaball' })
+type SavedPattern = (AppPattern & { type: 'pattern' }) | (AppMetaballPattern & { type: 'metaball' }) | (AppAsawaPattern & { type: 'ruth-asawa' })
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -34,7 +34,7 @@ export default function DashboardPage() {
     const fetchSavedPatterns = async () => {
       setPatternsLoading(true)
 
-      const [{ data: patterns }, { data: metaballs }] = await Promise.all([
+      const [{ data: patterns }, { data: metaballs }, { data: asawas }] = await Promise.all([
         supabase
           .from('app_patterns')
           .select('*')
@@ -45,11 +45,17 @@ export default function DashboardPage() {
           .select('*')
           .eq('pinned', true)
           .order('created_at', { ascending: false }),
+        supabase
+          .from('app_asawa_patterns')
+          .select('*')
+          .eq('pinned', true)
+          .order('created_at', { ascending: false }),
       ])
 
       const merged: SavedPattern[] = [
         ...(patterns || []).map((p: AppPattern) => ({ ...p, type: 'pattern' as const })),
         ...(metaballs || []).map((p: AppMetaballPattern) => ({ ...p, type: 'metaball' as const })),
+        ...(asawas || []).map((p: AppAsawaPattern) => ({ ...p, type: 'ruth-asawa' as const })),
       ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
       setSavedPatterns(merged)
@@ -133,7 +139,7 @@ export default function DashboardPage() {
         sloganColor: pattern.slogan_color || '#000000',
       })
       router.push(`/app/pattern?${params.toString()}`)
-    } else {
+    } else if (pattern.type === 'metaball') {
       const params = new URLSearchParams({
         totalPoints: String(pattern.total_points),
         chargeCount: String(pattern.charge_count),
@@ -143,11 +149,27 @@ export default function DashboardPage() {
         strokeColor: pattern.stroke_color,
       })
       router.push(`/app/metaball?${params.toString()}`)
+    } else {
+      const params = new URLSearchParams({
+        columns: String(pattern.columns),
+        rows: String(pattern.rows),
+        strokeWeight: String(pattern.stroke_weight),
+        strokeColor: pattern.stroke_color,
+        rotationRandom: String(pattern.rotation_random),
+        positionRandom: String(pattern.position_random),
+        randomSeed: String(pattern.random_seed),
+      })
+      router.push(`/app/ruth-asawa?${params.toString()}`)
     }
   }
 
   const handleUnpinPattern = async (pattern: SavedPattern) => {
-    const table = pattern.type === 'pattern' ? 'app_patterns' : 'app_metaball_patterns'
+    const tableMap = {
+      'pattern': 'app_patterns',
+      'metaball': 'app_metaball_patterns',
+      'ruth-asawa': 'app_asawa_patterns',
+    } as const
+    const table = tableMap[pattern.type]
     await supabase.from(table).update({ pinned: false }).eq('id', pattern.id)
     setSavedPatterns((prev) => prev.filter((p) => p.id !== pattern.id))
   }
@@ -272,7 +294,7 @@ export default function DashboardPage() {
                         />
                       </button>
                       <span className="absolute bottom-1 left-1 text-[9px] uppercase tracking-wider bg-black/60 text-white px-1.5 py-0.5 rounded">
-                        {pattern.type === 'pattern' ? 'Lattice' : 'Metaball'}
+                        {pattern.type === 'pattern' ? 'Lattice' : pattern.type === 'metaball' ? 'Metaball' : 'Asawa'}
                       </span>
                       <button
                         onClick={() => handleUnpinPattern(pattern)}

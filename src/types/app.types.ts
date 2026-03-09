@@ -50,11 +50,35 @@ export interface AppMetaballPattern {
   created_at: string
 }
 
+export interface AppAsawaPattern {
+  id: string
+  user_id: string
+  columns: number
+  rows: number
+  stroke_weight: number
+  stroke_color: string
+  rotation_random: number
+  position_random: number
+  random_seed: number
+  svg_preview: string
+  pinned: boolean
+  created_at: string
+}
+
 export interface AppUserLogo {
   id: string
   user_id: string
   image_url: string
   filename: string
+  created_at: string
+}
+
+export interface AppPixelizerPattern {
+  id: string
+  user_id: string
+  resolution: number
+  svg_preview: string
+  pinned: boolean
   created_at: string
 }
 

@@ -1,11 +1,15 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import AppNav from '@/components/layout/AppNav'
 import PatternViewer from '@/components/sections/PatternViewer'
 import MetaballViewer from '@/components/sections/MetaballViewer'
+import AsawaViewer, { AsawaLogoOverlay } from '@/components/sections/AsawaViewer'
+import PixelizerViewer, { PixelizerLogoOverlay, PixelInfo } from '@/components/sections/PixelizerViewer'
 import { generatePoints } from '@/lib/utils/metaball.utils'
+import { parseSvg } from '@/components/sections/LogoImport'
+import { createClient } from '@/services/supabase/client'
 
 const PATTERN_DEFAULTS = {
   columns: 7,
@@ -21,6 +25,51 @@ const PATTERN_DEFAULTS = {
   randomSeed: 0,
 }
 
+const ASAWA_DEFAULTS = {
+  columns: 25,
+  rows: 25,
+  strokeWeight: 0.3,
+  strokeColor: 'transparent',
+  rotationRandom: 3,
+  positionRandom: 0.23,
+  randomSeed: 0,
+}
+
+const ASAWA_CELL_SIZE = 12
+
+const PIXELIZER_DEFAULTS = {
+  resolution: 2500,
+  cellSize: 12,
+  defaultImage: '/defaults/pixel-maker-default.png',
+}
+
+function computeCoverGrid(totalPixels: number, aspectRatio: number) {
+  const cols = Math.round(Math.sqrt(totalPixels * aspectRatio))
+  const rows = Math.round(totalPixels / cols)
+  return { cols: Math.max(1, cols), rows: Math.max(1, rows) }
+}
+
+function extractCoverPixelData(image: HTMLImageElement, cols: number, rows: number): PixelInfo[][] {
+  const canvas = document.createElement('canvas')
+  canvas.width = cols
+  canvas.height = rows
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return []
+  ctx.drawImage(image, 0, 0, cols, rows)
+  const imageData = ctx.getImageData(0, 0, cols, rows)
+  const data = imageData.data
+  const pixels: PixelInfo[][] = []
+  for (let row = 0; row < rows; row++) {
+    const rowData: PixelInfo[] = []
+    for (let col = 0; col < cols; col++) {
+      const i = (row * cols + col) * 4
+      rowData.push({ r: data[i], g: data[i + 1], b: data[i + 2], alpha: data[i + 3] })
+    }
+    pixels.push(rowData)
+  }
+  return pixels
+}
+
 const METABALL_DEFAULTS = {
   totalPoints: 60,
   chargeCount: 40,
@@ -34,11 +83,68 @@ const METABALL_DEFAULTS = {
 
 export default function SelectDesignerPage() {
   const router = useRouter()
+  const supabase = createClient()
 
   const { charges, passThroughPoints } = useMemo(
     () => generatePoints(METABALL_DEFAULTS.totalPoints, METABALL_DEFAULTS.chargeCount, METABALL_DEFAULTS.seed),
     [],
   )
+
+  const [asawaCoverLogo, setAsawaCoverLogo] = useState<AsawaLogoOverlay | null>(null)
+  const [pixelizerCoverData, setPixelizerCoverData] = useState<{ pixelData: PixelInfo[][]; cols: number; rows: number } | null>(null)
+  const [pixelizerCoverLogo, setPixelizerCoverLogo] = useState<PixelizerLogoOverlay | null>(null)
+
+  useEffect(() => {
+    const fetchCoverLogo = async () => {
+      const { data } = await supabase
+        .from('app_user_logos')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1)
+      if (data && data.length > 0) {
+        try {
+          const response = await fetch(data[0].image_url)
+          const svgText = await response.text()
+          const { innerContent, width, height, minX, minY, defaultFill, defaultStroke, defaultStrokeWidth } = parseSvg(svgText)
+          if (innerContent) {
+            setAsawaCoverLogo({
+              svgContent: innerContent,
+              fillColor: defaultFill,
+              strokeColor: defaultStroke,
+              strokeWidth: defaultStrokeWidth,
+              nativeWidth: width,
+              nativeHeight: height,
+              nativeMinX: minX,
+              nativeMinY: minY,
+            })
+            setPixelizerCoverLogo({
+              svgContent: innerContent,
+              strokeColor: defaultStroke,
+              strokeWidth: defaultStrokeWidth,
+              nativeWidth: width,
+              nativeHeight: height,
+              nativeMinX: minX,
+              nativeMinY: minY,
+            })
+          }
+        } catch (err) {
+          console.error('Failed to fetch cover logo:', err)
+        }
+      }
+    }
+    fetchCoverLogo()
+  }, [supabase])
+
+  useEffect(() => {
+    const img = new Image()
+    img.onload = () => {
+      const ar = img.naturalWidth / img.naturalHeight
+      const { cols, rows } = computeCoverGrid(PIXELIZER_DEFAULTS.resolution, ar)
+      const pixelData = extractCoverPixelData(img, cols, rows)
+      setPixelizerCoverData({ pixelData, cols, rows })
+    }
+    img.src = PIXELIZER_DEFAULTS.defaultImage
+  }, [])
 
   const designers = [
     {
@@ -53,6 +159,20 @@ export default function SelectDesignerPage() {
       name: 'Metaball Isocurve',
       description: 'Generate 2D metaball isocurves through points with marching squares',
       href: '/app/metaball',
+      available: true,
+    },
+    {
+      id: 'ruth-asawa',
+      name: 'Ruth Asawa',
+      description: 'Generate wire-inspired grid patterns with adjustable density',
+      href: '/app/ruth-asawa',
+      available: true,
+    },
+    {
+      id: 'pixelizer',
+      name: 'Pixel Maker',
+      description: 'Upload an image and pixelize it using your logo as tiles',
+      href: '/app/pixelizer',
       available: true,
     },
     {
@@ -147,6 +267,27 @@ export default function SelectDesignerPage() {
                       strokeColor={METABALL_DEFAULTS.strokeColor}
                       fillSetIndex={METABALL_DEFAULTS.fillSetIndex}
                       fillColor={METABALL_DEFAULTS.fillColor}
+                    />
+                  ) : designer.id === 'ruth-asawa' ? (
+                    <AsawaViewer
+                      columns={ASAWA_DEFAULTS.columns}
+                      rows={ASAWA_DEFAULTS.rows}
+                      strokeWeight={ASAWA_DEFAULTS.strokeWeight}
+                      strokeColor={ASAWA_DEFAULTS.strokeColor}
+                      cellSize={ASAWA_CELL_SIZE}
+                      rotationRandom={ASAWA_DEFAULTS.rotationRandom}
+                      positionRandom={ASAWA_DEFAULTS.positionRandom}
+                      randomSeed={ASAWA_DEFAULTS.randomSeed}
+                      logoOverlay={asawaCoverLogo}
+                      fillOpacityRandom={true}
+                    />
+                  ) : designer.id === 'pixelizer' && pixelizerCoverData ? (
+                    <PixelizerViewer
+                      cols={pixelizerCoverData.cols}
+                      rows={pixelizerCoverData.rows}
+                      cellSize={PIXELIZER_DEFAULTS.cellSize}
+                      pixelData={pixelizerCoverData.pixelData}
+                      logoOverlay={pixelizerCoverLogo}
                     />
                   ) : designer.id === 'color-themer' ? (
                     <div className="w-full h-full flex flex-col">
