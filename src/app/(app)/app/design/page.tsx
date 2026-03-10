@@ -81,6 +81,34 @@ const METABALL_DEFAULTS = {
   fillColor: '#F0EEE9',
 }
 
+function WavePreviewCard() {
+  const gridSize = 16
+  const dots: { cx: number; cy: number; r: number }[] = []
+  for (let j = 0; j < gridSize; j++) {
+    for (let i = 0; i < gridSize; i++) {
+      const nx = i / (gridSize - 1)
+      const ny = j / (gridSize - 1)
+      const x = nx * 100
+      const y = ny * 100
+      const wave =
+        Math.sin(nx * 4 + 0.5) * 0.5 +
+        Math.cos(ny * 3 + 0.3) * 0.3 +
+        Math.sin(Math.sqrt(nx * nx + ny * ny) * 5) * 0.2
+      const size = 1.2 + wave * 1.0
+      dots.push({ cx: x, cy: y, r: Math.max(0.4, size) })
+    }
+  }
+  return (
+    <div className="w-full h-full bg-black flex items-center justify-center p-4">
+      <svg viewBox="-5 -5 110 110" className="w-full h-full">
+        {dots.map((d, i) => (
+          <circle key={i} cx={d.cx} cy={d.cy} r={d.r} fill="white" />
+        ))}
+      </svg>
+    </div>
+  )
+}
+
 export default function SelectDesignerPage() {
   const router = useRouter()
   const supabase = createClient()
@@ -180,6 +208,13 @@ export default function SelectDesignerPage() {
       name: 'Color Themer',
       description: 'Upload an image and let AI extract a color palette from it',
       href: '/app/color-themer',
+      available: true,
+    },
+    {
+      id: 'wave-pattern',
+      name: 'Wave Pattern',
+      description: 'Generate animated 3D wave point clouds with directional flow vectors',
+      href: '/app/wave-pattern',
       available: true,
     },
   ]
@@ -295,6 +330,8 @@ export default function SelectDesignerPage() {
                         <div key={c} className="flex-1" style={{ backgroundColor: c }} />
                       ))}
                     </div>
+                  ) : designer.id === 'wave-pattern' ? (
+                    <WavePreviewCard />
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-neutral-300">
                       <svg

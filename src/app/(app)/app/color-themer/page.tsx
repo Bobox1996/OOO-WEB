@@ -129,10 +129,32 @@ export default function ColorThemerPage() {
     if (dropped) processFile(dropped)
   }
 
-  const handleCopy = (hex: string, index: number) => {
-    navigator.clipboard.writeText(hex)
-    setCopiedIndex(index)
-    setTimeout(() => setCopiedIndex(null), 1500)
+  const copyToClipboard = useCallback(async (text: string): Promise<boolean> => {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text)
+        return true
+      }
+      const textarea = document.createElement('textarea')
+      textarea.value = text
+      textarea.style.position = 'fixed'
+      textarea.style.left = '-9999px'
+      document.body.appendChild(textarea)
+      textarea.select()
+      const ok = document.execCommand('copy')
+      document.body.removeChild(textarea)
+      return ok
+    } catch {
+      return false
+    }
+  }, [])
+
+  const handleCopy = async (hex: string, index: number) => {
+    const ok = await copyToClipboard(hex)
+    if (ok) {
+      setCopiedIndex(index)
+      setTimeout(() => setCopiedIndex(null), 1500)
+    }
   }
 
   const handleRemoveImage = () => {
@@ -526,11 +548,13 @@ export default function ColorThemerPage() {
 
                   {/* Copy All */}
                   <button
-                    onClick={() => {
+                    onClick={async () => {
                       const hexes = colors.map(c => c.hex)
-                      navigator.clipboard.writeText(JSON.stringify(hexes, null, 2))
-                      setCopiedIndex(-1)
-                      setTimeout(() => setCopiedIndex(null), 1500)
+                      const ok = await copyToClipboard(JSON.stringify(hexes, null, 2))
+                      if (ok) {
+                        setCopiedIndex(-1)
+                        setTimeout(() => setCopiedIndex(null), 1500)
+                      }
                     }}
                     className="w-full py-3 border border-black/10 text-sm uppercase tracking-widest hover:border-black transition-colors"
                   >

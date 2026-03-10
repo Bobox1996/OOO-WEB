@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 
 export interface MetaballParams {
   totalPoints: number
@@ -24,6 +24,37 @@ export default function MetaballControls({ params, onChange }: MetaballControlsP
   const { totalPoints, chargeCount, seed, accuracy, strokeWeight, strokeColor, fillSetIndex, fillColor } = params
   const maxSetIndex = Math.max(0, totalPoints - chargeCount - 1)
 
+  const [totalPointsInput, setTotalPointsInput] = useState(String(totalPoints))
+  const [chargeCountInput, setChargeCountInput] = useState(String(chargeCount))
+  const [seedInput, setSeedInput] = useState(String(seed))
+
+  useEffect(() => { setTotalPointsInput(String(totalPoints)) }, [totalPoints])
+  useEffect(() => { setChargeCountInput(String(chargeCount)) }, [chargeCount])
+  useEffect(() => { setSeedInput(String(seed)) }, [seed])
+
+  const commitTotalPoints = () => {
+    const parsed = parseInt(totalPointsInput)
+    const val = isNaN(parsed) ? 2 : Math.max(2, Math.min(200, parsed))
+    const newChargeCount = Math.min(chargeCount, val - 1)
+    setTotalPointsInput(String(val))
+    if (newChargeCount !== chargeCount) setChargeCountInput(String(newChargeCount))
+    onChange({ totalPoints: val, chargeCount: newChargeCount })
+  }
+
+  const commitChargeCount = () => {
+    const parsed = parseInt(chargeCountInput)
+    const val = isNaN(parsed) ? 1 : Math.max(1, Math.min(totalPoints - 1, parsed))
+    setChargeCountInput(String(val))
+    onChange({ chargeCount: val })
+  }
+
+  const commitSeed = () => {
+    const parsed = parseInt(seedInput)
+    const val = isNaN(parsed) ? 0 : parsed
+    setSeedInput(String(val))
+    onChange({ seed: val })
+  }
+
   return (
     <div className="space-y-8">
       {/* ── Point generation inputs ──────────────────────────── */}
@@ -41,12 +72,10 @@ export default function MetaballControls({ params, onChange }: MetaballControlsP
             id="totalPoints"
             min={2}
             max={200}
-            value={totalPoints}
-            onChange={(e) => {
-              const val = Math.max(2, Math.min(200, parseInt(e.target.value) || 2))
-              const newChargeCount = Math.min(chargeCount, val - 1)
-              onChange({ totalPoints: val, chargeCount: newChargeCount })
-            }}
+            value={totalPointsInput}
+            onChange={(e) => setTotalPointsInput(e.target.value)}
+            onBlur={commitTotalPoints}
+            onKeyDown={(e) => { if (e.key === 'Enter') commitTotalPoints() }}
             className="w-full px-4 py-3 bg-white border border-black/20 text-black focus:outline-none focus:border-black text-lg"
           />
           <span className="text-xs text-neutral-400 mt-1 block">
@@ -67,11 +96,10 @@ export default function MetaballControls({ params, onChange }: MetaballControlsP
             id="chargeCount"
             min={1}
             max={totalPoints - 1}
-            value={chargeCount}
-            onChange={(e) => {
-              const val = Math.max(1, Math.min(totalPoints - 1, parseInt(e.target.value) || 1))
-              onChange({ chargeCount: val })
-            }}
+            value={chargeCountInput}
+            onChange={(e) => setChargeCountInput(e.target.value)}
+            onBlur={commitChargeCount}
+            onKeyDown={(e) => { if (e.key === 'Enter') commitChargeCount() }}
             className="w-full px-4 py-3 bg-white border border-black/20 text-black focus:outline-none focus:border-black text-lg"
           />
           <span className="text-xs text-neutral-400 mt-1 block">
@@ -90,8 +118,10 @@ export default function MetaballControls({ params, onChange }: MetaballControlsP
           <input
             type="number"
             id="seed"
-            value={seed}
-            onChange={(e) => onChange({ seed: parseInt(e.target.value) || 0 })}
+            value={seedInput}
+            onChange={(e) => setSeedInput(e.target.value)}
+            onBlur={commitSeed}
+            onKeyDown={(e) => { if (e.key === 'Enter') commitSeed() }}
             className="w-full px-4 py-3 bg-white border border-black/20 text-black focus:outline-none focus:border-black text-lg"
           />
           <span className="text-xs text-neutral-400 mt-1 block">

@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 
 export interface AsawaParams {
   rows: number
@@ -33,6 +33,29 @@ export default function AsawaControls({
   randomSeed,
   onChange,
 }: AsawaControlsProps) {
+  const [columnsInput, setColumnsInput] = useState(String(columns))
+  const [rowsInput, setRowsInput] = useState(String(rows))
+  const [seedInput, setSeedInput] = useState(String(randomSeed))
+
+  useEffect(() => { setColumnsInput(String(columns)) }, [columns])
+  useEffect(() => { setRowsInput(String(rows)) }, [rows])
+  useEffect(() => { setSeedInput(String(randomSeed)) }, [randomSeed])
+
+  const commitValue = (
+    raw: string,
+    min: number,
+    max: number | null,
+    fallback: number,
+    key: keyof AsawaParams,
+    setLocal: (v: string) => void,
+  ) => {
+    const parsed = parseInt(raw)
+    let clamped = isNaN(parsed) ? fallback : Math.max(min, parsed)
+    if (max !== null) clamped = Math.min(max, clamped)
+    setLocal(String(clamped))
+    onChange({ [key]: clamped })
+  }
+
   return (
     <div className="space-y-6">
       {/* Grid Size */}
@@ -49,8 +72,10 @@ export default function AsawaControls({
             id="asawa-columns"
             min={20}
             max={40}
-            value={columns}
-            onChange={(e) => onChange({ columns: Math.max(20, Math.min(40, parseInt(e.target.value) || 20)) })}
+            value={columnsInput}
+            onChange={(e) => setColumnsInput(e.target.value)}
+            onBlur={() => commitValue(columnsInput, 20, 40, 20, 'columns', setColumnsInput)}
+            onKeyDown={(e) => { if (e.key === 'Enter') commitValue(columnsInput, 20, 40, 20, 'columns', setColumnsInput) }}
             className="w-full px-4 py-3 bg-white border border-black/20 text-black focus:outline-none focus:border-black text-lg"
           />
         </div>
@@ -67,8 +92,10 @@ export default function AsawaControls({
             id="asawa-rows"
             min={20}
             max={40}
-            value={rows}
-            onChange={(e) => onChange({ rows: Math.max(20, Math.min(40, parseInt(e.target.value) || 20)) })}
+            value={rowsInput}
+            onChange={(e) => setRowsInput(e.target.value)}
+            onBlur={() => commitValue(rowsInput, 20, 40, 20, 'rows', setRowsInput)}
+            onKeyDown={(e) => { if (e.key === 'Enter') commitValue(rowsInput, 20, 40, 20, 'rows', setRowsInput) }}
             className="w-full px-4 py-3 bg-white border border-black/20 text-black focus:outline-none focus:border-black text-lg"
           />
         </div>
@@ -153,8 +180,10 @@ export default function AsawaControls({
             type="number"
             id="asawa-randomSeed"
             min={0}
-            value={randomSeed}
-            onChange={(e) => onChange({ randomSeed: Math.max(0, parseInt(e.target.value) || 0) })}
+            value={seedInput}
+            onChange={(e) => setSeedInput(e.target.value)}
+            onBlur={() => commitValue(seedInput, 0, null, 0, 'randomSeed', setSeedInput)}
+            onKeyDown={(e) => { if (e.key === 'Enter') commitValue(seedInput, 0, null, 0, 'randomSeed', setSeedInput) }}
             className="w-full px-4 py-3 bg-white border border-black/20 text-black focus:outline-none focus:border-black text-lg"
           />
         </div>
