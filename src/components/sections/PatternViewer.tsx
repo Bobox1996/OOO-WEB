@@ -26,6 +26,7 @@ export interface PatternViewerProps {
   sloganFont?: string
   sloganWeight?: number
   sloganColor?: string
+  weightRandom?: boolean
   rotationRandom?: number
   positionRandom?: number
   randomSeed?: number
@@ -88,11 +89,22 @@ function recolorSvg(svgContent: string, fillColor: string, strokeColor: string, 
     }
   }
 
+  const styleEls = svg.querySelectorAll('style')
+  for (const styleEl of styleEls) {
+    let css = styleEl.textContent || ''
+    css = css.replace(/fill\s*:\s*(?!none|transparent)[^;}"']+/gi, `fill:${fillColor}`)
+    if (strokeColor !== 'none') {
+      css = css.replace(/stroke\s*:\s*(?!none|transparent)[^;}"']+/gi, `stroke:${strokeColor}`)
+    }
+    css = css.replace(/stroke-width\s*:\s*[^;}"']+/gi, `stroke-width:${sw}`)
+    styleEl.textContent = css
+  }
+
   return svg.innerHTML
 }
 
 const PatternViewer = forwardRef<SVGSVGElement, PatternViewerProps>(
-  ({ columns, rows, strokeWeight, strokeColor, slogan = '', sloganFont = 'var(--font-inter), Inter, sans-serif', sloganWeight = 400, sloganColor = '#000000', rotationRandom = 0, positionRandom = 0, randomSeed = 0, cellSize = 50, logoOverlay, logoSelected }, ref) => {
+  ({ columns, rows, strokeWeight, strokeColor, slogan = '', sloganFont = 'var(--font-inter), Inter, sans-serif', sloganWeight = 400, sloganColor = '#000000', weightRandom = false, rotationRandom = 0, positionRandom = 0, randomSeed = 0, cellSize = 50, logoOverlay, logoSelected }, ref) => {
     const gridWidth = columns * cellSize
     const gridHeight = rows * cellSize
     const fontSize = cellSize * 0.6
@@ -157,6 +169,10 @@ const PatternViewer = forwardRef<SVGSVGElement, PatternViewerProps>(
           ? (seededRandom(charSeed + 6271) * 2 - 1) * positionRandom * cellSize
           : 0
 
+        const charWeight = weightRandom
+          ? (Math.round(seededRandom(charSeed + 4217) * 9) + 1) * 100
+          : sloganWeight
+
         const needsTransform = angle !== 0 || offsetX !== 0 || offsetY !== 0
 
         textElements.push(
@@ -165,7 +181,7 @@ const PatternViewer = forwardRef<SVGSVGElement, PatternViewerProps>(
             x={vx}
             y={vy}
             fontFamily={sloganFont}
-            fontWeight={sloganWeight}
+            fontWeight={charWeight}
             fontSize={fontSize}
             fill={sloganColor}
             textAnchor="middle"

@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import ColorPalettePicker from './ColorPalettePicker'
 
 export interface MetaballParams {
   totalPoints: number
@@ -58,60 +59,92 @@ export default function MetaballControls({ params, onChange }: MetaballControlsP
   return (
     <div className="space-y-8">
       {/* ── Point generation inputs ──────────────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+      <div className="space-y-6">
         {/* Total Points */}
-        <div className="flex flex-col">
+        <div>
           <label
             htmlFor="totalPoints"
-            className="text-sm uppercase tracking-wider text-neutral-500 mb-2 min-h-[2.5rem] flex items-end"
+            className="block text-sm uppercase tracking-wider text-neutral-500 mb-2"
           >
             Total Points
           </label>
-          <input
-            type="number"
-            id="totalPoints"
-            min={2}
-            max={200}
-            value={totalPointsInput}
-            onChange={(e) => setTotalPointsInput(e.target.value)}
-            onBlur={commitTotalPoints}
-            onKeyDown={(e) => { if (e.key === 'Enter') commitTotalPoints() }}
-            className="w-full px-4 py-3 bg-white border border-black/20 text-black focus:outline-none focus:border-black text-lg"
-          />
+          <div className="flex items-center gap-4">
+            <input
+              type="range"
+              min={2}
+              max={200}
+              step={1}
+              value={totalPoints}
+              onChange={(e) => {
+                const val = parseInt(e.target.value)
+                const newChargeCount = Math.min(chargeCount, val - 1)
+                setTotalPointsInput(String(val))
+                if (newChargeCount !== chargeCount) setChargeCountInput(String(newChargeCount))
+                onChange({ totalPoints: val, chargeCount: newChargeCount })
+              }}
+              className="flex-1 h-2 bg-neutral-200 rounded-lg appearance-none cursor-pointer accent-black"
+            />
+            <input
+              type="number"
+              id="totalPoints"
+              min={2}
+              max={200}
+              value={totalPointsInput}
+              onChange={(e) => setTotalPointsInput(e.target.value)}
+              onBlur={commitTotalPoints}
+              onKeyDown={(e) => { if (e.key === 'Enter') commitTotalPoints() }}
+              className="w-20 px-3 py-2 text-center text-sm bg-white border border-black/20 text-black focus:outline-none focus:border-black"
+            />
+          </div>
           <span className="text-xs text-neutral-400 mt-1 block">
             Points in 20x20 box
           </span>
         </div>
 
         {/* Charge Count */}
-        <div className="flex flex-col">
+        <div>
           <label
             htmlFor="chargeCount"
-            className="text-sm uppercase tracking-wider text-neutral-500 mb-2 min-h-[2.5rem] flex items-end"
+            className="block text-sm uppercase tracking-wider text-neutral-500 mb-2"
           >
             Charge Count (P)
           </label>
-          <input
-            type="number"
-            id="chargeCount"
-            min={1}
-            max={totalPoints - 1}
-            value={chargeCountInput}
-            onChange={(e) => setChargeCountInput(e.target.value)}
-            onBlur={commitChargeCount}
-            onKeyDown={(e) => { if (e.key === 'Enter') commitChargeCount() }}
-            className="w-full px-4 py-3 bg-white border border-black/20 text-black focus:outline-none focus:border-black text-lg"
-          />
+          <div className="flex items-center gap-4">
+            <input
+              type="range"
+              min={1}
+              max={totalPoints - 1}
+              step={1}
+              value={chargeCount}
+              onChange={(e) => {
+                const val = parseInt(e.target.value)
+                setChargeCountInput(String(val))
+                onChange({ chargeCount: val })
+              }}
+              className="flex-1 h-2 bg-neutral-200 rounded-lg appearance-none cursor-pointer accent-black"
+            />
+            <input
+              type="number"
+              id="chargeCount"
+              min={1}
+              max={totalPoints - 1}
+              value={chargeCountInput}
+              onChange={(e) => setChargeCountInput(e.target.value)}
+              onBlur={commitChargeCount}
+              onKeyDown={(e) => { if (e.key === 'Enter') commitChargeCount() }}
+              className="w-20 px-3 py-2 text-center text-sm bg-white border border-black/20 text-black focus:outline-none focus:border-black"
+            />
+          </div>
           <span className="text-xs text-neutral-400 mt-1 block">
             Remaining {Math.max(0, totalPoints - chargeCount)} = pass-through
           </span>
         </div>
 
         {/* Seed */}
-        <div className="flex flex-col">
+        <div>
           <label
             htmlFor="seed"
-            className="text-sm uppercase tracking-wider text-neutral-500 mb-2 min-h-[2.5rem] flex items-end"
+            className="block text-sm uppercase tracking-wider text-neutral-500 mb-2"
           >
             Seed
           </label>
@@ -203,6 +236,7 @@ export default function MetaballControls({ params, onChange }: MetaballControlsP
             />
             <span className="text-sm text-neutral-600 uppercase">{strokeColor}</span>
           </div>
+          <ColorPalettePicker onSelectColor={(hex) => onChange({ strokeColor: hex })} />
         </div>
       </div>
 
@@ -226,15 +260,20 @@ export default function MetaballControls({ params, onChange }: MetaballControlsP
               {fillSetIndex === -1 ? 'None' : `#${fillSetIndex}`}
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="color"
-              value={fillColor}
-              onChange={(e) => onChange({ fillColor: e.target.value })}
-              className="w-12 h-12 border border-black/20 cursor-pointer bg-white p-1"
-              disabled={fillSetIndex === -1}
-            />
-            <span className="text-sm text-neutral-600 uppercase">{fillColor}</span>
+          <div>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                value={fillColor}
+                onChange={(e) => onChange({ fillColor: e.target.value })}
+                className="w-12 h-12 border border-black/20 cursor-pointer bg-white p-1"
+                disabled={fillSetIndex === -1}
+              />
+              <span className="text-sm text-neutral-600 uppercase">{fillColor}</span>
+            </div>
+            {fillSetIndex !== -1 && (
+              <ColorPalettePicker onSelectColor={(hex) => onChange({ fillColor: hex })} />
+            )}
           </div>
         </div>
       </div>

@@ -7,6 +7,7 @@ import PatternViewer from '@/components/sections/PatternViewer'
 import MetaballViewer from '@/components/sections/MetaballViewer'
 import AsawaViewer, { AsawaLogoOverlay } from '@/components/sections/AsawaViewer'
 import PixelizerViewer, { PixelizerLogoOverlay, PixelInfo } from '@/components/sections/PixelizerViewer'
+import WavePatternViewer, { WAVE_DEFAULTS, WaveLogoData } from '@/components/sections/WavePatternViewer'
 import { generatePoints } from '@/lib/utils/metaball.utils'
 import { parseSvg } from '@/components/sections/LogoImport'
 import { createClient } from '@/services/supabase/client'
@@ -81,34 +82,6 @@ const METABALL_DEFAULTS = {
   fillColor: '#F0EEE9',
 }
 
-function WavePreviewCard() {
-  const gridSize = 16
-  const dots: { cx: number; cy: number; r: number }[] = []
-  for (let j = 0; j < gridSize; j++) {
-    for (let i = 0; i < gridSize; i++) {
-      const nx = i / (gridSize - 1)
-      const ny = j / (gridSize - 1)
-      const x = nx * 100
-      const y = ny * 100
-      const wave =
-        Math.sin(nx * 4 + 0.5) * 0.5 +
-        Math.cos(ny * 3 + 0.3) * 0.3 +
-        Math.sin(Math.sqrt(nx * nx + ny * ny) * 5) * 0.2
-      const size = 1.2 + wave * 1.0
-      dots.push({ cx: x, cy: y, r: Math.max(0.4, size) })
-    }
-  }
-  return (
-    <div className="w-full h-full bg-black flex items-center justify-center p-4">
-      <svg viewBox="-5 -5 110 110" className="w-full h-full">
-        {dots.map((d, i) => (
-          <circle key={i} cx={d.cx} cy={d.cy} r={d.r} fill="white" />
-        ))}
-      </svg>
-    </div>
-  )
-}
-
 export default function SelectDesignerPage() {
   const router = useRouter()
   const supabase = createClient()
@@ -121,6 +94,7 @@ export default function SelectDesignerPage() {
   const [asawaCoverLogo, setAsawaCoverLogo] = useState<AsawaLogoOverlay | null>(null)
   const [pixelizerCoverData, setPixelizerCoverData] = useState<{ pixelData: PixelInfo[][]; cols: number; rows: number } | null>(null)
   const [pixelizerCoverLogo, setPixelizerCoverLogo] = useState<PixelizerLogoOverlay | null>(null)
+  const [waveCoverLogo, setWaveCoverLogo] = useState<WaveLogoData | null>(null)
 
   useEffect(() => {
     const fetchCoverLogo = async () => {
@@ -149,6 +123,13 @@ export default function SelectDesignerPage() {
               svgContent: innerContent,
               strokeColor: defaultStroke,
               strokeWidth: defaultStrokeWidth,
+              nativeWidth: width,
+              nativeHeight: height,
+              nativeMinX: minX,
+              nativeMinY: minY,
+            })
+            setWaveCoverLogo({
+              svgContent: innerContent,
               nativeWidth: width,
               nativeHeight: height,
               nativeMinX: minX,
@@ -326,12 +307,12 @@ export default function SelectDesignerPage() {
                     />
                   ) : designer.id === 'color-themer' ? (
                     <div className="w-full h-full flex flex-col">
-                      {['#303B41', '#1A241D', '#374F38', '#C8DADE', '#90A5A8'].map((c) => (
+                      {['#2A2A19', '#9C606F', '#584245', '#A8C5E3', '#616326', '#7E81A1'].map((c) => (
                         <div key={c} className="flex-1" style={{ backgroundColor: c }} />
                       ))}
                     </div>
                   ) : designer.id === 'wave-pattern' ? (
-                    <WavePreviewCard />
+                    <WavePatternViewer params={WAVE_DEFAULTS} logoData={waveCoverLogo} />
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-neutral-300">
                       <svg

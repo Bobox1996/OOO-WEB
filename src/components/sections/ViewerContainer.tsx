@@ -168,7 +168,7 @@ function DraggableContent({
       const dy = svgPt.y - logoOverlay.y
       const newDistance = Math.sqrt(dx * dx + dy * dy) || 1
       const ratio = newDistance / initialDistance.current
-      onLogoScale(Math.max(0.005, initialScale.current * ratio))
+      onLogoScale(Math.max(0.0001, initialScale.current * ratio))
     }
 
     if (mode.current === 'rotate' && onLogoRotate) {

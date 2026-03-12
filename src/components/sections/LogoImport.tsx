@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { AppUserLogo } from '@/types'
+import ColorPalettePicker from './ColorPalettePicker'
 
 export interface LogoOverlay {
   svgContent: string
@@ -224,6 +225,7 @@ export default function LogoImport({
                   className="w-full h-9 border border-black/20 cursor-pointer bg-white p-0.5"
                   title="Fill color"
                 />
+                <ColorPalettePicker onSelectColor={(hex) => onLogoOverlayChange({ ...logoOverlay, fillColor: hex })} />
               </div>
             )}
             <div>
@@ -235,6 +237,7 @@ export default function LogoImport({
                 className="w-full h-9 border border-black/20 cursor-pointer bg-white p-0.5"
                 title="Stroke color"
               />
+              <ColorPalettePicker onSelectColor={(hex) => onLogoOverlayChange({ ...logoOverlay, strokeColor: hex })} />
             </div>
           </div>
 

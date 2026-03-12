@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import ColorPalettePicker from './ColorPalettePicker'
 
 export interface AsawaParams {
   rows: number
@@ -142,6 +143,7 @@ export default function AsawaControls({
             />
             <span className="text-sm text-neutral-600 uppercase">{strokeColor === 'transparent' ? 'none' : strokeColor}</span>
           </div>
+          <ColorPalettePicker onSelectColor={(hex) => onChange({ strokeColor: hex })} />
         </div>
       </div>
 

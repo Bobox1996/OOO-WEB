@@ -76,6 +76,17 @@ function prepareLogoForCurrentColor(svgContent: string, strokeColor: string, str
     }
   }
 
+  const styleEls = svg.querySelectorAll('style')
+  for (const styleEl of styleEls) {
+    let css = styleEl.textContent || ''
+    css = css.replace(/fill\s*:\s*(?!none|transparent)[^;}"']+/gi, 'fill:currentColor')
+    if (strokeColor !== 'none') {
+      css = css.replace(/stroke\s*:\s*(?!none|transparent)[^;}"']+/gi, `stroke:${strokeColor}`)
+    }
+    css = css.replace(/stroke-width\s*:\s*[^;}"']+/gi, `stroke-width:${strokeWidth}`)
+    styleEl.textContent = css
+  }
+
   return svg.innerHTML
 }
 

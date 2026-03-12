@@ -6,7 +6,7 @@ import AppNav from '@/components/layout/AppNav'
 import MetaballViewer from '@/components/sections/MetaballViewer'
 import MetaballControls, { MetaballParams } from '@/components/sections/MetaballControls'
 import ViewerContainer from '@/components/sections/ViewerContainer'
-import LogoImport, { LogoOverlay } from '@/components/sections/LogoImport'
+import LogoImport, { LogoOverlay, parseSvg } from '@/components/sections/LogoImport'
 import { generatePoints } from '@/lib/utils/metaball.utils'
 import { createClient } from '@/services/supabase/client'
 import { AppMetaballPattern, AppUserLogo } from '@/types'
@@ -138,7 +138,11 @@ export default function MetaballPage() {
 
   const handleNext = async () => {
     if (!svgRef.current) return
+    setLogoSelected(false)
     setSaving(true)
+
+    await new Promise((resolve) => requestAnimationFrame(resolve))
+
     const serializer = new XMLSerializer()
     const svgString = serializer.serializeToString(svgRef.current)
     const base64 = btoa(unescape(encodeURIComponent(svgString)))
@@ -169,6 +173,12 @@ export default function MetaballPage() {
         accuracy: params.accuracy,
         stroke_weight: params.strokeWeight,
         stroke_color: params.strokeColor,
+        fill_set_index: params.fillSetIndex,
+        fill_color: params.fillColor,
+        logo_url: logoOverlay?.url || null,
+        logo_fill_color: logoOverlay?.fillColor || null,
+        logo_stroke_color: logoOverlay?.strokeColor || null,
+        logo_stroke_width: logoOverlay?.strokeWidth ?? null,
         svg_preview: base64,
         pinned: false,
       }).select('id').single()
@@ -186,7 +196,7 @@ export default function MetaballPage() {
     router.push('/app/design')
   }
 
-  const handleLoadPattern = (pattern: AppMetaballPattern) => {
+  const handleLoadPattern = async (pattern: AppMetaballPattern) => {
     setParams((prev) => ({
       ...prev,
       totalPoints: pattern.total_points,
@@ -195,7 +205,40 @@ export default function MetaballPage() {
       accuracy: pattern.accuracy,
       strokeWeight: pattern.stroke_weight,
       strokeColor: pattern.stroke_color,
+      fillSetIndex: pattern.fill_set_index,
+      fillColor: pattern.fill_color,
     }))
+
+    if (pattern.logo_url) {
+      try {
+        const response = await fetch(pattern.logo_url)
+        const svgText = await response.text()
+        const { innerContent, width, height, minX, minY } = parseSvg(svgText)
+        if (innerContent) {
+          const targetSize = Math.min(viewerDimensions.width, viewerDimensions.height) / 6
+          const initialScale = targetSize / Math.max(width, height)
+          setLogoOverlay({
+            svgContent: innerContent,
+            url: pattern.logo_url,
+            x: viewerDimensions.width / 2,
+            y: viewerDimensions.height / 2,
+            scale: initialScale,
+            rotation: 0,
+            fillColor: pattern.logo_fill_color || '#000000',
+            strokeColor: pattern.logo_stroke_color || 'none',
+            strokeWidth: pattern.logo_stroke_width ?? 0,
+            nativeWidth: width,
+            nativeHeight: height,
+            nativeMinX: minX,
+            nativeMinY: minY,
+          })
+        }
+      } catch (err) {
+        console.error('Failed to restore logo overlay:', err)
+      }
+    } else {
+      setLogoOverlay(null)
+    }
   }
 
   const handleTogglePin = async (pattern: AppMetaballPattern) => {

@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import ColorPalettePicker from './ColorPalettePicker'
 
 export const FONT_OPTIONS = [
   { label: 'Zilla Slab', value: 'var(--font-zilla-slab), "Zilla Slab", serif' },
@@ -19,6 +20,7 @@ export interface GridParams {
   sloganFont: string
   sloganWeight: number
   sloganColor: string
+  weightRandom: boolean
   rotationRandom: number
   positionRandom: number
   randomSeed: number
@@ -33,6 +35,7 @@ interface PatternControlsProps {
   sloganFont: string
   sloganWeight: number
   sloganColor: string
+  weightRandom: boolean
   rotationRandom: number
   positionRandom: number
   randomSeed: number
@@ -48,6 +51,7 @@ export default function PatternControls({
   sloganFont,
   sloganWeight,
   sloganColor,
+  weightRandom,
   rotationRandom,
   positionRandom,
   randomSeed,
@@ -139,6 +143,7 @@ export default function PatternControls({
             />
             <span className="text-sm text-neutral-600 uppercase">{strokeColor}</span>
           </div>
+          <ColorPalettePicker onSelectColor={(hex) => onChange({ strokeColor: hex })} />
         </div>
       </div>
 
@@ -205,6 +210,22 @@ export default function PatternControls({
             />
             <span className="text-sm text-neutral-600 w-12 text-right">{sloganWeight}</span>
           </div>
+          <div className="flex items-center justify-between mt-2">
+            <span className="text-xs uppercase tracking-wider text-neutral-400">Randomize</span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={weightRandom}
+              onClick={() => onChange({ weightRandom: !weightRandom })}
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                weightRandom ? 'bg-black' : 'bg-neutral-300'
+              }`}
+            >
+              <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${
+                weightRandom ? 'translate-x-4' : 'translate-x-0.5'
+              }`} />
+            </button>
+          </div>
         </div>
 
         {/* Text Color */}
@@ -225,6 +246,7 @@ export default function PatternControls({
             />
             <span className="text-sm text-neutral-600 uppercase">{sloganColor}</span>
           </div>
+          <ColorPalettePicker onSelectColor={(hex) => onChange({ sloganColor: hex })} />
         </div>
       </div>
 

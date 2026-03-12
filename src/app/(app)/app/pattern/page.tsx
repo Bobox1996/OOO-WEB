@@ -6,7 +6,7 @@ import AppNav from '@/components/layout/AppNav'
 import PatternViewer from '@/components/sections/PatternViewer'
 import PatternControls, { GridParams, FONT_OPTIONS } from '@/components/sections/PatternControls'
 import ViewerContainer from '@/components/sections/ViewerContainer'
-import LogoImport, { LogoOverlay } from '@/components/sections/LogoImport'
+import LogoImport, { LogoOverlay, parseSvg } from '@/components/sections/LogoImport'
 import { createClient } from '@/services/supabase/client'
 import { AppPattern, AppUserLogo } from '@/types'
 
@@ -24,6 +24,7 @@ export default function PatternPage() {
     sloganFont: FONT_OPTIONS[0].value,
     sloganWeight: 800,
     sloganColor: '#000000',
+    weightRandom: false,
     rotationRandom: 20,
     positionRandom: 0.2,
     randomSeed: 0,
@@ -113,7 +114,11 @@ export default function PatternPage() {
 
   const handleNext = async () => {
     if (!svgRef.current) return
+    setLogoSelected(false)
     setSaving(true)
+
+    await new Promise((resolve) => requestAnimationFrame(resolve))
+
     const serializer = new XMLSerializer()
     const svgString = serializer.serializeToString(svgRef.current)
     const base64 = btoa(unescape(encodeURIComponent(svgString)))
@@ -143,8 +148,17 @@ export default function PatternPage() {
         stroke_weight: params.strokeWeight,
         stroke_color: params.strokeColor,
         slogan: params.slogan || null,
+        slogan_font: params.sloganFont,
         slogan_weight: params.sloganWeight,
         slogan_color: params.sloganColor,
+        weight_random: params.weightRandom,
+        rotation_random: params.rotationRandom,
+        position_random: params.positionRandom,
+        random_seed: params.randomSeed,
+        logo_url: logoOverlay?.url || null,
+        logo_fill_color: logoOverlay?.fillColor || null,
+        logo_stroke_color: logoOverlay?.strokeColor || null,
+        logo_stroke_width: logoOverlay?.strokeWidth ?? null,
         svg_preview: base64,
         pinned: false,
       }).select('id').single()
@@ -162,20 +176,53 @@ export default function PatternPage() {
     router.push('/app/design')
   }
 
-  const handleLoadPattern = (pattern: AppPattern) => {
+  const handleLoadPattern = async (pattern: AppPattern) => {
     setParams({
       columns: pattern.columns,
       rows: pattern.rows,
       strokeWeight: pattern.stroke_weight,
       strokeColor: pattern.stroke_color,
       slogan: pattern.slogan || '',
-      sloganFont: FONT_OPTIONS[0].value,
+      sloganFont: pattern.slogan_font || FONT_OPTIONS[0].value,
       sloganWeight: pattern.slogan_weight || 400,
       sloganColor: pattern.slogan_color || '#000000',
-      rotationRandom: 0,
-      positionRandom: 0,
-      randomSeed: 0,
+      weightRandom: pattern.weight_random,
+      rotationRandom: pattern.rotation_random,
+      positionRandom: pattern.position_random,
+      randomSeed: pattern.random_seed,
     })
+
+    if (pattern.logo_url) {
+      try {
+        const response = await fetch(pattern.logo_url)
+        const svgText = await response.text()
+        const { innerContent, width, height, minX, minY } = parseSvg(svgText)
+        if (innerContent) {
+          const dims = getViewerDimensions()
+          const targetSize = Math.min(dims.width, dims.height) / 6
+          const initialScale = targetSize / Math.max(width, height)
+          setLogoOverlay({
+            svgContent: innerContent,
+            url: pattern.logo_url,
+            x: dims.width / 2,
+            y: dims.height / 2,
+            scale: initialScale,
+            rotation: 0,
+            fillColor: pattern.logo_fill_color || '#000000',
+            strokeColor: pattern.logo_stroke_color || 'none',
+            strokeWidth: pattern.logo_stroke_width ?? 0,
+            nativeWidth: width,
+            nativeHeight: height,
+            nativeMinX: minX,
+            nativeMinY: minY,
+          })
+        }
+      } catch (err) {
+        console.error('Failed to restore logo overlay:', err)
+      }
+    } else {
+      setLogoOverlay(null)
+    }
   }
 
   const handleTogglePin = async (pattern: AppPattern) => {
@@ -252,6 +299,7 @@ export default function PatternPage() {
                     sloganFont={params.sloganFont}
                     sloganWeight={params.sloganWeight}
                     sloganColor={params.sloganColor}
+                    weightRandom={params.weightRandom}
                     rotationRandom={params.rotationRandom}
                     positionRandom={params.positionRandom}
                     randomSeed={params.randomSeed}
@@ -277,6 +325,7 @@ export default function PatternPage() {
                   sloganFont={params.sloganFont}
                   sloganWeight={params.sloganWeight}
                   sloganColor={params.sloganColor}
+                  weightRandom={params.weightRandom}
                   rotationRandom={params.rotationRandom}
                   positionRandom={params.positionRandom}
                   randomSeed={params.randomSeed}

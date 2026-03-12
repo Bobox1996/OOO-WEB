@@ -82,6 +82,17 @@ function recolorSvg(svgContent: string, fillColor: string, strokeColor: string, 
     }
   }
 
+  const styleEls = svg.querySelectorAll('style')
+  for (const styleEl of styleEls) {
+    let css = styleEl.textContent || ''
+    css = css.replace(/fill\s*:\s*(?!none|transparent)[^;}"']+/gi, `fill:${fillColor}`)
+    if (strokeColor !== 'none') {
+      css = css.replace(/stroke\s*:\s*(?!none|transparent)[^;}"']+/gi, `stroke:${strokeColor}`)
+    }
+    css = css.replace(/stroke-width\s*:\s*[^;}"']+/gi, `stroke-width:${sw}`)
+    styleEl.textContent = css
+  }
+
   return svg.innerHTML
 }
 

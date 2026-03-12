@@ -154,6 +154,11 @@ export default function RuthAsawaPage() {
         rotation_random: params.rotationRandom,
         position_random: params.positionRandom,
         random_seed: params.randomSeed,
+        logo_url: logoOverlay?.url || null,
+        logo_fill_color: logoOverlay?.fillColor || null,
+        logo_stroke_color: logoOverlay?.strokeColor || null,
+        logo_stroke_width: logoOverlay?.strokeWidth ?? null,
+        fill_opacity_random: fillOpacityRandom,
         svg_preview: base64,
         pinned: false,
       }).select('id').single()
@@ -171,7 +176,7 @@ export default function RuthAsawaPage() {
     router.push('/app/design')
   }
 
-  const handleLoadPattern = (pattern: AppAsawaPattern) => {
+  const handleLoadPattern = async (pattern: AppAsawaPattern) => {
     setParams({
       columns: pattern.columns,
       rows: pattern.rows,
@@ -181,6 +186,37 @@ export default function RuthAsawaPage() {
       positionRandom: pattern.position_random,
       randomSeed: pattern.random_seed,
     })
+    setFillOpacityRandom(pattern.fill_opacity_random)
+
+    if (pattern.logo_url) {
+      try {
+        const response = await fetch(pattern.logo_url)
+        const svgText = await response.text()
+        const { innerContent, width, height, minX, minY } = parseSvg(svgText)
+        if (innerContent) {
+          const logoScale = CELL_SIZE / Math.max(width, height)
+          setLogoOverlay({
+            svgContent: innerContent,
+            url: pattern.logo_url,
+            x: 0,
+            y: 0,
+            scale: logoScale,
+            rotation: 0,
+            fillColor: pattern.logo_fill_color || '#000000',
+            strokeColor: pattern.logo_stroke_color || 'none',
+            strokeWidth: pattern.logo_stroke_width ?? 0,
+            nativeWidth: width,
+            nativeHeight: height,
+            nativeMinX: minX,
+            nativeMinY: minY,
+          })
+        }
+      } catch (err) {
+        console.error('Failed to restore logo overlay:', err)
+      }
+    } else {
+      setLogoOverlay(null)
+    }
   }
 
   const handleTogglePin = async (pattern: AppAsawaPattern) => {

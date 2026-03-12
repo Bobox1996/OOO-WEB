@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import AppNav from '@/components/layout/AppNav'
 import { createClient } from '@/services/supabase/client'
 import { extractThemeColors, type PaletteColor } from '@/lib/utils/extractThemeColors'
+import { getSavedPalettes, savePalette, deletePalette, type SavedPalette } from '@/lib/utils/colorPalettes'
 
 export default function ColorThemerPage() {
   const router = useRouter()
@@ -29,6 +30,28 @@ export default function ColorThemerPage() {
   const [generatedImages, setGeneratedImages] = useState<[string, string] | null>(null)
   const [genError, setGenError] = useState<string | null>(null)
   const [promptTemplate, setPromptTemplate] = useState<string | null>(null)
+
+  const [showSaveInput, setShowSaveInput] = useState(false)
+  const [paletteName, setPaletteName] = useState('')
+  const [savedPalettes, setSavedPalettes] = useState<SavedPalette[]>([])
+
+  useEffect(() => {
+    setSavedPalettes(getSavedPalettes())
+    const handler = () => setSavedPalettes(getSavedPalettes())
+    window.addEventListener('palettes-updated', handler)
+    return () => window.removeEventListener('palettes-updated', handler)
+  }, [])
+
+  const handleSavePalette = () => {
+    if (!paletteName.trim() || colors.length === 0) return
+    savePalette(paletteName.trim(), colors.map((c) => c.hex))
+    setPaletteName('')
+    setShowSaveInput(false)
+  }
+
+  const handleDeletePalette = (id: string) => {
+    deletePalette(id)
+  }
 
   const colors = useMemo(() => allColors.slice(0, targetCount), [allColors, targetCount])
 
@@ -560,6 +583,41 @@ export default function ColorThemerPage() {
                   >
                     {copiedIndex === -1 ? 'Copied All!' : 'Copy All as JSON'}
                   </button>
+
+                  {/* Save Palette */}
+                  {!showSaveInput ? (
+                    <button
+                      onClick={() => setShowSaveInput(true)}
+                      className="w-full py-3 bg-black text-white text-sm uppercase tracking-widest font-medium hover:bg-neutral-800 transition-colors"
+                    >
+                      Save Palette
+                    </button>
+                  ) : (
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={paletteName}
+                        onChange={(e) => setPaletteName(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') handleSavePalette() }}
+                        placeholder="Palette name..."
+                        className="flex-1 px-3 py-2.5 border border-black/10 text-sm focus:outline-none focus:border-black transition-colors placeholder:text-neutral-300"
+                        autoFocus
+                      />
+                      <button
+                        onClick={handleSavePalette}
+                        disabled={!paletteName.trim()}
+                        className="px-4 py-2.5 bg-black text-white text-xs uppercase tracking-widest font-medium hover:bg-neutral-800 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={() => { setShowSaveInput(false); setPaletteName('') }}
+                        className="px-3 py-2.5 border border-black/10 text-xs uppercase tracking-widest hover:border-black transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="aspect-square border border-dashed border-neutral-300 flex flex-col items-center justify-center gap-3 text-neutral-300">
@@ -569,6 +627,43 @@ export default function ColorThemerPage() {
                   <p className="text-sm text-neutral-400">
                     Upload an image to extract its color palette
                   </p>
+                </div>
+              )}
+
+              {/* Saved Palettes */}
+              {savedPalettes.length > 0 && (
+                <div className="space-y-3">
+                  <h2 className="text-sm uppercase tracking-widest font-medium">
+                    Saved Palettes
+                  </h2>
+                  <div className="border border-black/10 divide-y divide-black/10">
+                    {savedPalettes.map((palette) => (
+                      <div
+                        key={palette.id}
+                        className="flex items-center gap-3 px-4 py-3"
+                      >
+                        <div className="flex gap-1 flex-shrink-0">
+                          {palette.colors.map((c, i) => (
+                            <div
+                              key={i}
+                              className="w-5 h-5 border border-black/10"
+                              style={{ backgroundColor: c }}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-sm flex-1 truncate">{palette.name}</span>
+                        <button
+                          onClick={() => handleDeletePalette(palette.id)}
+                          className="w-6 h-6 flex items-center justify-center text-neutral-400 hover:text-red-500 transition-colors flex-shrink-0"
+                          title="Delete palette"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>

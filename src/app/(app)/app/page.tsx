@@ -135,8 +135,13 @@ export default function DashboardPage() {
         strokeWeight: String(pattern.stroke_weight),
         strokeColor: pattern.stroke_color,
         slogan: pattern.slogan || '',
+        sloganFont: pattern.slogan_font || '',
         sloganWeight: String(pattern.slogan_weight || 400),
         sloganColor: pattern.slogan_color || '#000000',
+        weightRandom: String(pattern.weight_random),
+        rotationRandom: String(pattern.rotation_random),
+        positionRandom: String(pattern.position_random),
+        randomSeed: String(pattern.random_seed),
       })
       router.push(`/app/pattern?${params.toString()}`)
     } else if (pattern.type === 'metaball') {
@@ -147,6 +152,8 @@ export default function DashboardPage() {
         accuracy: String(pattern.accuracy),
         strokeWeight: String(pattern.stroke_weight),
         strokeColor: pattern.stroke_color,
+        fillSetIndex: String(pattern.fill_set_index),
+        fillColor: pattern.fill_color,
       })
       router.push(`/app/metaball?${params.toString()}`)
     } else {

@@ -29,8 +29,17 @@ export interface AppPattern {
   stroke_weight: number
   stroke_color: string
   slogan: string | null
+  slogan_font: string | null
   slogan_weight: number | null
   slogan_color: string | null
+  weight_random: boolean
+  rotation_random: number
+  position_random: number
+  random_seed: number
+  logo_url: string | null
+  logo_fill_color: string | null
+  logo_stroke_color: string | null
+  logo_stroke_width: number | null
   svg_preview: string
   pinned: boolean
   created_at: string
@@ -45,6 +54,12 @@ export interface AppMetaballPattern {
   accuracy: number
   stroke_weight: number
   stroke_color: string
+  fill_set_index: number
+  fill_color: string
+  logo_url: string | null
+  logo_fill_color: string | null
+  logo_stroke_color: string | null
+  logo_stroke_width: number | null
   svg_preview: string
   pinned: boolean
   created_at: string
@@ -60,6 +75,11 @@ export interface AppAsawaPattern {
   rotation_random: number
   position_random: number
   random_seed: number
+  logo_url: string | null
+  logo_fill_color: string | null
+  logo_stroke_color: string | null
+  logo_stroke_width: number | null
+  fill_opacity_random: boolean
   svg_preview: string
   pinned: boolean
   created_at: string
