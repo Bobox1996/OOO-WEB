@@ -243,7 +243,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                       />
                     </div>
                     <div>
-                      <label className="block text-sm uppercase tracking-wider text-neutral-500 mb-2">Team</label>
+                      <label className="block text-sm uppercase tracking-wider text-neutral-500 mb-2">COLLABORATOR</label>
                       <input
                         type="text"
                         value={formData.team}

@@ -47,7 +47,7 @@ export default async function DashboardPage() {
               <p className="text-5xl font-bold tracking-tight">{imageCount || 0}</p>
             </div>
             <div className="bg-white p-8">
-              <p className="text-sm uppercase tracking-wider text-neutral-500 mb-2">Team</p>
+              <p className="text-sm uppercase tracking-wider text-neutral-500 mb-2">COLLABORATOR</p>
               <p className="text-5xl font-bold tracking-tight">{teamCount || 0}</p>
             </div>
             <div className="bg-white p-8">

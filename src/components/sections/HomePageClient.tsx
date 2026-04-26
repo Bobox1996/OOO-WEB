@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { useGravityTitle } from '@/hooks/useGravityTitle'
 import SwimmingTitle from '@/components/sections/SwimmingTitle'
 import ProjectImage from '@/components/sections/ProjectImage'
+import IntroCover from '@/components/intro/IntroCover'
+import { useSessionIntroFlag } from '@/components/intro/useSessionIntroFlag'
 
 interface ProjectWithImages {
   id: string
@@ -55,6 +57,7 @@ function shuffleWithPriority<T extends { title: string }>(projects: T[]): T[] {
 }
 
 export default function HomePageClient({ projects }: HomePageClientProps) {
+  const { isReady, hasSeen, markSeen } = useSessionIntroFlag('ooo_home_intro_seen')
   const [maxOffset, setMaxOffset] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
   const titleTextRef = useRef<HTMLHeadingElement>(null)
@@ -113,6 +116,14 @@ export default function HomePageClient({ projects }: HomePageClientProps) {
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [handleScroll])
+
+  if (!isReady) {
+    return null
+  }
+
+  if (!hasSeen) {
+    return <IntroCover onComplete={markSeen} durationMs={2000} />
+  }
 
   return (
     <>
