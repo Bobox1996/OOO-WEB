@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Roboto_Flex, Montserrat, Inter, IBM_Plex_Sans_Condensed, Barlow_Condensed, Zilla_Slab } from "next/font/google";
+import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 
 const robotoFlex = Roboto_Flex({
@@ -50,6 +51,7 @@ export default function RootLayout({
     <html lang="en" className={`${robotoFlex.variable} ${montserrat.variable} ${inter.variable} ${ibmPlexSansCondensed.variable} ${barlowCondensed.variable} ${zillaSlab.variable}`}>
       <body className="antialiased">
         {children}
+        <Analytics />
       </body>
     </html>
   );
