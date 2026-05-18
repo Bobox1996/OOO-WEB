@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback, forwardRef, useImperativeHandle, useMemo } from 'react'
+import Image from 'next/image'
 import type { TeamMember, TeamDescription } from '@/types'
 import { throttle, placeText, visualWidth, wrapText } from '@/lib/utils/grid.utils'
 
@@ -434,6 +435,25 @@ const TeamOField = forwardRef<TeamOFieldRef, TeamOFieldProps>(({ oCount, members
           })}
         </div>
       </div>
+
+      {/* Portrait overlay when member is selected */}
+      {selectedMember?.portrait_url && (
+        <div
+          className="fixed inset-x-0 bottom-0 pointer-events-none z-[150] px-6"
+          style={{ height: '70vh' }}
+        >
+          <div className="relative mx-auto h-full max-w-screen-2xl">
+            <Image
+              src={selectedMember.portrait_url}
+              alt={`${selectedMember.first_name} ${selectedMember.last_name}`}
+              fill
+              className="object-contain object-bottom"
+              sizes="(max-width: 1536px) 100vw, 1536px"
+              priority
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 })
