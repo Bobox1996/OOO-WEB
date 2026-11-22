@@ -2,6 +2,7 @@ export interface Project {
   id: string
   index: string | null
   title: string
+  project_year?: number | null
   description: string | null
   category: string | null
   cover_image_id: string | null

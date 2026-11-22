@@ -1,60 +1,19 @@
+'use client'
+
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 
-interface SiteHeaderProps {
-  variant?: 'default' | 'floating'
-  onTeamClick?: (e: React.MouseEvent) => void
-}
-
-export default function SiteHeader({ variant = 'default', onTeamClick }: SiteHeaderProps) {
-  if (variant === 'floating') {
-    return (
-      <nav className="fixed top-0 left-0 right-0 z-50 pointer-events-none">
-        <div className="flex items-center justify-between px-6 py-5">
-          <Link 
-            href="/" 
-            className="font-title text-2xl font-bold tracking-tight text-black pointer-events-auto hover:opacity-70 transition-opacity"
-          >
-            OOO
-          </Link>
-          <Link 
-            href="/" 
-            className="text-sm uppercase tracking-widest text-black pointer-events-auto hover:opacity-70 transition-opacity"
-          >
-            ← Back
-          </Link>
-        </div>
-      </nav>
-    )
-  }
-
-  // Default header
-  return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-black/10">
-      <div className="flex items-center justify-between px-6 py-4">
-        <Link href="/" className="font-title text-2xl font-bold tracking-tight">
-          OOO
-        </Link>
-        <nav className="flex items-center gap-8">
-          <Link href="/" className="text-sm uppercase tracking-widest hover:opacity-50 transition-opacity">
-            Works
-          </Link>
-          {onTeamClick ? (
-            <button 
-              onClick={onTeamClick}
-              className="text-sm uppercase tracking-widest hover:opacity-50 transition-opacity"
-            >
-              Team
-            </button>
-          ) : (
-            <Link href="/team" className="text-sm uppercase tracking-widest hover:opacity-50 transition-opacity">
-              Team
-            </Link>
-          )}
-          <Link href="/vision" className="text-sm uppercase tracking-widest hover:opacity-50 transition-opacity">
-            Vision
-          </Link>
-        </nav>
-      </div>
-    </header>
-  )
+export default function SiteHeader({ onTeamClick }: { onTeamClick?: (e: React.MouseEvent) => void }) {
+  const path = usePathname()
+  return <header className="studio-head">
+    <Link href="/" className="studio-brand" aria-label="Out Of Office Design home">
+      <span aria-hidden="true" className="ooo-mark"><i /><i /><i /></span>
+      <span>Out Of<br />Office Design</span>
+    </Link>
+    <nav aria-label="Main navigation">{[['/', 'Works'], ['/team', 'Team'], ['/vision', 'Vision']].map(([href, label]) =>
+      <Link key={href} href={href} onClick={href === '/team' ? onTeamClick : undefined}
+        aria-current={(href === '/' ? path === '/' || path.startsWith('/project/') : path === href) ? 'page' : undefined}>{label}</Link>
+    )}</nav>
+    <a className="head-contact" href="mailto:office@out-of-office.design">Contact <span>↗</span></a>
+  </header>
 }

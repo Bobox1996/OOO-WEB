@@ -30,6 +30,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const [editing, setEditing] = useState(false)
   const [formData, setFormData] = useState({ index: '', title: '', description: '', category: '', team: '' })
   const [saving, setSaving] = useState(false)
+  const [year, setYear] = useState('')
   const [settingCover, setSettingCover] = useState(false)
   const router = useRouter()
   const supabase = createClient()
@@ -58,6 +59,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
     if (projectData) {
       setProject(projectData)
+      setYear(projectData.project_year?.toString() || '')
       setFormData({
         index: projectData.index || '',
         title: projectData.title,
@@ -78,10 +80,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
   const updateProject = async () => {
     setSaving(true)
+    const yearChange = project && 'project_year' in project ? { project_year: year ? Number(year) : null } : {}
     const { error } = await supabase
       .from('projects')
       .update({
         index: formData.index || null,
+        ...yearChange,
         title: formData.title,
         description: formData.description || null,
         category: formData.category || null,
@@ -90,7 +94,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       .eq('id', id)
 
     if (!error) {
-      setProject({ ...project!, ...formData })
+      setProject({ ...project!, ...formData, ...yearChange })
       setEditing(false)
     }
     setSaving(false)
@@ -202,6 +206,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
               <div className="border border-black/10 p-6 sticky top-24">
                 {editing ? (
                   <div className="space-y-6">
+                    {'project_year' in project && <label className="block text-sm">
+                      Project year
+                      <input type="text" inputMode="numeric" pattern="[0-9]{4}" maxLength={4}
+                        className="block w-full px-3 py-3 bg-neutral-50 border border-black/10 mt-2"
+                        value={year} onChange={e => setYear(e.target.value.replace(/\D/g, ''))} />
+                    </label>}
                     <div>
                       <label className="block text-sm uppercase tracking-wider text-neutral-500 mb-2">Index</label>
                       <input
@@ -255,7 +265,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                     <div className="flex gap-3 pt-4">
                       <button
                         onClick={updateProject}
-                        disabled={saving}
+                        disabled={saving || (year !== '' && !/^[1-9]\d{3}$/.test(year))}
                         className="flex-1 py-3 bg-black text-white text-xs uppercase tracking-widest hover:bg-neutral-800 transition-colors disabled:opacity-50"
                       >
                         {saving ? 'Saving...' : 'Save'}

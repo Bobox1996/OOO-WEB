@@ -1,25 +1,14 @@
+import Link from 'next/link'
 import { createClient } from '@/services/supabase/server'
-import VisionPageClient from '@/components/sections/VisionPageClient'
-import type { VisionContent } from '@/types'
 
-const O_COUNT = 4000
+export const metadata = { title: 'Vision | Out Of Office Design' }
 
 export default async function VisionPage() {
   const supabase = await createClient()
-  
-  const { data: visionData } = await supabase
-    .from('vision_content')
-    .select('*')
-    .limit(1)
-    .single()
-
-  const vision = visionData as VisionContent | null
-  const visionContent = vision?.content || ''
-
-  return (
-    <div className="h-screen overflow-hidden bg-white">
-      {/* Client component handles header, scroll-synced title and O-field */}
-      <VisionPageClient oCount={O_COUNT} visionContent={visionContent} />
-    </div>
-  )
+  const { data, error } = await supabase.from('vision_content').select('content').limit(1).maybeSingle()
+  return <main className="folio-page"><Link className="back-link" href="/">← Project index</Link>
+    <div className="folio-heading"><h1>Vision</h1></div>
+    {data?.content && <p className="studio-copy">{data.content}</p>}
+    {error && <p className="catalog-empty">The studio statement could not be loaded. Please refresh to try again.</p>}
+  </main>
 }
