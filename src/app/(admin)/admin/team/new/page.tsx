@@ -108,7 +108,7 @@ export default function NewTeamMemberPage() {
             </button>
           </div>
 
-          <h1 className="text-[clamp(2rem,5vw,4rem)] font-bold leading-[0.95] tracking-tighter uppercase mb-12">
+          <h1 className="text-display font-semibold leading-tight tracking-tight uppercase mb-12">
             New Member
           </h1>
 

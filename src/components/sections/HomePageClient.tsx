@@ -52,7 +52,7 @@ export default function HomePageClient({ projects, unavailable, children }: {
               <AsciiCover key={preview.id} src={preview.cover?.url} title={preview.title} />
               <span className="check-key">CHECK <b>↗</b></span>
             </Link>
-            <div className="preview-caption" aria-live="polite"><span>{preview.title}</span><span>Color ASCII</span></div>
+            <div className="preview-caption" aria-live="polite"><span>{preview.title}</span><span>ASCII overlay</span></div>
           </div>
         </div> : <p className="catalog-empty">{unavailable ? 'The project index could not be loaded. Please refresh to try again.' : 'No projects have been published yet.'}</p>}
       </section>

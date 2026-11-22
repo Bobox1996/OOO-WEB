@@ -159,7 +159,7 @@ function AppLoginForm() {
       <div className="flex-1 flex items-center justify-center px-6">
         <div className="w-full max-w-md">
           <div className="mb-12">
-            <h1 className="text-[clamp(2rem,5vw,3.5rem)] font-bold leading-[0.95] tracking-tighter uppercase">
+            <h1 className="text-display font-semibold leading-tight tracking-tight uppercase">
               APP
               <br />
               Login

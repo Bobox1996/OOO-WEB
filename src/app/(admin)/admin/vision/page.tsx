@@ -121,7 +121,7 @@ export default function AdminVisionPage() {
           {/* Header */}
           <div className="flex items-end justify-between mb-12">
             <div>
-              <h1 className="text-[clamp(2rem,5vw,4rem)] font-bold leading-[0.95] tracking-tighter uppercase">
+              <h1 className="text-display font-semibold leading-tight tracking-tight uppercase">
                 Vision
               </h1>
               <p className="text-neutral-500 mt-4 text-lg">Edit the vision statement</p>

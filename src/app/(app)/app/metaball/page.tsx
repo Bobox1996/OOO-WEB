@@ -265,7 +265,7 @@ export default function MetaballPage() {
           {/* Header */}
           <div className="mb-8">
             <div className="flex items-center justify-between">
-              <h1 className="text-[clamp(2rem,5vw,4rem)] font-bold leading-[0.95] tracking-tighter uppercase">
+              <h1 className="text-display font-semibold leading-tight tracking-tight uppercase">
                 Metaball
                 <br />
                 Isocurve

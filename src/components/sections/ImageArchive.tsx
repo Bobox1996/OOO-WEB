@@ -29,7 +29,7 @@ export default function ImageArchive({ projects, seed }: { projects: CatalogProj
         return <div className="archive-cell" key={image.id}>
           <Link href={'/project/' + project.id} prefetch={false} aria-label={'Open ' + project.title}
             className={'archive-print' + (cover ? ' cover-print' : '')}
-            style={{ width: size + '%', marginInlineStart: ((100 - size) * inset) + '%', marginTop: (drop * 8) + 'vw' }}>
+            style={{ width: size + '%', marginInlineStart: ((100 - size) * inset) + '%', marginTop: 'calc(' + drop + ' * var(--archive-drop))' }}>
             <Image src={image.url} alt={project.title} width={1000} height={750}
               sizes="(max-width: 650px) 90vw, 48vw" loading="lazy" />
           </Link>

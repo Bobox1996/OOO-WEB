@@ -188,7 +188,7 @@ export default function DashboardPage() {
         <div className="max-w-screen-xl mx-auto">
           {/* Header */}
           <div className="mb-16">
-            <h1 className="text-[clamp(2rem,5vw,4rem)] font-bold leading-[0.95] tracking-tighter uppercase">
+            <h1 className="text-display font-semibold leading-tight tracking-tight uppercase">
               Dashboard
             </h1>
             <p className="text-neutral-500 mt-4 text-lg">
@@ -256,7 +256,7 @@ export default function DashboardPage() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
                       </button>
-                      <p className="absolute bottom-0 left-0 right-0 bg-white/80 text-[10px] text-neutral-500 px-1 py-0.5 truncate opacity-0 group-hover:opacity-100 transition-opacity">
+                      <p className="absolute bottom-0 left-0 right-0 bg-white/80 text-xs text-neutral-500 px-1 py-0.5 truncate opacity-0 group-hover:opacity-100 transition-opacity">
                         {logo.filename}
                       </p>
                     </div>
@@ -300,7 +300,7 @@ export default function DashboardPage() {
                           }}
                         />
                       </button>
-                      <span className="absolute bottom-1 left-1 text-[9px] uppercase tracking-wider bg-black/60 text-white px-1.5 py-0.5 rounded">
+                      <span className="absolute bottom-1 left-1 text-xs uppercase tracking-wider bg-black/60 text-white px-1.5 py-0.5 rounded">
                         {pattern.type === 'pattern' ? 'Lattice' : pattern.type === 'metaball' ? 'Metaball' : 'Asawa'}
                       </span>
                       <button

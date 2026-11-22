@@ -30,7 +30,7 @@ export default async function DashboardPage() {
         <div className="max-w-screen-xl mx-auto">
           {/* Header */}
           <div className="mb-12">
-            <h1 className="text-[clamp(2rem,5vw,4rem)] font-bold leading-[0.95] tracking-tighter uppercase">
+            <h1 className="text-display font-semibold leading-tight tracking-tight uppercase">
               Dashboard
             </h1>
             <p className="text-neutral-500 mt-4 text-lg">Portfolio overview</p>

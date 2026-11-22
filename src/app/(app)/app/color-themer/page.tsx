@@ -246,7 +246,7 @@ export default function ColorThemerPage() {
             >
               &larr; Back to Design Models
             </button>
-            <h1 className="text-[clamp(2rem,5vw,4rem)] font-bold leading-[0.95] tracking-tighter uppercase">
+            <h1 className="text-display font-semibold leading-tight tracking-tight uppercase">
               Color
               <br />
               Themer
@@ -507,7 +507,7 @@ export default function ColorThemerPage() {
                   onChange={(e) => setTargetCount(Number(e.target.value))}
                   className="w-full accent-black"
                 />
-                <div className="flex justify-between text-[10px] text-neutral-400 font-mono">
+                <div className="flex justify-between text-xs text-neutral-400 font-mono">
                   <span>1</span>
                   <span>2</span>
                   <span>3</span>

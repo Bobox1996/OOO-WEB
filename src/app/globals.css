@@ -6,11 +6,28 @@
   --accent: #000000;
   --muted: #666666;
   --border: #e5e5e5;
-  /* Title font — keep in sync with FONT_TITLE in src/lib/fonts.ts */
-  --font-title: var(--font-montserrat), "ITC Avant Garde Gothic", "Avant Garde Gothic", "Century Gothic", "Futura", sans-serif;
+  --studio-font: var(--font-inter), Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-title: var(--studio-font);
+  --type-display: 2.125rem;
+  --type-body: 1rem;
+  --type-caption: .75rem;
+}
+
+@media (max-width: 760px) {
+  :root { --type-display: 1.875rem; }
 }
 
 @theme inline {
+  --font-sans: var(--studio-font);
+  --font-mono: var(--studio-font);
+  --text-display: var(--type-display);
+  --text-xs: var(--type-caption);
+  --text-sm: var(--type-caption);
+  --text-base: var(--type-body);
+  --text-lg: var(--type-body);
+  --text-xl: var(--type-body);
+  --text-2xl: var(--type-display);
+  --text-5xl: var(--type-display);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
 }
@@ -26,7 +43,8 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: var(--studio-font);
+  font-size: var(--type-body);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

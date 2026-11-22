@@ -7,5 +7,8 @@ import { useState } from 'react'
 export default function PortfolioImage(props: ImageProps) {
   const [original, setOriginal] = useState<ImageProps['src'] | null>(null)
   return <Image {...props} alt={props.alt} unoptimized={original === props.src}
-    onError={() => setOriginal(props.src)} />
+    onError={event => {
+      if (original === props.src) props.onError?.(event)
+      else setOriginal(props.src)
+    }} />
 }
