@@ -31,6 +31,12 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 
 ## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Out Of Office Design uses Vercel’s GitHub integration. The `main` branch of [Bobox1996/OOO-WEB](https://github.com/Bobox1996/OOO-WEB) supplies the existing Vercel project `ooo-web`. Its build root is the repository root, the directory containing `package.json`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. In GitHub Desktop, use **File → Add local repository** to select `C:\OOO\OOO WEB\portfolio` the first time. Select the `main` branch.
+2. For a change already committed by Codex, find the commit in **History** and click **Push origin**. For edits you make yourself, first select the intended files, enter a summary, and click **Commit to main**.
+3. Open [Vercel Deployments](https://vercel.com/ooos-projects-f7dc45af/ooo-web/deployments) and find the production deployment with the same commit. Once it is **Ready** and assigned to the production domain, refresh the [live site](https://ooo-web.vercel.app).
+
+If the push creates no deployment, check the connected repository under **Settings → Git**. If it creates only a preview or requires manual promotion, check **Settings → Environments → Production → Branch Tracking**. Select `main` and enable automatic assignment of production domains. If a build fails, open the build log for that commit.
+
+This workflow publishes the Next.js application. Project media stays in Supabase Storage. Apply any required Supabase database migrations separately.
