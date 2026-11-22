@@ -1,0 +1,28 @@
+.lab { max-width: 56rem; margin: 0 auto; color: #171717; }
+.header { display: flex; justify-content: space-between; align-items: center; gap: 1.5rem; margin-bottom: 2rem; }
+.header h1 { margin: 0; font-size: clamp(1.75rem, 3.4vw, 2.15rem); font-weight: 600; line-height: 1.1; letter-spacing: -.045em; }
+.header p { margin: .6rem 0 0; font-size: .9rem; line-height: 1.5; color: #626262; }
+.download { display: inline-flex; align-items: center; gap: 1.25rem; padding: .8rem 1.1rem; background: #171717; color: white; font-size: .85rem; white-space: nowrap; }
+.download:hover { background: #393939; }
+.list { padding: 0; margin: 0; list-style: none; border: 1px solid #ddd; border-radius: .45rem; overflow: hidden; }
+.list li { display: flex; align-items: stretch; }
+.list li + li { border-top: 1px solid #ddd; }
+.list li:hover { background: #fafafa; }
+.entry { display: grid; flex: 1; min-width: 0; align-content: center; gap: .25rem; padding: 1rem 1.1rem; overflow-wrap: anywhere; }
+.entry strong { font-size: .95rem; font-weight: 600; }
+.entry span, .entry small, .source, .guide, .footer, .empty { font-size: .8rem; line-height: 1.5; }
+.entry span, .entry small, .source, .footer { color: #606060; }
+.source { display: flex; align-items: center; padding: .8rem 1.1rem; white-space: nowrap; }
+.source:hover, .footer a:hover, .guide a { text-decoration: underline; text-underline-offset: .2em; }
+.entry:focus-visible, .source:focus-visible { outline: 2px solid currentColor; outline-offset: -3px; }
+.guide { margin-top: 1.5rem; }
+.guide summary { cursor: pointer; width: fit-content; padding: .35rem 0; font-weight: 500; }
+.guide ol { padding-left: 1.4rem; max-width: 43rem; list-style: decimal; color: #505050; }
+.guide li { margin-top: .7rem; padding-left: .25rem; }
+.guide code { overflow-wrap: anywhere; font-family: ui-monospace, monospace; font-size: .95em; }
+.footer { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #e4e4e4; }
+.empty { padding: 1rem; border: 1px solid #ddd; }
+@media (max-width: 36rem) {
+  .header { flex-direction: column; align-items: flex-start; gap: 1rem; }
+  .entry, .source { padding: .85rem; }
+}

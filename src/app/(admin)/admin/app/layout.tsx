@@ -11,6 +11,22 @@ export default function AppLayout({
 }) {
   const pathname = usePathname()
 
+  if (pathname === '/admin/app' || pathname.startsWith('/admin/app/experiments/')) {
+    return (
+      <>
+        <AdminNav />
+        <main className="px-5 pt-24 pb-12 md:px-8">
+          {pathname !== '/admin/app' && (
+            <div className="max-w-[60rem] mx-auto mb-6">
+              <Link href="/admin/app" className="text-sm text-neutral-600 hover:underline">← Experiments</Link>
+            </div>
+          )}
+          {children}
+        </main>
+      </>
+    )
+  }
+
   const tabs = [
     { href: '/admin/app/users', label: 'Users' },
     { href: '/admin/app/assets', label: 'Assets' },
@@ -27,6 +43,7 @@ export default function AppLayout({
         <div className="max-w-screen-xl mx-auto">
           {/* Header */}
           <div className="mb-8">
+            <Link href="/admin/app" className="mb-5 inline-block text-sm text-neutral-600 hover:underline">← Experiments</Link>
             <h1 className="text-display font-semibold leading-tight tracking-tight uppercase">
               APP
             </h1>

@@ -40,3 +40,9 @@ Out Of Office Design uses Vercel’s GitHub integration. The `main` branch of [B
 If the push creates no deployment, check the connected repository under **Settings → Git**. If it creates only a preview or requires manual promotion, check **Settings → Environments → Production → Branch Tracking**. Select `main` and enable automatic assignment of production domains. If a build fails, open the build log for that commit.
 
 This workflow publishes the Next.js application. Project media stays in Supabase Storage. Apply any required Supabase database migrations separately.
+
+## Studio experiments
+
+Open **Admin → APP** to launch member-built tools or download the OOO experiment template. The ZIP contains the Grid Study source, a standalone Next.js preview, a dependency lockfile and instructions for Codex.
+
+Each published app lives under `src/app/(admin)/admin/app/experiments/<slug>/`. Its `page.tsx` defines the route and `experiment.json` supplies the catalog title, author, description and version. Use the existing Grid Study folder as a reference. Pushing a new app or an update to the website's `main` branch publishes it through the same Vercel deployment. The existing Supabase admin membership check covers the catalog, downloads and app pages.

@@ -1,0 +1,17 @@
+.study { max-width: 60rem; margin: 0 auto; color: #222220; line-height: 1.45; }
+.study h1 { margin: 0; font-size: clamp(1.75rem, 3.4vw, 2.15rem); line-height: 1.1; font-weight: 600; letter-spacing: -.045em; }
+.description { margin: .6rem 0 1.75rem; font-size: .9rem; color: #60605d; }
+.workspace { display: grid; grid-template-columns: minmax(12rem, 1fr) 3fr; border: 1px solid #d9d9d5; }
+.controls { padding: 1.35rem; display: flex; flex-direction: column; gap: 1.2rem; }
+.controls label, .area { display: grid; gap: .45rem; font-size: .85rem; }
+.controls label span { display: flex; justify-content: space-between; align-items: baseline; gap: .75rem; }
+.controls input { width: 100%; margin: 0; accent-color: #252522; }
+.controls output, .area strong { font-variant-numeric: tabular-nums; }
+.area { margin-top: auto; padding-top: 1rem; border-top: 1px solid #ddd; }
+.area span { color: #60605d; }
+.drawing { margin: 0; border-left: 1px solid #d9d9d5; background: #f6f6f2; display: grid; align-items: center; }
+.drawing svg { display: block; width: 100%; height: auto; }
+@media (max-width: 40rem) {
+  .workspace { grid-template-columns: 1fr; }
+  .drawing { grid-row: 1; border-left: 0; border-bottom: 1px solid #d9d9d5; }
+}
