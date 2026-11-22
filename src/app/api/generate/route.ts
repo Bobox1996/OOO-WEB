@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/services/supabase/server'
+import { buildGeminiUrl, toGeminiFetchError } from '@/lib/utils/gemini.utils'
 
 export const maxDuration = 60
 
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
     parts.push({ text: prompt })
 
     // Gemini API URL
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent?key=${apiKey}`
+    const geminiUrl = buildGeminiUrl('gemini-2.5-flash-image', apiKey)
     const requestBody = JSON.stringify({
       contents: [
         {
@@ -77,18 +78,25 @@ export async function POST(request: NextRequest) {
     })
 
     // Make 2 parallel API calls for variations
-    const [geminiResponse1, geminiResponse2] = await Promise.all([
-      fetch(geminiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: requestBody,
-      }),
-      fetch(geminiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: requestBody,
-      }),
-    ])
+    let geminiResponse1: Response
+    let geminiResponse2: Response
+    try {
+      [geminiResponse1, geminiResponse2] = await Promise.all([
+        fetch(geminiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: requestBody,
+        }),
+        fetch(geminiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: requestBody,
+        }),
+      ])
+    } catch (error) {
+      console.error('Gemini fetch error:', error)
+      return NextResponse.json({ error: toGeminiFetchError(error) }, { status: 503 })
+    }
 
     // Helper function to extract image from Gemini response
     const extractImage = async (response: Response, index: number) => {
@@ -175,6 +183,6 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('Generate error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: toGeminiFetchError(error) }, { status: 500 })
   }
 }

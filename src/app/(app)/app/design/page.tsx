@@ -7,8 +7,8 @@ import PatternViewer from '@/components/sections/PatternViewer'
 import MetaballViewer from '@/components/sections/MetaballViewer'
 import AsawaViewer, { AsawaLogoOverlay } from '@/components/sections/AsawaViewer'
 import PixelizerViewer, { PixelizerLogoOverlay, PixelInfo } from '@/components/sections/PixelizerViewer'
-import WavePatternViewer, { WAVE_DEFAULTS, WaveLogoData } from '@/components/sections/WavePatternViewer'
 import { generatePoints } from '@/lib/utils/metaball.utils'
+import { loadDefaultAsawaLogo } from '@/lib/utils/asawa-logo.utils'
 import { parseSvg } from '@/components/sections/LogoImport'
 import { createClient } from '@/services/supabase/client'
 
@@ -94,22 +94,24 @@ export default function SelectDesignerPage() {
   const [asawaCoverLogo, setAsawaCoverLogo] = useState<AsawaLogoOverlay | null>(null)
   const [pixelizerCoverData, setPixelizerCoverData] = useState<{ pixelData: PixelInfo[][]; cols: number; rows: number } | null>(null)
   const [pixelizerCoverLogo, setPixelizerCoverLogo] = useState<PixelizerLogoOverlay | null>(null)
-  const [waveCoverLogo, setWaveCoverLogo] = useState<WaveLogoData | null>(null)
 
   useEffect(() => {
     const fetchCoverLogo = async () => {
+      let asawaLogo: AsawaLogoOverlay | null = null
+
       const { data } = await supabase
         .from('app_user_logos')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(1)
+
       if (data && data.length > 0) {
         try {
           const response = await fetch(data[0].image_url)
           const svgText = await response.text()
           const { innerContent, width, height, minX, minY, defaultFill, defaultStroke, defaultStrokeWidth } = parseSvg(svgText)
           if (innerContent) {
-            setAsawaCoverLogo({
+            asawaLogo = {
               svgContent: innerContent,
               fillColor: defaultFill,
               strokeColor: defaultStroke,
@@ -118,7 +120,7 @@ export default function SelectDesignerPage() {
               nativeHeight: height,
               nativeMinX: minX,
               nativeMinY: minY,
-            })
+            }
             setPixelizerCoverLogo({
               svgContent: innerContent,
               strokeColor: defaultStroke,
@@ -128,17 +130,17 @@ export default function SelectDesignerPage() {
               nativeMinX: minX,
               nativeMinY: minY,
             })
-            setWaveCoverLogo({
-              svgContent: innerContent,
-              nativeWidth: width,
-              nativeHeight: height,
-              nativeMinX: minX,
-              nativeMinY: minY,
-            })
           }
         } catch (err) {
           console.error('Failed to fetch cover logo:', err)
         }
+      }
+
+      if (!asawaLogo) {
+        asawaLogo = await loadDefaultAsawaLogo()
+      }
+      if (asawaLogo) {
+        setAsawaCoverLogo(asawaLogo)
       }
     }
     fetchCoverLogo()
@@ -189,13 +191,6 @@ export default function SelectDesignerPage() {
       name: 'Color Themer',
       description: 'Upload an image and let AI extract a color palette from it',
       href: '/app/color-themer',
-      available: true,
-    },
-    {
-      id: 'wave-pattern',
-      name: 'Wave Pattern',
-      description: 'Generate animated 3D wave point clouds with directional flow vectors',
-      href: '/app/wave-pattern',
       available: true,
     },
   ]
@@ -311,8 +306,6 @@ export default function SelectDesignerPage() {
                         <div key={c} className="flex-1" style={{ backgroundColor: c }} />
                       ))}
                     </div>
-                  ) : designer.id === 'wave-pattern' ? (
-                    <WavePatternViewer params={WAVE_DEFAULTS} logoData={waveCoverLogo} />
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-neutral-300">
                       <svg

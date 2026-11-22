@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/services/supabase/server'
+import { buildGeminiUrl, toGeminiFetchError } from '@/lib/utils/gemini.utils'
 
 export const maxDuration = 60
 
@@ -61,7 +62,7 @@ export async function POST(request: NextRequest) {
 
     const parts: Array<{ text: string }> = [{ text: promptText }]
 
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${apiKey}`
+    const geminiUrl = buildGeminiUrl('gemini-2.5-flash-image', apiKey)
     const requestBody = JSON.stringify({
       contents: [{ parts }],
       generationConfig: {
@@ -69,18 +70,25 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    const [geminiResponse1, geminiResponse2] = await Promise.all([
-      fetch(geminiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: requestBody,
-      }),
-      fetch(geminiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: requestBody,
-      }),
-    ])
+    let geminiResponse1: Response
+    let geminiResponse2: Response
+    try {
+      [geminiResponse1, geminiResponse2] = await Promise.all([
+        fetch(geminiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: requestBody,
+        }),
+        fetch(geminiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: requestBody,
+        }),
+      ])
+    } catch (error) {
+      console.error('Gemini fetch error:', error)
+      return NextResponse.json({ error: toGeminiFetchError(error) }, { status: 503 })
+    }
 
     const extractImage = async (response: Response, index: number) => {
       if (!response.ok) {
@@ -118,6 +126,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, images: [image1, image2] })
   } catch (error) {
     console.error('Color themer generate error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: toGeminiFetchError(error) }, { status: 500 })
   }
 }

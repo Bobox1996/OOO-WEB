@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/services/supabase/server'
+import { buildGeminiUrl, toGeminiFetchError } from '@/lib/utils/gemini.utils'
 
 export const maxDuration = 60
 
@@ -52,18 +53,24 @@ export async function POST(request: NextRequest) {
       { text: promptText },
     ]
 
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`
+    const geminiUrl = buildGeminiUrl('gemini-2.0-flash', apiKey)
 
-    const geminiResponse = await fetch(geminiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts }],
-        generationConfig: {
-          responseModalities: ['TEXT'],
-        },
-      }),
-    })
+    let geminiResponse: Response
+    try {
+      geminiResponse = await fetch(geminiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts }],
+          generationConfig: {
+            responseModalities: ['TEXT'],
+          },
+        }),
+      })
+    } catch (error) {
+      console.error('Gemini fetch error:', error)
+      return NextResponse.json({ error: toGeminiFetchError(error) }, { status: 503 })
+    }
 
     if (!geminiResponse.ok) {
       const errorData = await geminiResponse.json().catch(() => ({}))
@@ -112,6 +119,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, colors })
   } catch (error) {
     console.error('Color themer error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: toGeminiFetchError(error) }, { status: 500 })
   }
 }

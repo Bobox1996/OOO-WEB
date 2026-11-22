@@ -7,6 +7,7 @@ import AsawaViewer from '@/components/sections/AsawaViewer'
 import AsawaControls, { AsawaParams } from '@/components/sections/AsawaControls'
 import ViewerContainer from '@/components/sections/ViewerContainer'
 import LogoImport, { LogoOverlay, parseSvg } from '@/components/sections/LogoImport'
+import { loadDefaultAsawaLogo, ASAWA_DEFAULT_LOGO_URL } from '@/lib/utils/asawa-logo.utils'
 import { createClient } from '@/services/supabase/client'
 import { AppUserLogo, AppAsawaPattern } from '@/types'
 
@@ -30,7 +31,6 @@ export default function RuthAsawaPage() {
   const [logos, setLogos] = useState<AppUserLogo[]>([])
   const [logoOverlay, setLogoOverlay] = useState<LogoOverlay | null>(null)
   const [fillOpacityRandom, setFillOpacityRandom] = useState(true)
-  const autoImportedRef = useRef(false)
   const [recentPatterns, setRecentPatterns] = useState<AppAsawaPattern[]>([])
   const [patternsLoading, setPatternsLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -63,14 +63,16 @@ export default function RuthAsawaPage() {
     }
 
     const fetchLogos = async () => {
+      let overlaySet = false
+
       const { data } = await supabase
         .from('app_user_logos')
         .select('*')
         .order('created_at', { ascending: false })
+
       if (data) {
         setLogos(data)
-        if (data.length > 0 && !autoImportedRef.current) {
-          autoImportedRef.current = true
+        if (data.length > 0) {
           try {
             const response = await fetch(data[0].image_url)
             const svgText = await response.text()
@@ -92,10 +94,33 @@ export default function RuthAsawaPage() {
                 nativeMinX: minX,
                 nativeMinY: minY,
               })
+              overlaySet = true
             }
           } catch (err) {
             console.error('Failed to auto-import logo:', err)
           }
+        }
+      }
+
+      if (!overlaySet) {
+        const defaultLogo = await loadDefaultAsawaLogo()
+        if (defaultLogo) {
+          const logoScale = CELL_SIZE / Math.max(defaultLogo.nativeWidth, defaultLogo.nativeHeight)
+          setLogoOverlay({
+            svgContent: defaultLogo.svgContent,
+            url: ASAWA_DEFAULT_LOGO_URL,
+            x: 0,
+            y: 0,
+            scale: logoScale,
+            rotation: 0,
+            fillColor: defaultLogo.fillColor,
+            strokeColor: defaultLogo.strokeColor,
+            strokeWidth: defaultLogo.strokeWidth,
+            nativeWidth: defaultLogo.nativeWidth,
+            nativeHeight: defaultLogo.nativeHeight,
+            nativeMinX: defaultLogo.nativeMinX,
+            nativeMinY: defaultLogo.nativeMinY,
+          })
         }
       }
     }
