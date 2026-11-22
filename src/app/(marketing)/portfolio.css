@@ -14,9 +14,9 @@
 .studio-head, .site-foot { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
 .studio-head { margin: 0 var(--gutter); min-height: 72px; border-bottom: 2px solid var(--ink); }
 .studio-brand { display: flex; align-items: center; gap: 11px; font-weight: 700; line-height: .98; font-size: 13px; letter-spacing: -.055em; }
-.ooo-mark { display: inline-flex; align-items: center; padding-right: 1px; }
-.ooo-mark i { display: block; border: 3px solid; height: 27px; width: 27px; border-radius: 50%; }
-.ooo-mark i + i { margin-left: -10px; }
+.studio-head-logo, .studio-foot-logo { display: block; width: auto; }
+.studio-head-logo { height: 36px; flex: none; }
+.studio-foot-logo { height: 64px; }
 .studio-head nav { display: flex; gap: 4px; margin-left: auto; }
 .studio-head nav a, .head-contact, .archive-shortcut { font-size: 12px; font-weight: 550; }
 .studio-head nav a { padding: 5px 13px; border-radius: 30px; }
@@ -155,8 +155,8 @@
 @media (max-width: 760px) {
   .studio-head { min-height: 58px; gap: 8px; }
   .studio-brand { font-size: 11px; gap: 6px; }
-  .ooo-mark i { height: 21px; width: 21px; border-width: 2.5px; }
-  .ooo-mark i + i { margin-left: -8px; }
+  .studio-head-logo { height: 30px; }
+  .studio-foot-logo { height: 54px; }
   .studio-head nav { gap: 0; }
   .studio-head nav a { padding: 5px 8px; font-size: 11px; }
   .head-contact { display: none; }

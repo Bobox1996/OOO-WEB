@@ -2,12 +2,13 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import StudioLogo from './StudioLogo'
 
 export default function SiteHeader({ onTeamClick }: { onTeamClick?: (e: React.MouseEvent) => void }) {
   const path = usePathname()
   return <header className="studio-head">
     <Link href="/" className="studio-brand" aria-label="Out Of Office Design home">
-      <span aria-hidden="true" className="ooo-mark"><i /><i /><i /></span>
+      <StudioLogo className="studio-head-logo" />
       <span>Out Of<br />Office Design</span>
     </Link>
     <nav aria-label="Main navigation">{[['/', 'Works'], ['/team', 'Team'], ['/vision', 'Vision']].map(([href, label]) =>

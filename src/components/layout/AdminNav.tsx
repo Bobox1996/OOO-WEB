@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import StudioLogo from '@/components/layout/StudioLogo'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/services/supabase/client'
 import { getAdminRole, type AdminRole } from '@/services/supabase/admin'
@@ -50,8 +51,8 @@ export default function AdminNav() {
     <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-black/10">
       <div className="flex items-center justify-between px-6 py-4">
         <div className="flex items-center gap-6 md:gap-12">
-          <Link href="/admin/dashboard" className="text-2xl font-bold tracking-tight">
-            OOO
+          <Link href="/admin/dashboard" aria-label="Out Of Office admin dashboard">
+            <StudioLogo />
           </Link>
           
           {/* Desktop navigation - hidden on mobile */}

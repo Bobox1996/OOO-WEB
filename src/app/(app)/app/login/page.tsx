@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/services/supabase/client'
 import Link from 'next/link'
+import StudioLogo from '@/components/layout/StudioLogo'
 
 const SAVED_EMAILS_KEY = 'ooo_app_saved_emails'
 
@@ -145,8 +146,8 @@ function AppLoginForm() {
       {/* Header */}
       <header className="border-b border-black/10">
         <div className="flex items-center justify-between px-6 py-4">
-          <Link href="/" className="text-2xl font-bold tracking-tight">
-            OOO
+          <Link href="/" aria-label="Out Of Office Design home">
+            <StudioLogo />
           </Link>
           <Link href="/" className="text-sm uppercase tracking-widest text-neutral-400 hover:text-black transition-opacity">
             ← Back

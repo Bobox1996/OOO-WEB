@@ -40,6 +40,9 @@ export const metadata: Metadata = {
   title: "OOO",
   description: "Architecture and Design Studio",
   keywords: ["architecture", "design", "studio", "portfolio"],
+  icons: {
+    icon: [{ url: "/brand/out-of-office-tab-dark.png", type: "image/png", sizes: "64x64", media: "(prefers-color-scheme: dark)" }],
+  },
 };
 
 export default function RootLayout({
