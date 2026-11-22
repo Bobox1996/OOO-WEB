@@ -122,7 +122,14 @@ export default function HomePageClient({ projects }: HomePageClientProps) {
   }
 
   if (!hasSeen) {
-    return <IntroCover onComplete={markSeen} durationMs={2000} />
+    return (
+      <IntroCover
+        onComplete={markSeen}
+        durationMs={1400}
+        holdDurationMs={0}
+        fadeDurationMs={600}
+      />
+    )
   }
 
   return (

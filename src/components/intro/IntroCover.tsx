@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 
 const BASE_RING_RADII = [0.72, 0.9, 1.08]
@@ -8,6 +8,7 @@ const RING_PHASE_OFFSETS = [0, (Math.PI * 2) / 3, (Math.PI * 4) / 3]
 
 interface IntroCoverProps {
   durationMs?: number
+  holdDurationMs?: number
   fadeDurationMs?: number
   particleCount?: number
   onComplete: () => void
@@ -15,6 +16,7 @@ interface IntroCoverProps {
 
 export default function IntroCover({
   durationMs = 2500,
+  holdDurationMs = 1000,
   fadeDurationMs = 650,
   particleCount = 6000,
   onComplete,
@@ -23,24 +25,27 @@ export default function IntroCover({
   const rafRef = useRef<number | null>(null)
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null)
   const resizeHandlerRef = useRef<(() => void) | null>(null)
-  const unlockTimerRef = useRef<number | null>(null)
-  const [canEnter, setCanEnter] = useState(false)
+  const fadeTimerRef = useRef<number | null>(null)
+  const completeTimerRef = useRef<number | null>(null)
   const [isFadingOut, setIsFadingOut] = useState(false)
 
-  const hintText = useMemo(
-    () => (canEnter ? 'Click anywhere to enter' : 'Loading OOO...'),
-    [canEnter]
-  )
-
   useEffect(() => {
-    unlockTimerRef.current = window.setTimeout(() => setCanEnter(true), durationMs)
+    const beginExit = () => {
+      setIsFadingOut(true)
+      completeTimerRef.current = window.setTimeout(() => onComplete(), fadeDurationMs)
+    }
+
+    fadeTimerRef.current = window.setTimeout(beginExit, durationMs + holdDurationMs)
 
     return () => {
-      if (unlockTimerRef.current) {
-        window.clearTimeout(unlockTimerRef.current)
+      if (fadeTimerRef.current) {
+        window.clearTimeout(fadeTimerRef.current)
+      }
+      if (completeTimerRef.current) {
+        window.clearTimeout(completeTimerRef.current)
       }
     }
-  }, [durationMs])
+  }, [durationMs, holdDurationMs, fadeDurationMs, onComplete])
 
   useEffect(() => {
     const mount = mountRef.current
@@ -179,34 +184,20 @@ export default function IntroCover({
     }
   }, [durationMs, particleCount])
 
-  const handleClick = () => {
-    if (!canEnter || isFadingOut) return
-    setIsFadingOut(true)
-    window.setTimeout(() => onComplete(), fadeDurationMs)
-  }
-
   return (
     <div
-      className="fixed inset-0 z-[120] bg-white cursor-pointer"
+      className="fixed inset-0 z-[120] bg-white"
       style={{
         opacity: isFadingOut ? 0 : 1,
         transition: `opacity ${fadeDurationMs}ms ease`,
-        pointerEvents: isFadingOut ? 'none' : 'auto',
+        pointerEvents: 'none',
       }}
-      onClick={handleClick}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault()
-          handleClick()
-        }
-      }}
-      aria-label="Intro cover animation"
+      aria-label="Intro animation"
+      aria-hidden={isFadingOut}
     >
       <div ref={mountRef} className="absolute inset-0" />
       <div className="absolute bottom-10 left-1/2 -translate-x-1/2 text-xs tracking-[0.18em] uppercase text-black/70 select-none">
-        {hintText}
+        Loading OOO...
       </div>
     </div>
   )
