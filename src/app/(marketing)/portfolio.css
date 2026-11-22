@@ -59,16 +59,8 @@
 .solid-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
 .preview-link { position: relative; isolation: isolate; overflow: hidden; flex: 1; display: grid; place-items: center; min-height: 0; background: #fff; }
 .cover-photo { object-fit: cover; object-position: center; }
-.ascii-grain, .ascii-glass { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-.ascii-grain { backdrop-filter: blur(1px); }
-.ascii-glass {
-  mask-image: linear-gradient(108deg, transparent 8%, #0003 29%, black 48%, #0008 61%, transparent 82%);
-  mask-size: 235% 100%;
-  animation: glass-drift 7s ease-in-out infinite alternate;
-  animation-play-state: paused;
-}
-.ascii-glass[data-visible="true"] { animation-play-state: running; }
-@keyframes glass-drift { from { mask-position: 0% 0; } to { mask-position: 100% 0; } }
+.ascii-plate, .ascii-light { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.ascii-plate { backdrop-filter: blur(1.4px) saturate(1.12); }
 .corner { pointer-events: none; position: absolute; width: 9px; height: 9px; z-index: 1; }
 .tl { left: 0; top: 0; border-left: 1px solid; border-top: 1px solid; }
 .tr { right: 0; top: 0; border-right: 1px solid; border-top: 1px solid; }
@@ -219,5 +211,5 @@
 }
 @media (prefers-reduced-motion: reduce) {
   html:has(.portfolio) { scroll-behavior: auto; }
-  .pixel-cat.walking svg, .ascii-glass { animation: none; }
+  .pixel-cat.walking svg { animation: none; }
 }
