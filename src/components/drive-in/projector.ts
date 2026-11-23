@@ -20,7 +20,8 @@ export function projector(p:T.Object3D,frame:{x:number;y:number;z:number;w:numbe
   const map=texture(1200,612,c=>{ctx=c;intermission(c,'Intermission')})
   const {x,y,z,w,h}=frame
   const screen=face(p,x,y,z+.034,w,h,map)
-  screen.material.transparent=false;screen.material.fog=false
+  screen.material.transparent=false
+  if (screen.material instanceof T.MeshBasicMaterial) screen.material.fog=false
   const reflectionMat=new T.ShaderMaterial({
     uniforms:{poster:{value:map}},transparent:true,depthWrite:false,
     vertexShader:`varying vec2 v;void main(){v=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
