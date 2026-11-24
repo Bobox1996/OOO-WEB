@@ -1,12 +1,19 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { pixelViewport } from '../src/components/sumiyoshi/pixelViewport.ts'
+import { artworkWidth, pixelViewport } from '../src/components/sumiyoshi/pixelViewport.ts'
 import {
   areas, cafeSpawn, distance, forestCenterX, homeSpawn, members, nearby, pickStop,
   slideMove, stops, walkable, walkPath,
 } from '../src/components/sumiyoshi/world.ts'
 
-test('the two artwork resolutions use the same composition and the portrait canvas keeps its aspect', () => {
+test('the detailed artwork preserves framing, with two lighter raster options', () => {
+  assert.equal(artworkWidth(null), 960)
+  assert.equal(artworkWidth('640'), 640)
+  assert.equal(artworkWidth('480'), 480)
+  assert.deepEqual(pixelViewport(1280, 720), { width: 960, height: 540 })
+  assert.deepEqual(pixelViewport(390, 844), { width: 390, height: 844 })
+  assert.deepEqual(pixelViewport(600, 1200), { width: 432, height: 864 })
+  assert.deepEqual(pixelViewport(480, 270), { width: 480, height: 270 })
   assert.deepEqual(pixelViewport(1280, 720, 640), { width: 640, height: 360 })
   assert.deepEqual(pixelViewport(1280, 720, 480), { width: 480, height: 270 })
   assert.deepEqual(pixelViewport(390, 844, 640), { width: 240, height: 520 })

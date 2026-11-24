@@ -1,9 +1,10 @@
 import * as T from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { cameraDirector, opening, type View } from './camera'
-import { bottleLabel, furnishLight, rainField, television } from './objects'
+import { bottleLabel, cafeWindowRain, furnishLight, rainField, television } from './objects'
+import { createCanopyBreeze } from './canopyBreeze'
 import { screenSurface } from './screenSurface'
-import { pixelViewport } from './pixelViewport'
+import { artworkWidth, pixelViewport } from './pixelViewport'
 import { areas, stops, homeSpawn, forestCenterX, npcPositions, memberStops, nearby, walkable, walkPath, slideMove, distance, type Point, type Stop } from './world'
 
 type Controls={
@@ -31,6 +32,8 @@ export function createStreetGame(host:HTMLDivElement,events:Controls,vision:stri
   const scenes={home:new T.Scene(),street:new T.Scene(),cafe:new T.Scene()}
   const keyLights={home:furnishLight(scenes.home,'home'),street:furnishLight(scenes.street,'street'),cafe:furnishLight(scenes.cafe,'cafe')}
   const soaked={home:rainField(scenes.home,'home'),street:rainField(scenes.street,'street')}
+  const cafeGlass=cafeWindowRain(scenes.cafe)
+  const breeze=createCanopyBreeze()
   const camera=new T.PerspectiveCamera(48,1,.035,95),director=cameraDirector(camera),tv=television(scenes.home)
   const tvDocument=screenSurface(tv.face,camera)
   const avatar=new T.Group();scenes.home.add(avatar);avatar.position.set(homeSpawn.x,0,homeSpawn.z)
@@ -48,16 +51,31 @@ export function createStreetGame(host:HTMLDivElement,events:Controls,vision:stri
   const cutaway:T.Object3D[]=[],cafeCeiling:T.Object3D[]=[]
   let view:View=opening,route:Point[]=[],goal:Stop|null=null,nearId:Stop|null=null
   let disposed=false,ready=false,blocked=false,resizePending=true,frame=0,then=0,time=0,stride=0
-  const rasterWidth=new URLSearchParams(location.search).get('pixels')==='480'?480:640
+  const rasterWidth=artworkWidth(new URLSearchParams(location.search).get('pixels'))
   let pointer:{x:number;y:number;angle:number}|null=null,bottleAngle=0,remotePulse=0
   let nearGround:T.Mesh|undefined
+  const paintAnisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy())
   function model(file:string,attach:(obj:T.Group)=>void){
     return loader.loadAsync('/sumiyoshi/models/'+file+'.glb').then(g=>{
       if(disposed){free([g.scene]);return}
+      const environment=file!=='people'&&file!=='cola'
+      const paint=new Set<T.Texture>()
       g.scene.traverse(o=>{if(o instanceof T.Mesh){
-        const m=Array.isArray(o.material)?o.material[0]:o.material
+        const materials=Array.isArray(o.material)?o.material:[o.material]
+        const m=materials[0]
         o.castShadow=!m.transparent&&!m.name.includes('Painted botanical sprays');o.receiveShadow=!m.transparent
+        if(environment)for(const material of materials){
+          if(material.map)paint.add(material.map)
+          if(material.emissiveMap)paint.add(material.emissiveMap)
+        }
       }})
+      // Keep nearby texels sharp; filter receding leaf clusters, timber and fine metalwork
+      // across mip levels so oblique views and slow tracking do not sparkle.
+      for(const map of paint){
+        map.magFilter=T.NearestFilter;map.minFilter=T.LinearMipmapLinearFilter
+        map.anisotropy=paintAnisotropy;map.needsUpdate=true
+      }
+      if(file==='house'||file==='street'||file==='cafe-front')breeze.attach(g.scene)
       attach(g.scene)
     })
   }
@@ -224,7 +242,10 @@ export function createStreetGame(host:HTMLDivElement,events:Controls,vision:stri
     }
     director.frame(view,avatar.position,dt,motion.matches,tvDocument.attached,canvas.width)
     if(tvDocument.attached&&view.mode==='focus')tvDocument.place(canvas.clientWidth,canvas.clientHeight)
-    if(view.area!=='cafe')soaked[view.area](motion.matches?0:time)
+    const weatherTime=motion.matches?0:time
+    if(view.area==='cafe')cafeGlass(weatherTime)
+    else soaked[view.area](weatherTime)
+    breeze.update(time,motion.matches)
     if(view.area==='street'){
       keyLights.street.target.position.x=avatar.position.x;keyLights.street.position.x=avatar.position.x-5
     }

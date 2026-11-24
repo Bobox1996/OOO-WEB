@@ -75,7 +75,7 @@ plaster = finish("Charcoal lime render", "444a48", .82)
 brass = finish("Aged honey brass", "8a7256", .34, .57)
 reed = finish("Smoke blue ceramic", "5b7777", .35, .12)
 paper = finish("Washi shade | light source", "efc18a", .79, emission=1.25)
-lamp_paper = finish("Tosa paper | luminous fiber and spiral rib", "d5aa73", .88, emission=.56, image="lit-washi")
+lamp_paper = finish("Tosa paper | luminous fiber and spiral rib", "d5aa73", .88, emission=.91, image="lit-washi")
 rattan = finish("Linen binding", "a39174", .8)
 bluebook = finish("Clothbound book", "647f81", .86)
 cream = finish("Uncoated ivory sheets", "c1b498", .87)
@@ -87,18 +87,19 @@ ground = finish("Wet moss lawn", "365443", .84)
 rock = finish("Andesite | blue shadow", "495951", .62, image="garden-andesite")
 rocklight = finish("Andesite | rain catching faces", "5e6b5c", .63, image="garden-andesite")
 lich = finish("Lichen crust", "657054", .86, image="garden-andesite")
-bark = finish("Camellia bark", "4b5043", .89)
-twig = finish("Willow branch highlights", "69705a", .85)
-leaves = [finish(n,h,.72,emission=.12) for n,h in [
-    ("Camellia shadow","203c38"),("Camellia green","2f5143"),("Camellia mids","3b634b"),
-    ("Camellia upper planes","5b8061"),("Wet leaf rim","809674")]]
 city = finish("Pixel plate | far apartments and Osaka sky","34626a",1,emission=.8,image="distant-nagaya",plate=True)
 pine = finish("Painted botanical sprays | trained black pine","315f51",1,emission=.8,image="black-pine",plate=True)
 maple = finish("Painted botanical sprays | rain maple","39714f",1,emission=.8,image="rain-maple",plate=True)
-oak = finish("Painted botanical sprays | distant oak","335b5b",1,emission=.8,image="blue-oak",plate=True)
-ferns = finish("Painted botanical sprays | fern bank","4a8052",1,emission=.8,image="fern-bank",plate=True)
-camellia = finish("Painted botanical sprays | broad near camellia leaves","455a4c",1,emission=.8,image="camellia-branches",plate=True)
-unlit = {m.name for m in (city,pine,maple,oak,ferns,camellia)}
+oak = finish("Painted botanical sprays | rain oak","335b5b",1,emission=.8,image="blue-oak",plate=True)
+distantoak = finish("Far oak silhouettes in blue air","36516b",1,emission=.8,image="blue-oak",plate=True)
+ferns = finish("Botanical Japanese fern","4a8052",1,emission=.8,image="fern-bank",plate=True)
+camellia = finish("Botanical camellia","455a4c",1,emission=.8,image="camellia-branches",plate=True)
+hosta = finish("Botanical striped hosta","628159",1,emission=.8,image="ribbed-hosta",plate=True)
+meadow = finish("Botanical woodland grass","576f52",1,emission=.8,image="woodland-grass",plate=True)
+lily = finish("Spathiphyllum | indoor ivory flowers","71886d",1,emission=.8,image="peace-lily",plate=True)
+indoorfern = finish("Leatherleaf fern | reading ledge","647b55",1,emission=.8,image="fern-bank",plate=True)
+philodendron = finish("Brass-slung heartleaf philodendron","798456",1,emission=.8,image="trailing-philodendron",plate=True)
+unlit = {m.name for m in (city,pine,maple,oak,distantoak,ferns,camellia,hosta,meadow,lily,indoorfern,philodendron)}
 
 parts = defaultdict(lambda: [[], [], []])
 section = ""
@@ -159,6 +160,25 @@ def vertical_plate(part,mat,x,bottom,z,width,height,angle=0,flip=False):
     corners=[(x-dx,bottom,z-dz),(x+dx,bottom,z+dz),(x+dx,bottom+height,z+dz),(x-dx,bottom+height,z-dz)]
     us=(1,0) if flip else (0,1)
     mesh(part,mat,corners,[(0,1,2,3)], [[(us[0],0),(us[1],0),(us[1],1),(us[0],1)]])
+
+def planting(part, mat, x, bottom, z, width, height, angle=0, flip=False):
+    """Bend the edge of a spray away from the centre to give its tips a real footprint."""
+    verts, faces, uvs = [], [], []
+    for row in range(3):
+        v = row/2
+        for col in range(5):
+            u = col/4
+            across = (u-.5)*width
+            depth = width*(.5-abs(u-.5)*2)*(.06+.11*v) + height*.07*v
+            verts.append((x+across*math.cos(angle)-depth*math.sin(angle),
+                          bottom+v*height,z+across*math.sin(angle)+depth*math.cos(angle)))
+    for row in range(2):
+        for col in range(4):
+            idx = row*5+col
+            face = (idx,idx+1,idx+6,idx+5)
+            faces.append(face)
+            uvs.append([((1-i%5/4) if flip else i%5/4,(i//5)/2) for i in face])
+    mesh(part,mat,verts,faces,uvs)
 
 
 def cushion(part, center, dims, mat=linen, welt=True):
@@ -313,12 +333,79 @@ for k in range(3):
     a=k*math.tau/3-.44
     tube("Split bamboo binding",rattan,[(x+math.cos(a)*r,y,z+math.sin(a)*r) for y,r in levels],.0034,5)
 
+section="05b | porcelain, hanging vines and the evening fern"
+celadon=finish("Celadon | blue ash glaze","67877e",.34,.12)
+shino=finish("Shino | burnt sienna glaze","8e614d",.49)
+slip=finish("Amber slip | glazed pottery rim","ae8b6e",.38)
+stem=finish("Pothos | trailing stem","585c3e",.86)
+vine_shadow=finish("Pothos | deep leaf face","365a46",.72,emission=.20)
+vine_green=finish("Pothos | folded blade","6c8853",.70,emission=.21)
+vine_cream=finish("Pothos | marbled leaf tip","9d9e65",.7,emission=.19)
+
+def ceramic_bowl(label, x,y,z,h,r,glaze):
+    rings=[(0,.54),(.062,.55),(.11,.50),(.17,.62),(.38,.77),(.69,.93),(.88,1),(.94,.99),(1,1.04)]
+    tube(label,glaze,[(x,y+t*h,z) for t,_ in rings],[s*r for _,s in rings],28)
+    tube(label+" | turned lip",slip,[(x,y+h*.945,z),(x,y+h*.99,z)],[r*1.046,r*1.04],28)
+    tube(label+" | recessed planting",soil,[(x,y+h*1.002,z),(x,y+h*1.008,z)],r*.96,26)
+
+# The perch is outside the television silhouette even from the seated portrait camera.
+ceramic_bowl("Petite ash-glazed fern bowl",-2.16,.49,-3.40,.24,.195,celadon)
+planting("Layered leatherleaf over the cypress perch",indoorfern,-2.16,.72,-3.40,.78,.53,.19)
+planting("Leatherleaf side spray",indoorfern,-2.21,.72,-3.43,.48,.39,-1.25,True)
+ceramic_bowl("Footed Shino lily vessel",1.99,.005,-2.69,.39,.22,shino)
+planting("Evening spathes and dark glossy leaves",lily,1.99,.39,-2.68,.74,.88,-.19)
+planting("Turned leaves behind Spathiphyllum",lily,2.00,.391,-2.72,.54,.69,1.21,True)
+
+# Tsuri-bachi in the window return. The falling stems taper and carry alternate
+# cordate leaves; each bowed fold and terminal drip tip remains legible in side view.
+hx,hz=-2.42,-3.39
+ceramic_bowl("Hanging copper-brown bowl",hx,2.65,hz,.205,.221,shino)
+for dx,dz in ((-.17,-.06),(.15,-.065),(.033,.18)):
+    tube("Three-strand brass suspension",brass,[(hx,3.234,hz),(hx+dx,2.84,hz+dz)],.006,6)
+for n in range(7):
+    angle = n*math.tau/7
+    length = [.39,.61,.45,.22,.55,.82,.42][n]
+    vine=[]
+    for k in range(10):
+        t=k/9
+        radius=.085+.22*math.sin(min(t/.4,1)*math.pi*.5)
+        vine.append(Vector((hx+math.cos(angle)*radius+.077*math.sin(t*5+angle)*t,
+                            2.886-.93*length*t**1.36,hz+math.sin(angle)*radius+math.sin(t*4+angle)*.025)))
+    tube("Tsuri-bachi trailing stems",stem,vine,[.008-i*.00055 for i in range(10)],6)
+    for k in range(1,10):
+        p=vine[k]
+        side=(-1 if (k+n)%2 else 1)
+        size=(.12 if k<6 else .094)*(1+.16*math.sin(k+n))
+        direction=Vector((side*.62,-.64,.23))
+        across=Vector((.70,side*.58,.09))
+        center=p+direction*size*.48+Vector((0,0,.021))
+        tip=p+direction*size
+        a=p+direction*.025+across*size*.34
+        b=p+direction*.025-across*size*.34
+        left=p+direction*size*.48+across*size*.40
+        right=p+direction*size*.48-across*size*.40
+        verts=[p,a,left,tip,right,b,center]
+        mesh("Trailing pothos heart blades",vine_shadow,verts,[(0,1,6),(1,2,6),(2,3,6)])
+        mesh("Trailing pothos heart blades",vine_green,verts,[(0,6,5),(5,6,4),(4,6,3)])
+        if (k+n)%3==1:
+            mesh("Cream variegation in pothos",vine_cream,[center.lerp(p,.77),center,
+                 center.lerp(right,.42)+Vector((0,0,.002))],[(0,1,2)])
+
+section="Cutaway | heartleaf Philodendron above the reading gallery"
+# This close silhouette brings a sense of depth to the high portrait crop.
+hx,hz=-1.42,.02
+vertical_plate("Pendant heartleaf philodendron",philodendron,hx,2.42,hz+.078,.62,.76,-.075)
+body_x=hx-.079
+ceramic_bowl("Cochin stoneware hanging pot",body_x,2.827,hz-.012,.145,.108,shino)
+for dx,dz in ((-.091,-.037),(.091,-.039),(-.012,.099)):
+    tube("Waxed cord from the cedar soffit",brass,[(body_x,3.245,hz),(body_x+dx,2.969,hz+dz)],.006,7)
+
 section="06 | distant silhouettes beyond the garden"
 vertical_plate("Sumiyoshi apartments beyond retaining wall",city,0,-1.36,-23.5,46,13.94)
-for i in range(12):
-    x=-17+i*3.2+R.uniform(-.7,.7);z=R.uniform(-16.8,-13.0)
-    h=R.uniform(4.2,6.35)
-    vertical_plate("Second-growth oak crowns",oak,x,-.45,z,h*1.54,h, R.uniform(-.43,.43),i%2)
+for i,(x,z,h) in enumerate([(-16,-15.6,5.8),(-11.9,-16.3,4.5),(-8.4,-17.6,4.3),
+        (-4.9,-14.8,3.0),(-.4,-17.1,3.6),(3.4,-14.3,2.9),(8.2,-16.5,4.3),
+        (11.5,-14.2,5.1),(16.3,-15.4,5.5)]):
+    vertical_plate("Second-growth oak silhouettes",distantoak,x,-.35,z,h*1.03,h,(-1)**i*.19,i%2)
 
 section="07 | courtyard terrain, gravel and planting beds"
 box("Damp earth",soil,(0,-.12,-9.06),(17.4,.39,11.1))
@@ -332,7 +419,12 @@ for i in range(36):
     x=R.uniform(-6.6,6.6);z=R.uniform(-11.6,-4.02)
     if -2.15<x<2.15 and -6.5<z<-4.08:continue
     size=R.uniform(.16,.50)
-    box("Broken moss bank",ground,(x,.088,z),(3*size,.08,2*size))
+    points=[(x,.117,z)]
+    for j in range(14):
+        theta=j*math.tau/14
+        radius=size*(1+.22*math.sin(theta*3+i))
+        points.append((x+1.45*radius*math.cos(theta),.111,z+radius*math.sin(theta)))
+    mesh("Moss islands at the waterline",ground,points,[(0,(j+1)%14+1,j+1) for j in range(14)])
 
 
 def boulder(x,y,z,a,b,c,lichen=True):
@@ -362,52 +454,40 @@ for i in range(98):
     if -1.98<x<1.91 and z>-6.44: continue
     a=R.uniform(.035,.12);boulder(x,.105,z,a,a*.49,a*R.uniform(.72,1.16))
 
-section="08 | middle garden, sculpted pine and upper canopy"
-for idx,(x,z,w,h,mat,angle) in enumerate([
-    (-6.1,-7.6,5.4,5.62,maple,.24),(-4.2,-7.9,4.15,4.23,pine,.07),
-    (-2.49,-9.87,4.5,4.72,maple,-.1),(-.86,-11.38,5.0,4.35,oak,.16),
-    (1.35,-9.2,4.62,4.68,pine,-.12),(3.76,-9.0,4.55,4.83,maple,-.04),
-    (5.86,-7.28,5.19,5.22,pine,-.32),(-6.19,-5.03,4.7,5.47,pine,.5),
-    (6.54,-6.1,4.82,5.51,maple,-.54),(-7.70,-11.70,5.4,6,maple,.06)]):
-    vertical_plate("Trained trees in staggered beds",mat,x,.10,z,w,h,angle,idx%3==0)
+section="08 | framed garden, pine and maple canopies"
+# The pine anchors the left reveal while the right maple frames a view to Osaka.
+for x,z,w,h,mat,angle,flip in [
+        (-7.04,-8.62,4.7,4.94,oak,.29,True),(-5.71,-11.83,4.44,4.33,maple,.17,True),
+        (-2.86,-7.43,3.94,3.65,pine,.14,False),(-.42,-11.62,3.42,3.82,oak,.25,False),
+        (1.91,-9.57,3.39,3.43,maple,-.19,True),(4.52,-6.52,3.69,3.76,maple,-.41,False),
+        (6.91,-9.68,3.76,3.93,pine,-.19,True),(-6.12,-5.29,3.22,3.93,oak,.53,False)]:
+    vertical_plate("Garden tree in elevation",mat,x,.10,z,w,h,angle,flip)
 
-section="09 | camellia branches and flowering understory"
-def evergreen(x,z,height):
-    y=.10
-    for k in range(6):
-        a=k*2.4+R.uniform(-.7,.7);r=R.uniform(.24,.68)*height
-        end=Vector((x+math.cos(a)*r,y+height*R.uniform(.56,1.12),z+math.sin(a)*r))
-        start=Vector((x,y,z));mid=start.lerp(end,.46)+Vector((0,.14*height,0))
-        tube("Woody camellia stems",bark,[start,mid,end],[.018*height,.011*height,.006],5)
-        for j in range(8):
-            t=(j+1)/9;tip=mid.lerp(end,t) if t>.5 else start.lerp(mid,t*1.7)
-            la=a+(1 if j%2 else -1)*R.uniform(.78,1.58);size=height*R.uniform(.12,.24);width=size*R.uniform(.28,.42)
-            d=Vector((math.cos(la),R.uniform(-.27,.38),math.sin(la)))
-            v=Vector((-d.z,0,d.x));peak=tip+d*size*.54+Vector((0,size*.15,0))
-            vs=[tip,peak-v*width,peak,tip+d*size,peak+v*width]
-            faces=[(0,1,2),(1,3,2),(0,2,4),(2,3,4)]
-            c=R.randint(0,2)
-            mesh("Waxy folded camellia leaves",leaves[c],vs,faces[:2])
-            mesh("Waxy folded camellia leaves",leaves[c+1],vs,faces[2:])
-for i in range(82):
-    x=R.uniform(-6.44,6.44);z=R.uniform(-11.28,-4.05)
-    if -2.10<x<2.04 and z>-6.57:continue
-    evergreen(x,z,R.uniform(.43,1.39))
-for x,z,w,h in [(-3.39,-5.41,2.51,1.13),(-2.41,-6.05,2.50,1.23),(2.65,-5.53,3.38,1.28),
-                (-4.82,-4.51,3.12,1.48),(4.80,-4.59,3.3,1.68),(.84,-7.58,3.14,.99)]:
-    vertical_plate("Fern clumps at the water's edge",ferns,x,.105,z,w,h,R.uniform(-.4,.4),R.random()>.5)
-for i,(x,z,w,h) in enumerate([(-4.84,-4.54,2.48,1.95),(-3.51,-5.25,2.28,1.46),(-2.43,-6.07,2.12,1.57),
-        (2.84,-5.3,2.55,1.59),(4.53,-4.67,2.86,2.11),(5.34,-5.84,3.30,2.68),
-        (-4.89,-6.64,3.20,2.53),(-.64,-8.12,2.23,1.60),(.88,-7.89,2.68,1.67)]):
-    vertical_plate("Glossy camellia along the sill",camellia,x,.10,z,w,h,R.uniform(-.26,.26),i%2)
-# Slender highlights and cut vistas, with trunks in front of the painted tree strata.
-for root_x,root_z,height in [(-4.4,-6.38,4.62),(4.58,-6.1,4.14),(-2.94,-9.27,3.32),(5.37,-8.55,4.91)]:
-    path=[(root_x,.11,root_z),(root_x-.18,height*.35,root_z+.16),(root_x+.012,height*.62,root_z),
-        (root_x+.42,height*.79,root_z+.12),(root_x+.54,height,root_z+.07)]
-    tube("Deep garden branch",bark,path,[.065,.051,.035,.022,.006],7)
-    for j in range(2,5):
-        origin=path[j-1];side=1 if j%2 else -1;tip=(origin[0]+side*.84,origin[1]+.52,origin[2]+.13)
-        tube("Fine secondary fork",twig,[origin,((origin[0]+tip[0])*.5,origin[1]+.18,origin[2]),tip],[.027,.016,.004],5)
+section="09 | layered shade border and water garden"
+# Curated drifts reveal the basalt steps. Dark gaps between the variegated
+# leaves keep the garden from becoming an undifferentiated wall of detail.
+drifts = [
+    (camellia,-4.62,-6.31,2.35,1.69,.32),(camellia,-2.80,-9.02,1.66,1.29,-.23),
+    (camellia,.13,-9.78,1.84,1.44,.12),(camellia,3.25,-6.75,1.84,1.34,-.30),
+    (camellia,5.53,-4.95,2.07,1.67,-.49),(camellia,6.48,-7.51,1.77,1.51,.38),
+    (hosta,-3.14,-4.95,1.40,.79,.28),(hosta,-4.86,-4.54,1.42,.78,.46),
+    (hosta,-1.86,-7.01,1.14,.63,-.18),(hosta,2.66,-5.61,1.34,.77,-.28),
+    (hosta,3.99,-6.31,1.17,.64,.06),(hosta,5.19,-5.10,1.25,.72,-.42),
+    (ferns,-3.95,-5.12,1.72,.99,.27),(ferns,-2.38,-6.19,1.42,.90,-.13),
+    (ferns,-5.94,-4.36,1.75,1.10,.52),(ferns,-.59,-7.62,1.45,.72,.03),
+    (ferns,1.55,-7.27,1.68,.91,-.11),(ferns,3.63,-5.94,1.48,.97,-.04),
+    (ferns,4.78,-4.58,1.83,1.13,-.24),
+    (meadow,-4.21,-4.43,1.48,.78,.30),(meadow,-2.69,-4.49,.92,.55,-.13),
+    (meadow,-1.70,-6.67,1.1,.63,.22),(meadow,.49,-7.17,1.27,.67,-.19),
+    (meadow,2.02,-5.40,.92,.59,-.08),(meadow,3.53,-4.62,1.14,.76,-.29),
+    (meadow,5.54,-4.29,1.45,.90,-.41)]
+for i,(mat,x,z,w,h,angle) in enumerate(drifts):
+    planting("Drifts of "+mat.name,mat,x,.113,z,w,h,angle,i%3==1)
+
+for i,(x,z) in enumerate([(-6.8,-6.8),(-5.2,-8.2),(-3.9,-8.4),(-1.55,-8.9),
+                          (.9,-9.4),(2.8,-9.7),(4.4,-8.6),(6.1,-8.5)]):
+    planting("Upland woodland margin",ferns if i%3 else camellia,x,.112,z,
+             1.45+.15*(i%3),.66+.15*(i%4),.24*math.sin(i),i%2)
 
 
 def construct(name,data,mat,collection):
@@ -474,6 +554,10 @@ for mat in g["materials"]:
         mat.setdefault("extensions",{})["KHR_materials_unlit"]={}
         mat["alphaMode"]="MASK";mat["alphaCutoff"]=.48;mat["doubleSided"]=True
         mat.pop("emissiveTexture",None);mat.pop("emissiveFactor",None)
+        if mat["name"] == distantoak.name:
+            mat["pbrMetallicRoughness"]["baseColorFactor"]=[.48,.64,.85,1]
+        elif mat["name"] == indoorfern.name:
+            mat["pbrMetallicRoughness"]["baseColorFactor"]=[1,.92,.68,1]
 for sampler in g.get("samplers",[]):
     sampler["magFilter"]=9728;sampler["minFilter"]=9987
 s=json.dumps(g,separators=(',',':')).encode();s+=b' '*(-len(s)%4)

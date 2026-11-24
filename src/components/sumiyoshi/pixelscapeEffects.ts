@@ -60,6 +60,13 @@ const waterShader = {
       return mix(mix(hash(cell), hash(cell + vec2(1,0)), f.x),
         mix(hash(cell + vec2(0,1)), hash(cell + vec2(1,1)), f.x), f.y);
     }
+    float apertureSheen(vec3 ray, vec3 center, vec2 halfSize) {
+      float distance = (center.z-worldPoint.z) / min(-.025,ray.z);
+      vec2 miss = max(abs((worldPoint+distance*ray).xy-center.xy)-halfSize,vec2(0.));
+      float spread = .16+.095*distance;
+      return exp(-dot(miss,miss)/max(.001,spread*spread)) *
+        (1.-smoothstep(8.,15.,distance))*step(.01,distance)*step(ray.z,-.025);
+    }
     void main() {
       vec2 p = worldPoint.xz;
       bool lounge = street < .5 && p.y > -2.87;
@@ -97,9 +104,12 @@ const waterShader = {
       }
       uv = clamp(uv + offset, texel, 1.0 - texel);
       vec3 reflected = texture2D(tDiffuse, uv).rgb;
-      vec3 broad = .5 * (texture2D(tDiffuse, uv + vec2(1.5 * texel.x, 0.)).rgb
-                        + texture2D(tDiffuse, uv - vec2(1.5 * texel.x, 0.)).rgb);
-      reflected = mix(reflected, broad, lounge ? .65 : .30);
+      // A grazing wave carries two wider, fainter shoulders around the reflected
+      // source. They inherit the window / vending case colour directly from the probe.
+      vec2 shoulder = vec2(texel.x*(lounge ? 1.8 : 2.8+2.4*small),0.);
+      vec3 broad = .5 * (texture2D(tDiffuse, uv + shoulder).rgb
+                        + texture2D(tDiffuse, uv - shoulder).rgb);
+      reflected = mix(reflected,broad,lounge ? .54 : .30);
       vec3 eye = normalize(cameraPosition - worldPoint);
       float grazing = pow(1. - clamp(eye.y, 0., 1.), 1.7);
       float intensity = dot(reflected, vec3(.2126,.7152,.0722));
@@ -121,13 +131,26 @@ const waterShader = {
             reflected += .48 * sheen * colour;
           }
         }
-        opacity = (.17 + .29 * grazing) * (.82 + .18 * raw);
+        opacity = (.19 + .29 * grazing) * (.82 + .18 * raw);
       } else {
-        float breaks = .48 + .52 * smoothstep(.18, .6, band);
-        opacity = wet * (.31 + .40 * grazing + .13 * smoothstep(.06, .5, intensity)) * breaks;
-        reflected += vec3(.013, .034, .039) * crest * (.34 + smoothstep(.04,.46,intensity));
+        if (street > .5) {
+          // Light from these openings is scattered by the asphalt as well as the
+          // water. This wide lobe remains registered as the user moves east/west.
+          vec3 ray = reflect(-eye,vec3(0.,1.,0.));
+          vec3 spill = vec3(.26,.097,.031)*apertureSheen(ray,vec3(-10.74,1.08,-.12),vec2(.95,.91));
+          spill += vec3(.062,.16,.23)*apertureSheen(ray,vec3(8.10,1.51,.55),vec2(.38,.31));
+          spill += vec3(.18,.081,.026)*apertureSheen(ray,vec3(15.13,1.45,-.28),vec2(1.56,.59));
+          reflected += spill * (.32+.68*band);
+        }
+        float breaks = .35 + .65 * smoothstep(.23,.67,band);
+        float lamp = smoothstep(.07,.45,intensity);
+        opacity = wet * (.37 + .38 * grazing + .23 * lamp) * breaks;
+        // The meniscus is sky-blue in shadow and picks up the *actual* reflected
+        // lamp colour when a drop lands in a warm window's trail.
+        reflected += (.22 * broad + vec3(.018,.039,.077)) * crest;
+        reflected += broad * .19 * smoothstep(.40,.73,small) * lamp;
       }
-      gl_FragColor = vec4(reflected * vec3(.87,.95,.98), opacity);
+      gl_FragColor = vec4(reflected * vec3(.99,.96,1.), opacity);
       #include <tonemapping_fragment>
       #include <colorspace_fragment>
     }`,
@@ -162,7 +185,8 @@ function wetSurface(scene: T.Scene, area: RainArea) {
   const drawReflection = mirror.onBeforeRender
   mirror.onBeforeRender = function (renderer, scene, camera, geometry, material, group) {
     renderer.getDrawingBufferSize(size)
-    const ratio = Math.min(1, 320 / Math.max(size.x, size.y))
+    const probeEdge = size.x > size.y ? 448 : 352
+    const ratio = Math.min(1, probeEdge / Math.max(size.x, size.y))
     const w = Math.max(1, Math.round(size.x * ratio)), h = Math.max(1, Math.round(size.y * ratio))
     const resized = target.width !== w || target.height !== h
     const now = performance.now()
@@ -174,7 +198,7 @@ function wetSurface(scene: T.Scene, area: RainArea) {
     }
     const moved = !view.equals(camera.matrixWorld) || !projection.equals(camera.projectionMatrix)
     // Cache a still composition; projected UVs remain world-anchored between captures.
-    if (!resized && lastRevision === revision && now - lastTime < (moved ? 82 : 470)) return
+    if (!resized && lastRevision === revision && now - lastTime < (moved ? 72 : 470)) return
     if (resized) target.setSize(w, h)
     uniforms.texel.value.set(1 / w, 1 / h)
     drawReflection.call(this, renderer, scene, camera, geometry, material, group)
@@ -189,7 +213,7 @@ function wetSurface(scene: T.Scene, area: RainArea) {
 
 function fallingRain(scene: T.Scene, area: RainArea) {
   const home = area === 'home', random = seeded(home ? 655 : 182)
-  const count = home ? 165 : 530
+  const count = home ? 220 : 690
   const positions = new Float32Array(count * 6), tails = new Float32Array(count * 2)
   const drops = new Float32Array(count * 4)
   for (let i = 0; i < count; i++) {
@@ -219,14 +243,15 @@ function fallingRain(scene: T.Scene, area: RainArea) {
         vec3 p = position;
         float height = mod(p.y - floor(time * 20.) * .05 * drop.y, 8.0);
         p += vec3(.056 * (8.0 - height) + tail * .014, height - p.y - tail * drop.x, 0.0);
-        amber = street * max(exp(-.56 * abs(p.x + 11.8)), .72 * exp(-.62 * abs(p.x - 14.5)));
-        strength = (.11 + .12 * (1. - tail) + amber * .15) * (.66 + .30 * (drop.y - 3.8) / 2.7);
+        float lampDistance = min(length(p-vec3(-10.74,1.85,-.12)),length(p-vec3(15.13,2.12,.16)));
+        amber = street * exp(-.37*lampDistance) + (1.-street)*.38*exp(-.36*length(p-vec3(-3.45,1.17,-1.1)));
+        strength = (.085 + .17 * (1.-tail) + amber*.30) * (.62+.34*(drop.y-3.8)/2.7);
         gl_Position = projectionMatrix * modelViewMatrix * vec4(p,1.);
       }`,
     fragmentShader: `
       varying float strength, amber;
       void main() {
-        gl_FragColor = vec4(mix(vec3(.16,.38,.44), vec3(.83,.68,.37), amber), strength);
+        gl_FragColor = vec4(mix(vec3(.16,.33,.60),vec3(.98,.60,.29),amber),strength);
         #include <colorspace_fragment>
       }`,
   })
@@ -238,16 +263,19 @@ function fallingRain(scene: T.Scene, area: RainArea) {
   return (time: number) => {material.uniforms.time.value = time}
 }
 
-function windowRunoff(scene: T.Scene) {
-  // Narrow fixed tracks on the garden side of the sheet glass, concentrated
-  // at the two mullions. Only a few of the adhered drops creep down at once.
-  const random = seeded(7720), xyz: number[] = [], props: number[] = []
-  for (let i = 0; i < 63; i++) {
+function windowRunoff(scene: T.Scene, cafe = false) {
+  // Fixed tracks sit on the exterior face, just behind the real timber frames.
+  // A handful of longer trails creep down the glass between the stationary beads.
+  const random = seeded(cafe ? 4820 : 7720), xyz: number[] = [], props: number[] = []
+  const paneCenters = [2.44,3.45,4.46,5.48]
+  const depth = cafe ? -4.490 : -3.743
+  for (let i = 0; i < (cafe ? 54 : 83); i++) {
     const side = i % 2 ? -1 : 1
-    const x = side * (2.95 + 1.90 * random()), y = .27 + 2.55 * random()
+    const x = cafe ? paneCenters[i%4]+(random()-.5)*.84 : side*(2.85+1.98*random())
+    const y = cafe ? 1.39+1.48*random() : .33+2.46*random()
     const length = .022 + .083 * random() ** 2, drift = random() * .013 - .006
     const moving = i % 8 === 0 ? .15 + .55 * random() : 0
-    xyz.push(x, y + length, -3.743, x + drift, y, -3.743)
+    xyz.push(x, y+length, depth, x+drift,y,depth)
     const phase = random(), strength = .11 + .12 * random()
     props.push(moving, phase, strength * .33, moving, phase, strength)
   }
@@ -271,7 +299,7 @@ function windowRunoff(scene: T.Scene) {
     fragmentShader:`
       varying float alpha;
       void main() {
-        gl_FragColor = vec4(.36,.58,.62,alpha);
+        gl_FragColor = vec4(.29,.54,.78,alpha);
         #include <colorspace_fragment>
       }`,
   })
@@ -280,6 +308,10 @@ function windowRunoff(scene: T.Scene) {
   runoff.renderOrder = 3
   scene.add(runoff)
   return (time:number) => {material.uniforms.time.value = time}
+}
+
+export function cafeWindowRain(scene:T.Scene) {
+  return windowRunoff(scene,true)
 }
 
 export function rainField(scene: T.Scene, area: RainArea) {

@@ -17,7 +17,9 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(ROOT / 'art/sumiyoshi/cafe'))
+sys.path.insert(0, str(HERE))
 import build_cafe as g
+from planting import Specimen, crown_limbs
 
 OUT = ROOT / 'public/sumiyoshi/models'
 box, rod, solid, profile = g.box, g.rod, g.solid, g.profile
@@ -101,9 +103,14 @@ def start():
     pixels('Quarry tile and grout','clinker',.13)
     pixels('Light through polycarbonate webs','flutes',.26,'BLEND')
     pixels('Punched metal sliding doors','punched',.19,'BLEND')
+    pixels('Botanical rain leaves','botanical-leaves',.40,'MASK')
+    pixels('Room herbarium leaves','botanical-leaves',.44,'MASK')
+    pixels('Rain through four panes','rain-garden-window',.62)
+    material('Living petioles','617957',.22)
+    material('Rain dark bark','756c59',.23,rough=.58)
+    material('Pollen','e0bd72',.42)
     for i in range(3):
-        pixels('Forest projected crown %s'%i,'crown-%s'%i,.40,'MASK')
-        pixels('Interior garden sprig %s'%i,'canopy-%s'%i,.28,'MASK')
+        pixels('Botanical courtyard crown %s'%i,'crown-%s'%i,.46,'MASK')
     bpy.context.scene.unit_settings.system = 'METRIC'
 
 
@@ -147,13 +154,20 @@ def rack(x,y,z,w,h,bay,bright=True):
         box(x,y+h/2+.025,z+.125,w,.031,.042,'lanternLight',.006)
 
 
-def plant(x,y,z,w,h,variant,source=True):
-    # Planting emerges from the opening. Front and return branches occupy separate depths.
-    mat=('Forest projected crown ' if source else 'Interior garden sprig ')+str(variant)
-    rod((x,y,z),(x+.025,y+h*.49,z-.017),.026 if h>1 else .014,'shadeBrown',6,.010)
-    if source:
-        panel('Return leaf cluster '+str(variant),x+.04,y+h*.53,z-.105,w*.65,h*.88,mat,angle=.86)
-    panel('Canopy in front of open skin '+str(variant),x,y+h/2,z,w,h,mat)
+def facade_tree(x,y,z,w,h,variant):
+    # The three composited elevations retain the crown outlines from the OOO photograph.
+    # A return deeper in the recess gives foliage thickness; the root flare and underplanting
+    # are separate 3D specimens so the crowns remain connected to their openings at oblique views.
+    mat='Botanical courtyard crown '+str(variant)
+    crown_limbs(x,y,z,w,h,variant)
+    panel('Inner foliage in the vent '+str(variant),x-.035,y+h*.51,z-.19,w*.69,h*.86,mat,angle=.91)
+    panel('Photographic crown outline '+str(variant),x,y+h/2,z,w,h,mat)
+    leaves=Specimen('Planting around vent sill '+str(variant),502+variant,True)
+    for j in range(4):
+        xx=x+(-.28+.19*j)*min(1,w*.62)
+        if j%2:leaves.fern(xx,y+.013,z+.033,.19+.024*j)
+        else:leaves.rosette(xx,y+.015,z+.06,.18,7,9)
+    leaves.finish()
 
 
 def room_floor_lamps():
@@ -213,8 +227,16 @@ def front():
     box(.99,.138,-.62,2.25,.033,1.19,'plinth',.01)
     box(.97,.157,-.98,1.28,.012,.46,'wornTeal',.004)
     for zz in (-.16,-.25):box(-1.55,.130,zz,2.75,.017,.02,'flashing',0)
-    plant(-.30,.14,-.61,1.19,1.75,0,False)
-    plant(-2.97,.13,-.48,.78,1.20,1,False)
+    # The reference passage is bordered by low planting and taller stems behind the mesh.
+    # All growth stays inside the facade reveal and clear of the opening.
+    lower=Specimen('Sheltered planting behind the punched sliders',721)
+    lower.camellia(-.29,.146,-.99,1.61)
+    for xx,zz,size,cell in [(-.49,-.73,.83,0),(-.84,-.62,.58,7),(-2.94,-.75,.75,2),
+                            (-2.56,-.52,.32,1),(-.31,-.73,.32,1),(-.13,-.98,.27,3)]:
+        lower.rosette(xx,.145,zz,size,cell,12)
+    for xx,zz in [(-.28,-.53),(-.52,-.52),(-.79,-.48),(-2.79,-.48),(-2.98,-.44)]:
+        lower.fern(xx,.148,zz,.32)
+    lower.finish()
     section('D / inhabited upper storey and operable garden glazing')
     box(0,2.63,-2.49,6.84,.17,4.67,'reveal')
     box(0,4.16,-3.65,6.05,2.99,.15,'shadeBrown')
@@ -297,7 +319,7 @@ def front():
         box(xx,yy+.01,zz,w-.054,.035,depth-.08,'shadeBrown',.001)
         box(xx,yy-height,zz,w+.02,.023,depth+.02,'brightedge',.002)
         crown_width = (2.27,2.45,1.29)[variant]
-        plant(xx,yy+.017,zz+.03,crown_width,h,variant)
+        facade_tree(xx,yy+.017,zz+.03,crown_width,h,variant)
     finish('cafe-front')
 
 
@@ -408,6 +430,7 @@ def ceiling():
 
 def cafe():
     start()
+    pixels('OOO Forest House drawing plates','forest-studio-prints',.26)
     tint_interior('Natural walnut veneered boards',(.54,.72,.78),.075)
     tint_interior('Quarry tile and grout',(.67,.79,.84),.08)
     material('countertop','a79880',.12)
@@ -442,8 +465,10 @@ def cafe():
     box(3.98,2.06,-4.62,4.43,2.34,.098,'shadow',.013)
     for i,x in enumerate((2.44,3.45,4.46,5.48)):
         casing(x,2.08,-4.53,1.01,2.14,.094,'cedar',.058)
-        box(x,2.02,-4.555,.93,2.0,.017,'wornTeal',.001)
-        panel('Garden beyond the night glass',x,2.07,-4.526,.89,1.81,'Interior garden sprig '+str(i%3))
+        lo=(i+.010)/4;hi=(i+.990)/4
+        quad('Garden and blue-hour windows through pane '+str(i),
+             [(x-.477,1.035,-4.540),(x+.477,1.035,-4.540),(x+.477,3.106,-4.540),(x-.477,3.106,-4.540)],
+             'Rain through four panes',((lo,0),(hi,0),(hi,1),(lo,1)))
         for yy in (1.56,2.58):box(x,yy,-4.462,.91,.039,.065,'beam',.002)
         box(x,2.06,-4.459,.033,1.98,.063,'beam',.002)
     for x in (1.86,6.04):
@@ -510,8 +535,25 @@ def cafe():
     box(-1.93,1.138,-1.68,.39,.058,.28,'shadeBrown',.012)
     box(-1.93,1.265,-1.74,.28,.22,.065,'ironwork',.012)
     panel('Till screen',-1.93,1.265,-1.698,.235,.17,'wornTeal')
-    g.pot(-5.40,1.111,-1.68,.16,.18,'shadeBrown')
-    plant(-5.40,1.291,-1.68,.70,.57,1,False)
+    profile(-5.38,1.111,-1.65,[(0,.20),(.035,.23),(.115,.27),(.129,.267)],'wornTeal',24)
+    g.cyl(-5.38,1.239,-1.65,.25,.009,'earth',20)
+    bonsai=Specimen('Counter black pine / clipped needle pads',489)
+    bonsai.pine(-5.38,1.245,-1.65,.80)
+    bonsai.fern(-5.56,1.246,-1.61,.10,6)
+    bonsai.finish()
+    # Planted brackets occupy wall space away from the bar sightline and walking path.
+    for x,yy,zz,size in [(-5.84,2.99,-4.30,.49),(5.86,2.80,-4.27,.66)]:
+        box(x,yy-.092,zz,.48,.050,.38,'countertop',.009)
+        g.pot(x,yy-.065,zz,.12,.155,'turquoise')
+        hanging=Specimen('Trailing satin pothos',int(size*100))
+        hanging.rosette(x,yy+.09,zz,.21,1,11)
+        hanging.vine(x,yy+.11,zz+.12,size,4)
+        hanging.finish()
+    # One white spathe and long lanceolate leaves catch the garden light east of the counter.
+    g.pot(1.69,.038,-4.12,.28,.39,'ceramic')
+    lily=Specimen('Peace lily at the garden window',193)
+    lily.rosette(1.69,.43,-4.12,.83,0,15,True)
+    lily.finish()
     section('F / east banquette, listening tables and café services')
     box(5.95,.27,-1.23,.76,.49,4.91,'redwood',.025)
     box(6.29,.85,-1.23,.15,1.01,4.93,'beam',.023)
@@ -522,8 +564,43 @@ def cafe():
         box(6.127,.60,zz,.010,.036,.72,'ironwork',.002)
     for i,(xx,zz) in enumerate(((4.48,-2.75),(4.62,.30),(-4.87,2.46))):
         panel_table(xx,zz,i==2)
+    # The two small galleries share the sitters' eye line. Actual OOO plates are
+    # dry-mounted slightly forward of the wood liner; the brackets carry physical samples.
+    for west,zz,yy,w,plate in [(True,-2.42,1.69,1.04,0),(False,-1.50,1.71,.86,1)]:
+        side=-1 if west else 1
+        h=w*210/224
+        x=side*6.448
+        box(x,yy,zz,.083,h+.07,w+.07,'shadeBrown',.009)
+        box(x-side*.041,yy,zz,.029,h+.026,w+.026,'dullBrass',.003)
+        xx=x-side*.060
+        # Reading direction reverses across the lane, and for the two opposite walls.
+        z0,z1=zz-side*w/2,zz+side*w/2
+        uv=((plate/2,0),((plate+1)/2,0),((plate+1)/2,1),(plate/2,1))
+        quad('Framed Forest House '+('axonometric' if west else 'floor study'),
+             [(xx,yy-h/2,z0),(xx,yy-h/2,z1),(xx,yy+h/2,z1),(xx,yy+h/2,z0)],
+             'OOO Forest House drawing plates',uv)
+    box(-6.39,1.27,-1.49,.24,.045,.65,'countertop',.006)
+    for j,sample_finish in enumerate(('flashing','cedar','ceramic')):
+        zz=-1.69+j*.185
+        box(-6.391,1.358,zz,.061,.135,.134,sample_finish,.004)
+        box(-6.427,1.305,zz,.089,.022,.151,'shadeBrown',.003)
+    # Small amber-glazed bud vase with a single branch at the east reading table.
+    profile(4.62,.792,.23,[(0,.049),(.015,.064),(.064,.070),(.104,.036),(.141,.029),(.144,.034)],'wine',16)
+    g.cyl(4.62,.936,.23,.026,.004,'espresso',12)
+    specimen=Specimen('Camellia cutting in an oxblood bud vase',106)
+    foot=Vector((4.62,.937,.23))
+    tip=foot+Vector((.059,.15,-.011))
+    specimen.stem(foot,tip,.003)
+    for j in range(3):
+        p=foot.lerp(tip,.38+j*.27)
+        specimen.leaf(3,p,j*2.1,.062,.024,.022,.19,.50)
+    specimen.finish()
     g.pot(5.85,.047,3.32,.36,.45,'wornTeal')
-    plant(5.85,.50,3.32,1.17,1.42,2,False)
+    clump=Specimen('Banquette planting / tall cast iron and variegated leaves',711)
+    clump.rosette(5.85,.502,3.32,1.02,2,16)
+    clump.fern(5.69,.505,3.45,.39)
+    clump.rosette(5.96,.503,3.48,.43,1,10)
+    clump.finish()
     # Reading ledge and stacked journals sit entirely within the east banquette footprint.
     box(5.89,.622,.78,.64,.06,.51,'countertop',.01)
     for j,(col,w) in enumerate([('shadeBrown',.34),('paperBlue',.30),('redwood',.32)]):

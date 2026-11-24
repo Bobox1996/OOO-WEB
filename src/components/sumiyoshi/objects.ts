@@ -1,8 +1,8 @@
 import * as T from 'three'
-import { texture } from '../drive-in/geometry'
+import { glowTexture, texture } from '../drive-in/geometry'
 import { display } from './pixelscapeEffects'
 import type { Area } from './world'
-export { rainField } from './pixelscapeEffects'
+export { cafeWindowRain, rainField } from './pixelscapeEffects'
 
 function practical(scene:T.Scene,name:string,color:string,power:number,radius:number,x:number,y:number,z:number){
   const light=new T.PointLight(color,power,radius,2)
@@ -12,41 +12,109 @@ function practical(scene:T.Scene,name:string,color:string,power:number,radius:nu
   return light
 }
 
-function pendant(scene:T.Scene,name:string,color:string,candela:number,from:[number,number,number],to:[number,number,number]){
-  const light=new T.SpotLight(color,candela,5.2,.79,.84,2)
+type Position = [number, number, number]
+
+function pendant(scene:T.Scene,name:string,color:string,candela:number,from:Position,to:Position,angle=.87){
+  const light=new T.SpotLight(color,candela,7.2,angle,.88,2)
   light.name=name
   light.position.set(...from)
   light.target.position.set(...to)
   scene.add(light,light.target)
 }
 
+// Diffusion is attached to the physical luminous face. Opaque leaves, passers-by
+// and the architecture still occlude it, including in the reflection camera.
+function luminousFace(scene:T.Scene, map:T.Texture, name:string, at:Position, width:number, height:number, tint:string, strength:number) {
+  const material=new T.MeshBasicMaterial({
+    map,color:tint,opacity:strength,transparent:true,depthWrite:false,side:T.DoubleSide,
+    blending:T.AdditiveBlending,toneMapped:false,
+  })
+  const glow=new T.Mesh(new T.PlaneGeometry(width,height),material)
+  glow.name=name;glow.position.set(...at);glow.renderOrder=2
+  scene.add(glow)
+}
+
+function gardenWindowLight(scene:T.Scene) {
+  // Map the four real east panes and their mullions onto the red quarry tiles.
+  // The penumbra grows away from the glass. The transparent patch leaves the
+  // mortar joints and the objects sitting on the floor visible through the light.
+  const geometry=new T.BufferGeometry()
+  geometry.setAttribute('position',new T.Float32BufferAttribute([
+    1.89,.037,-4.52, 5.98,.037,-4.52, 4.16,.037,.08, -.38,.037,.08,
+  ],3))
+  geometry.setAttribute('uv',new T.Float32BufferAttribute([0,0,1,0,1,1,0,1],2))
+  geometry.setIndex([0,2,1,0,3,2])
+  const material=new T.ShaderMaterial({
+    transparent:true,depthWrite:false,blending:T.AdditiveBlending,
+    vertexShader:`
+      varying vec2 pane;
+      void main(){pane=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}
+    `,
+    fragmentShader:`
+      varying vec2 pane;
+      void main(){
+        float farEdge = smoothstep(0.,.11,pane.y)*(1.-smoothstep(.54,1.,pane.y));
+        float jamb = min(pane.x,1.-pane.x);
+        float aperture = smoothstep(0.,.035+.055*pane.y,jamb);
+        float vertical = abs(fract(pane.x*4.)-.5);
+        float rails = 1. - .40*smoothstep(.40-.13*pane.y,.50,vertical);
+        float bars = abs(fract(.90+pane.y*2.48)-.5);
+        float shadow = 1.-.22*(1.-smoothstep(.008,.04+.06*pane.y,bars));
+        gl_FragColor=vec4(.055,.25,.53,.32*farEdge*aperture*rails*shadow);
+        #include <colorspace_fragment>
+      }
+    `,
+  })
+  const spill=new T.Mesh(geometry,material)
+  spill.name='Rain-blue glass on quarry tiles'; scene.add(spill)
+}
+
 export function furnishLight(scene:T.Scene,area:Area){
   const street=area==='street',cafe=area==='cafe'
-  scene.background=new T.Color(street?'#16404d':cafe?'#172325':'#19363b')
-  if(street)scene.fog=new T.Fog('#123240',36,95)
-  scene.add(new T.HemisphereLight(cafe?'#bad0d2':'#a1c7d0',cafe?'#58483f':'#365152',cafe?.74:.91))
-  const key=new T.DirectionalLight(cafe?'#f4d9b7':'#a4d5df',cafe?.71:street?1.20:1.40)
-  key.name=cafe?'Warm reflected ceiling light':'Moonlight through cloud'
+  scene.background=new T.Color(street?'#203c60':cafe?'#182439':'#253c53')
+  if(street)scene.fog=new T.Fog('#294b70',26,90)
+  const sky=new T.HemisphereLight(
+    cafe?'#accaff':'#94bef7',cafe?'#806066':street?'#526483':'#6b606e',
+    cafe?1.18:street?1.18:1.48,
+  )
+  sky.name='Rain sky and reflected pavement light'
+  scene.add(sky)
+  const key=new T.DirectionalLight(cafe?'#ffe1bd':street?'#a3beef':'#a4d7ff',cafe?.78:street?1.08:1.36)
+  key.name=cafe?'Warm reflected ceiling light':'Moonlight through rain clouds'
   key.position.set(cafe?-2.8:-5,cafe?9:12,street?6:cafe?-3.5:-6)
   scene.add(key,key.target)
   key.castShadow=true;key.shadow.mapSize.set(1024,1024)
   const extent=street?16:9
   Object.assign(key.shadow.camera,{left:-extent,right:extent,top:extent,bottom:-extent,near:.2,far:60})
   key.shadow.bias=-.00027;key.shadow.normalBias=.019
-  const fill=new T.DirectionalLight(cafe?'#9ac4cf':'#669aaa',cafe?.60:.61)
+  const fill=new T.DirectionalLight(cafe?'#a5b9e4':street?'#839be5':'#a9b3e5',cafe?.72:street?.61:.76)
   fill.position.set(5,3,6);scene.add(fill)
+  const diffusion=glowTexture()
   if(street){
-    practical(scene,'Forest window behind perforated screen','#ffe1ad',7.8,4.4,-13.90,1.45,-1.30)
-    practical(scene,'Forest recessed entrance','#ffd3a0',8.2,4.5,-10.74,1.68,-.65)
-    practical(scene,'Vending window spill','#b1f0de',8,3.8,8.10,1.30,.73)
-    practical(scene,'Shop counter light','#ffc07b',15,5.3,14.60,1.81,.36)
-    practical(scene,'Genkan light','#ffb872',4.5,3.0,-4.9,1.62,.35)
+    practical(scene,'Forest window behind perforated screen','#ffc38e',15,5.4,-13.90,1.68,-1.43)
+    practical(scene,'Forest recessed entrance','#ffd28e',16,6.4,-10.74,1.90,-.92)
+    practical(scene,'Forest upper inhabited room','#ffca97',7.4,3.9,-12.04,4.2,-1.66)
+    practical(scene,'Vending window spill','#a7e3ff',10,4.6,8.10,1.46,.73)
+    practical(scene,'Tea shop eave','#ffbf84',15,6.0,15.13,2.12,.16)
+    practical(scene,'Azuma house recessed entrance','#ffd09a',5.6,4.2,0,1.99,-.57)
+    for(const x of [-14.16,-12.55,-10.77,-9.15]){
+      luminousFace(scene,diffusion,'Humidity around cafe shelf light',[x,2.09,-2.17],1.48,.38,'#ffb57e',.24)
+    }
+    luminousFace(scene,diffusion,'Lacquered beverage case',[8.10,1.49,.615],1.10,.86,'#aadfff',.13)
   }else if(cafe){
-    pendant(scene,'Coffee bar pendant','#ffe0b5',9.6,[-3.65,2.52,-1.80],[-3.65,.96,-1.77])
-    pendant(scene,'Espresso and porcelain wash','#ffe4bd',7.2,[-4.02,2.49,-3.45],[-4.48,1.06,-4.19])
-    pendant(scene,'Reading table shade','#f9dab5',5.0,[3.75,2.46,-1.0],[4.45,.70,-1.56])
+    // A broad paper ceiling and three smaller enamel shades have distinct jobs.
+    pendant(scene,'Light through the shoji ceiling','#ffce9a',25,[-3.1,3.23,-1.20],[-3.1,.06,-1.2],1.21)
+    for(const x of [-5.15,-3.45,-1.75]){
+      pendant(scene,'Enamel bar shade','#ffce91',10.0,[x,2.46,-2.35],[x,1.03,-1.65],.67)
+      luminousFace(scene,diffusion,'Diffusion under enamel shade',[x,2.454,-2.27],.67,.19,'#ffc088',.31)
+    }
+    pendant(scene,'Rain light through east windows','#91c3ff',17,[4.06,2.43,-4.48],[2.35,.60,-1.06],1.05)
+    gardenWindowLight(scene)
   }else{
-    practical(scene,'Paper lamp and cedar surround','#ffbc77',8.4,4.9,-3.45,1.19,-1.1)
+    practical(scene,'Paper lamp and cedar surround','#ffbc85',15,6.4,-3.45,1.17,-1.1)
+    luminousFace(scene,diffusion,'Washi fibres against wet glass',[-3.45,1.19,-1.42],1.65,1.67,'#ffad75',.37)
+    pendant(scene,'East reading downlight','#ffc293',14,[3.90,3.20,.56],[3.55,.06,.37])
+    practical(scene,'Blue court light returning through the sill','#91c7ff',9.2,6,1.90,1.80,-3.46)
   }
   return key
 }

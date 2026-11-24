@@ -11,15 +11,16 @@ export function cameraDirector(camera:T.PerspectiveCamera){
   return {
     cut(){snap=true}, elevation(){high=!high},
     get elevated(){return high},
-    frame(view:View,player:Point,dt:number,reduced:boolean,reading=false,rasterWidth=640){
+    frame(view:View,player:Point,dt:number,reduced:boolean,reading=false,rasterWidth=960){
       const {area,mode,member}=view,{x,z}=player
       const a=camera.aspect,portrait=a<.87
       let fov=48
       const alongStreet=area==='street'&&mode==='walk'&&!high
       if(mode==='seated'){
-        eye.set(portrait?.11:-2.25,portrait?1.72:1.87,portrait?3.70:3.85)
-        aim.set(0,portrait?1.25:1.38,-2.45)
-        fov=portrait?T.MathUtils.radToDeg(2*Math.atan(2.48/(6.15*a))):48
+        // From the seated eye, leave a wider strip of the planted window on the phone.
+        eye.set(portrait?.14:-2.25,portrait?1.55:1.87,portrait?3.79:3.85)
+        aim.set(portrait?-.13:0,portrait?.93:1.38,-2.45)
+        fov=portrait?T.MathUtils.radToDeg(2*Math.atan(2.77/(6.24*a))):48
       }else if(mode==='focus'){
         // A first-person lean toward the set. The entire display and a leafy margin stay in frame.
         const widthFraction=reading&&portrait?.92:.80

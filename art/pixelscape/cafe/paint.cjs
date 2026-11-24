@@ -47,6 +47,7 @@ function type(s,x,y,word,c,size=1,track=1) {
 }
 const jobs=[]
 function store(s,n){jobs.push(s.save(n))}
+jobs.push(require('./botanical-paint.cjs')())
 
 {
   const s=sheet(186,28,'0c2928')
@@ -123,24 +124,6 @@ const palettes=[
   }
   store(s,'clinker')
 }
-for(let variant=0;variant<3;variant++){
-  const s=sheet(96,96,'00000000')
-  const trunks=['353a32','484432','3a4134'],leafP=['133e38','1a4940','285643','316147','47724b','629258','82a55b']
-  const clusters=[]
-  function branch(x,y,a,len,width,depth){
-    let xx=x+Math.cos(a)*len,yy=y+Math.sin(a)*len;s.line(x,y,xx,yy,trunks[depth%3],width)
-    if(depth<3){branch(xx,yy,a-(.27+rand(22)/50),len*(.66+rand(9)/100),Math.max(1,width-1),depth+1);branch(xx,yy,a+(.27+rand(22)/50),len*(.68+rand(9)/100),Math.max(1,width-1),depth+1);if(depth===1)branch(xx,yy,a+rand(25)/100-.13,len*.75,1,depth+1)}
-    if(depth>=2)clusters.push([xx,yy])
-  }
-  branch(49,95,-1.57,31,3,0);branch(50,74,-2.03,15,2,1)
-  for(const [cx,cy] of clusters){
-    for(let k=0;k<65;k++){
-      const th=rand(628)/100,rr=Math.sqrt(rand(100)/100),xx=Math.floor(cx+Math.cos(th)*rr*15),yy=Math.floor(cy+Math.sin(th)*rr*10)
-      const base=Math.min(6,Math.max(0,Math.floor((cy-yy+11)/4)+rand(3)-2));s.rect(xx,yy,2+rand(5),1+rand(3),leafP[base])
-    }
-  }
-  store(s,'canopy-'+variant)
-}
 {
   // The studio's own front photograph supplies three distinct crown silhouettes.
   // Crop coordinates are measured on an 820px proof of the 1600px published photograph.
@@ -151,18 +134,38 @@ for(let variant=0;variant<3;variant++){
     [581,139,112,122,[[2,93],[8,56],[34,47],[43,26],[78,3],[107,5],[105,31],[79,63],[78,89],[58,122],[12,119]]]
   ]
   function inside(x,y,v){let hit=false;for(let i=0,j=v.length-1;i<v.length;j=i++){const [a,b]=v[i],[c,d]=v[j];if(((b>y)!==(d>y))&&x<(c-a)*(y-b)/(d-b)+a)hit=!hit}return hit}
-  const leaf=['0d2728','143535','1c433d','2b5143','396248','557c51','74915a','99a768']
+  const leaf=['142e37','1e4045','294e4a','365e51','477158','628360','78996d','9cad76','b0ba86']
   jobs.push((async()=>{
-    const {data,info}=await sharp(source).resize({width:820}).removeAlpha().raw().toBuffer({resolveWithObject:true})
+    // Keep 1.5x the original proof resolution. Cluster the colours using a lightly averaged
+    // luminance; saturated leaf edges stay transparent instead of inheriting the white sky.
+    const scale=1.5
+    const {data,info}=await sharp(source).resize({width:820*scale}).removeAlpha().raw().toBuffer({resolveWithObject:true})
     for(let i=0;i<crowns.length;i++){
-      const [left,top,width,height,polygon]=crowns[i],s=sheet(width,height,'00000000')
+      const [px,py,pw,ph,polygon]=crowns[i]
+      const left=Math.round(px*scale),top=Math.round(py*scale),width=Math.round(pw*scale),height=Math.round(ph*scale)
+      const s=sheet(width,height,'00000000')
+      const pigments=new Int8Array(width*height).fill(-1)
       for(let y=0;y<height;y++)for(let x=0;x<width;x++){
-        if(!inside(x+.5,y+.5,polygon))continue
+        if(!inside((x+.5)/scale,(y+.5)/scale,polygon))continue
         const ix=((top+y)*info.width+left+x)*3,r=data[ix],g=data[ix+1],b=data[ix+2]
         if((g>b*1.13+4 && g>r*.84 && r<g*1.21+6 && g<208) || (g<64 && g>b+3 && r<g+14)){
-          const index=Math.max(0,Math.min(7,Math.floor((g*.78+r*.22)/21.8)))
-          s.rect(x,y,1,1,leaf[index])
+          const local=(data[ix+4]+data[ix-2]+data[ix+info.width*3+1])/3
+          const value=g*.70+r*.15+local*.15
+          const index=Math.max(0,Math.min(8,Math.floor((value-11)/19.5)))
+          pigments[y*width+x]=index
         }
+      }
+      for(let y=0;y<height;y++)for(let x=0;x<width;x++){
+        let index=pigments[y*width+x]
+        // The real road has utility wires crossing the photographed foliage. Interpolate
+        // narrow interrupted leaf clusters here; the street supplies its own wires in 3D.
+        const sy=(top+y)/scale,sx=(left+x)/scale
+        const wire=[144-.020*sx,129-.032*sx,132-.012*sx,142-.010*sx].some(line=>Math.abs(line-sy)<2.5)
+        if(wire&&index<1&&y>=4&&y<height-4){
+          const a=pigments[(y-4)*width+x],b=pigments[(y+4)*width+x]
+          if(a>=1&&b>=1)index=(x+y)%3?b:a
+        }
+        if(index>=0)s.rect(x,y,1,1,leaf[index])
       }
       await s.save('crown-'+i)
     }

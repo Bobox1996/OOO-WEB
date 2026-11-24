@@ -14,9 +14,9 @@
 
 ## 镜头与像素
 
-模型使用米。街道人物约 1.7 m，Forest 的门高 2.10 m。默认街道镜头随人物横移，在立面处约覆盖 15.6 m。1280 × 720 的街景渲染到 640 × 360 后最近邻放大，每米约 41 个原生像素，5 cm 构件约 2 像素。用 `?pixels=480` 可在相同宽高比验证 480 × 270。两档在相同摄影机位置比较，不改变空间尺度。
+模型使用米。街道人物约 1.7 m，Forest 的门高 2.10 m。默认街道镜头随人物横移，在立面处约覆盖 15.6 m。1280 × 720 的街景默认以 960 × 540 渲染，每米约 62 个原生像素，5 cm 窗框约占 3 像素。近处像素采用最近邻放大，远处逐级滤去小于单个像素的纹理。用 `?pixels=640` 或 `?pixels=480` 可在同一台摄影机上切换至较轻的渲染档。
 
-竖屏使用独立视角，沿街取景约宽 8.65 m，按屏幕比例限制在 320 × 520 以内。进入咖啡馆前镜头向建筑中轴轻移，入口仍保持在真实的偏右位置。客厅使用透视镜头，初始横屏从沙发左后方取景，使屏幕、庭院和地面反光都可入画。电视详情、对话及项目目录在设备原始分辨率显示。
+竖屏使用独立视角，沿街取景约宽 8.65 m。默认的竖屏像素预算为 432 × 864，390 × 844 的街景以 390 × 844 渲染。沙发视角会为底部项目预览条预留空间。进入咖啡馆前镜头向建筑中轴轻移，入口仍保持在偏右位置。客厅横屏从沙发左后方取景，可同时看见电视、庭院和石面的反光。电视详情、对话及项目目录在设备原始分辨率显示。
 
 ## Forest-Wanna-Be House
 
@@ -26,13 +26,15 @@
 
 | 部分 | Blender 源文件 | 可重建输入 |
 | --- | --- | --- |
-| 客厅、雨庭 | [Garden-room.blend](house/Garden-room.blend) | `house/build.py`、`house/paint.cjs` 及 `house/paint/` 的独立像素图层 |
-| 住吉街道和周边建筑 | [Sumiyoshi-night.blend](street/Sumiyoshi-night.blend) | `street/build_street.py`、`street/paint.py` 与 `street/street-atlas.png` |
-| Forest 立面、咖啡馆室内 | [cafe-front.blend](cafe/cafe-front.blend)、[cafe.blend](cafe/cafe.blend) | `cafe/build.py`、`cafe/paint.cjs` 及树冠、网板与货架图集 |
+| 客厅、雨庭 | [Garden-room.blend](house/Garden-room.blend) | `house/studies/` 保存植物原画，`house/botanical-plates.cjs` 从原画提取独立植物。运行 `node art/pixelscape/house/paint.cjs` 生成 `house/paint/` 的图层，再用 Blender 运行 `house/build.py` |
+| 住吉街道和周边建筑 | [Sumiyoshi-night.blend](street/Sumiyoshi-night.blend) | `street/botany.py` 绘制街边物种，`street/paint.py` 生成 `street-atlas.png`，`street/build_street.py` 排布、打包模型 |
+| Forest 立面、咖啡馆室内 | [cafe-front.blend](cafe/cafe-front.blend)、[cafe.blend](cafe/cafe.blend) | `cafe/paint.cjs`、`cafe/botanical-paint.cjs` 生成树冠和叶片图集，`cafe/planting.py` 生成枝、叶与花，`cafe/build.py` 组装两个模型 |
 | 七位成员及玩家的坐姿、步态和转向 | [Residents.blend](cast/Residents.blend) | 编辑 `cast/cast-sheet.png`、`cast/player-sheet.png`，运行 `node art/pixelscape/cast/prepare_sprites.cjs`，然后用 Blender 运行 `cast/build_cast.py`。人物图集经过最近邻采样，置于三维场景中参与遮挡和投影。 |
 | VISION 玻璃瓶 | [Returnable-Cola.blend](cast/Returnable-Cola.blend) | `cast/build_cola.py`，瓶身文字取自工作室愿景 |
 
 六个 GLB 均位于 `public/sumiyoshi/models/`。镜头、可交互范围、光源与湿面反射分别由 `src/components/sumiyoshi/` 下的 `camera.ts`、`world.ts`、`objects.ts` 和 `pixelscapeEffects.ts` 控制。雨纹和倒影用世界坐标定位，两侧的电视补光从当前封面左右区域采样。PNG 图集可直接修绘，打包过程不依赖 Aseprite。
+
+室外暴露在风中的枝叶使用以 `Botanical ` 开头的材质名。`canopyBreeze.ts` 按连接的几何片区找到各簇根部，让同一阵风只推动叶尖。室内盆栽保持静止。启用系统的「减少动态效果」会让户外植物和雨纹定格。
 
 例如，从仓库根目录在 PowerShell 中重建 Forest 立面。以下命令读取现有 PNG，适合手工改过贴图后使用。
 
@@ -43,6 +45,8 @@ npm run package:sumiyoshi
 
 ## 图像验收
 
-在桌面 Chrome 中以 1280 × 720 视口和 390 × 844 触屏模拟检查入座、开门、交谈、取瓶与电视详情。调档对比使用同一台街道摄影机。640 档可读出雨棚和网板的边线，静止机位的主要运动集中在雨丝与水面。[正立面对照](screens/forest-study.webp) · [480 与 640 对比](screens/raster-comparison.webp) · [手机街景](screens/forest-facade-mobile.webp) · [客厅](screens/living-room-desktop.webp) · [咖啡馆](screens/cafe.webp)
+在 Chrome 中以桌面 1280 × 720 视口和 390 × 844 竖屏触控模拟检查入座、开门、交谈、取瓶与电视详情。客厅镜头用于检查庭院叶形与和纸灯，Forest 的正面镜头用于检查树池、开窗和湿路倒影。咖啡馆可同时看见吊灯照亮的吧台和雨窗投在陶砖上的冷光。[客厅](screens/living-room-desktop.webp) · [手机客厅](screens/living-room-mobile.webp) · [Forest 正面](screens/forest-facade-desktop.webp) · [手机街景](screens/forest-facade-mobile.webp) · [咖啡馆](screens/cafe.webp)
 
-进一步手工精修可集中在侧看树冠时的枝条厚度、半透明板在掠射角的折光，以及从正面人像推定的侧脸和后脑。
+[植物与灯光的同机位前后对照](screens/plant-light-study.webp) · [Forest 实景照片与游戏立面对照](screens/forest-study.webp)
+
+如继续精修，优先从咖啡馆入口斜看树冠，校准叶层之间的厚度，再根据实物样片核对聚碳酸酯在雨夜的透光程度。

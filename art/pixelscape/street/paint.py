@@ -4,6 +4,8 @@ import random
 import struct
 import zlib
 
+from botany import botanical_tiles
+
 
 def rgb(hex_color):
     if not isinstance(hex_color, str):
@@ -179,46 +181,24 @@ def printed():
 
 def tower(index):
     rng=random.Random(987+index)
-    cols=['32464e','37474a','3b4140','344a4c','3e4848','36424d'];base=cols[index]
+    cols=['354865','3c4a63','413f50','344962','3c4559','354462'];base=cols[index]
     d=Paper(126,192,base)
     for floor in range(11):
         y=10+16*floor
         d.rect(0,y,126,2,shift(base,-9));d.rect(0,y+2,126,1,shift(base,11))
         for col in range(5):
             x=6+24*col;r=rng.random()
-            d.rect(x-1,y+4,16,10,'25383e')
-            tint=rng.choice(('af9671','ae946b','d0ae72')) if r<.095 else rng.choice(('25383e','405457','4b5d60','344b52','485753'))
-            d.rect(x,y+5,13,8,tint);d.rect(x+6,y+5,1,8,'344247')
+            d.rect(x-1,y+4,16,10,'293647')
+            tint=rng.choice(('bc986f','b89a77','d9b47f')) if r<.095 else rng.choice(('2a3647','41516a','536279','33485e','465469'))
+            d.rect(x,y+5,13,8,tint);d.rect(x+6,y+5,1,8,'354255')
             if r<.09:d.rect(x,y+8,13,1,shift(tint,-23))
             if floor%4==1 and col%2==0:
-                d.rect(x+12,y+9,7,4,'566164');d.rect(x+13,y+10,4,1,'30484d')
+                d.rect(x+12,y+9,7,4,'566177');d.rect(x+13,y+10,4,1,'34465b')
         if (index+floor)%3:
             d.rect(1,y+12,124,1,shift(base,10));d.rect(3,y+14,120,2,shift(base,-8))
             for i in range(4,126,6):d.rect(i,y+12,1,3,shift(base,5))
     for x in (2,49,117):d.rect(x,2,2,188,shift(base,-8))
     d.rect(0,0,126,2,shift(base,16))
-    return d
-
-
-def tree(index):
-    rng=random.Random(404+index);d=Paper(94,118,(0,0,0,0))
-    type_palette=[['162f32','1b3e3e','245149','326457','52836a'],['112d34','16383c','1b4545','28544c','3d6556']]
-    p=type_palette[index%2]
-    d.line(45,117,48,41,'2f3431',3);d.line(47,82,24,55,'333b36',2);d.line(47,87,75,56,'303a34',2)
-    centers=[]
-    for j in range(45):
-        level=rng.random();theta=rng.random()*math.tau
-        radius=math.sqrt(rng.random())*(.55+.45*math.sin(level*3))
-        x=47+math.cos(theta)*35*radius;y=55+math.sin(theta)*33*radius-level*18
-        centers.append((int(x),int(y),rng.randint(8,14)))
-    for x,y,r in centers:d.circle(x,y,r,max(5,r-3),p[0])
-    for x,y,r in sorted(centers,key=lambda c:-c[1]):
-        d.circle(x,y-1,r-2,r//2+1,p[rng.choice([1,1,2])])
-        for j in range(22):
-            a=rng.uniform(1.9,4.5);u=rng.uniform(.35,1)
-            lx=x+math.cos(a)*r*u;ly=y+math.sin(a)*r*.62*u
-            d.rect(lx,ly,rng.randint(2,5),rng.choice([1,1,2]),p[rng.choice([1,2,2,3])])
-        for j in range(3):d.rect(x-rng.randint(1,r),y-rng.randint(2,r//2+1),2,1,p[4])
     return d
 
 
@@ -234,11 +214,11 @@ def road():
 
 
 def sky():
-    d=Paper(416,168,'163b4d');rng=random.Random(84)
+    d=Paper(416,168,'263a63');rng=random.Random(84)
     for y in range(d.h):
-        t=y/(d.h-1);r=round(18+t*15);g=round(54+t*21);b=round(70+t*13)
+        t=y/(d.h-1);r=round(27+t*23);g=round(45+t*32);b=round(77+t*32)
         d.rect(0,y,416,1,(r,g,b))
-    for y,radius,col in [(102,64,'294b52'),(91,51,'244650'),(52,35,'1e4250'),(26,27,'1b3c4c')]:
+    for y,radius,col in [(102,64,'354d67'),(91,51,'304862'),(52,35,'293e5e'),(26,27,'263954')]:
         x=-90
         while x<460:
             r=rng.randint(radius//3,radius)
@@ -249,7 +229,7 @@ def sky():
 def atlas(path,pigments=()):
     tiles={**{f'skin{i}':skin(i) for i in range(8)},**{f'room{i}':window(i) for i in range(6)},
            **{f'shop{i}':shop(i) for i in range(2)},**{f'tower{i}':tower(i) for i in range(6)},
-           **{f'tree{i}':tree(i) for i in range(4)},'road':road(),'sky':sky(),'notice':printed()}
+           **botanical_tiles(Paper),'road':road(),'sky':sky(),'notice':printed()}
     chips=Paper(128,128,'263c41')
     if len(pigments)>256:raise ValueError('Palette exceeds sixteen by sixteen swatches')
     for i,c in enumerate(pigments):chips.rect(i%16*8,i//16*8,8,8,c)

@@ -54,7 +54,7 @@ warmRoom=material('04 | Curtains with interior light',True,.9)
 store=material('05 | Illuminated store shelves',True,1.03)
 horizon=material('06 | Flats in aerial perspective',True,.53)
 skyMat=material('07 | Twilight sky',True,.85)
-leafMat=material('08 | Cut-paper wet leaves',True,.29,True)
+leafMat=material('Botanical Street | Wet leaves and boughs',True,.34,True,rough=.61)
 stone='405358';deep='182e34';shadow='21383d';iron='364747';tin='80908a';zinc='617777'
 wood='68534a';soot='343d3f';cream='c8bf9b';amber='ffcf83';sodium='f4d69c';teal='39736c'
 
@@ -187,9 +187,38 @@ def ac(x,y,z):
     for j in range(4):box(x+.21,y-.096+j*.071,z+.163,.16,.028,.02,'6d7974')
     box(x,y-.285,z,.69,.06,.32,'3f5051')
 
+def stoneware(x,z,diameter,height,glaze):
+    # Unglazed foot, glazed rings and a rolled rim around an exposed soil disc.
+    dark,body,rim = [('684c43','916654','a37d64'),('415a60','607677','87918b'),
+                     ('535448','727762','999981')][glaze % 3]
+    rings=[(.025,.31,dark),(.05,.35,dark),(.13,.36,body),(.76,.48,body),
+           (.80,.48,dark),(.84,.51,rim),(.96,.51,body),(1,.48,rim),(.98,.43,dark)]
+    sides=12
+    def vertex(level,radius,j):
+        a=math.tau*j/sides
+        return (x+math.cos(a)*diameter*radius,.025+level*height,z+math.sin(a)*diameter*radius)
+    for (level,radius,_),(top,outer,color) in zip(rings,rings[1:]):
+        for j in range(sides):
+            face([vertex(level,radius,j+1),vertex(level,radius,j),vertex(top,outer,j),vertex(top,outer,j+1)],color)
+    face([vertex(.97,.43,j) for j in reversed(range(sides))],'47463d')
+
+
 def plant(x,z,h,index):
-    box(x,.13,z,.35,.25,.29,['806659','76786c','626b66'][index%3])
-    placard('tree'+str(index%4),x,.19+h/2,z,h*.85,h,leafMat,angle=(-.10 if index%2 else .06))
+    species=4 if h>1.4 else index%5
+    diameter=.33 if h<.66 else (.46 if h>1.4 else .39)
+    pot_height=.22 if h<.66 else (.34 if h>1.4 else .27)
+    stoneware(x,z,diameter,pot_height,index)
+    leaf_width=h*(.85 if h>1.4 else 1.15)
+    direction=1 if math.sin(x*4)>0 else -1
+    flip=(1,0,0,1) if direction<0 else (0,0,1,1)
+    for layer in (0,1):
+        stand_off=(layer-.5)*diameter*.21
+        placard(f'herb{species}-{layer}',x,pot_height+h/2,z+stand_off,
+                leaf_width,h,leafMat,section=flip,angle=direction*(.32 if layer else -.29))
+
+
+def gutter_herbs(x,z,width,height,angle=0):
+    placard('gutter growth',x,.014+height/2,z,width,height,leafMat,angle=angle)
 
 def bike(x,z,color):
     def v(a,b,c=0):return (x+a,b,z+c)
@@ -348,6 +377,25 @@ box(0,1.07,-.773,.69,2.10,.04,'5c5146');box(.211,1.06,-.734,.032,.28,.045,'a29e8
 box(0,.023,-.17,.82,.045,.65,'75807a');box(0,2.18,-.73,.37,.025,.09,'b0a487',light)
 plant(-1.31,.21,.77,0);plant(-.91,.18,.49,2);plant(1.33,.22,.86,3)
 
+# Small additions stay beside thresholds and downpipes. Keep door swings and
+# the walkable lane clear, especially at the two interactive entrances.
+sector='22 / Domestic threshold gardens'
+for x,z,height,species in [(-23.83,.34,.72,3),(-19.10,.36,.79,0),
+                          (-15.85,.27,.61,2),(-7.62,.41,.74,1),(-7.22,.36,.69,3),
+                          (-2.55,.37,.49,2),(2.11,.32,1.08,4),(5.78,.32,.51,1),
+                          (7.26,.39,.63,2),(10.96,.31,.79,0),(16.47,.35,.58,3),
+                          (20.96,.35,.65,1),(23.05,.37,.49,2)]:
+    plant(x,z,height,species)
+for x,z,w,h in [(-24.55,.47,.40,.18),(-18.9,.35,.50,.15),(-15.62,.47,.52,.19),
+                 (-7.89,.49,.57,.21),(-2.08,.47,.33,.14),(-1.57,.52,.31,.14),
+                 (1.58,.46,.29,.12),(6.96,.43,.42,.18),(8.86,.31,.29,.16),
+                 (11.46,.37,.51,.17),(17.15,.46,.44,.16),(23.48,.45,.54,.21)]:
+    gutter_herbs(x,z,w,h)
+for x,z,h,flipped in [(-15.78,-.10,2.24,True),(-2.16,-.16,2.55,False),
+                      (6.8,-.03,2.06,True),(23.34,-.02,2.48,False)]:
+    placard('teika climber',x,.12+h/2,z,h*.54,h,leafMat,
+            section=(1,0,0,1) if flipped else (0,0,1,1))
+
 sector='30 / VISION illuminated beverage dispenser'
 x,z=8.10,.11
 box(x,.10,z,.96,.19,.70,'283d40');box(x,1.035,z,1.02,1.90,.74,'953f38')
@@ -392,7 +440,10 @@ for a,b in [((-8,5.9,-.1),(-4.8,3.8,-.13)),((12,5.98,-.2),(5.7,4.9,-.24)),((-24.
 sector='50 / Gardens behind the party line'
 for i in range(34):
     xx=-37+i*2.2+rng.uniform(-.6,.6);zz=rng.uniform(-14,-9.6);h=rng.uniform(4.6,9.9)
-    placard('tree'+str(i%4),xx,h/2,zz,h*.79,h,leafMat,angle=rng.uniform(-.26,.26))
+    species=(0,2,1,3,2,4,3)[i%7]
+    flip=(1,0,0,1) if i%3==0 else (0,0,1,1)
+    placard('tree'+str(species),xx,h/2,zz,h*(.78 if species in (1,4) else 1.02),
+            h,leafMat,section=flip,angle=rng.uniform(-.26,.26))
 
 sector='60 / Rear tenement terraces'
 for layer,(z,interval,start,n) in enumerate([(-17.3,8.3,-44,12),(-29.8,10.7,-59,13)]):
@@ -400,7 +451,7 @@ for layer,(z,interval,start,n) in enumerate([(-17.3,8.3,-44,12),(-29.8,10.7,-59,
         xx=start+i*interval+rng.uniform(-.8,.8);w=interval*rng.uniform(.72,.97)
         h=rng.uniform(7,17) if layer==0 else rng.uniform(11.0,22.3)
         dz=z+rng.uniform(-2,1.8);dt=rng.uniform(3,5.8)
-        box(xx,h/2,dz-dt/2,w,h,dt,['3e4e51','36484f','414b49'][i%3])
+        box(xx,h/2,dz-dt/2,w,h,dt,['424e66','3b4860','484b59'][i%3])
         placard('tower'+str((i+layer)%6),xx,h/2,dz+.012,w,h,horizon)
         box(xx,h+.045,dz-.30,w+.16,.11,.69,'4e6266')
         if i%2==1:
@@ -471,7 +522,7 @@ manifest['textures']=textures[:1]
 for mat in manifest['materials']:
     for tex in [mat.get('emissiveTexture'),mat.get('pbrMetallicRoughness',{}).get('baseColorTexture')]:
         if tex is not None:tex['index']=0
-    if mat['name'].startswith('08 |'):
+    if mat['name']==leafMat.name:
         mat['alphaMode']='MASK';mat['alphaCutoff']=.5
 data=json.dumps(manifest,separators=(',',':')).encode();data+=b' '*(-len(data)%4)
 out.write_bytes(struct.pack('<4sIIII',b'glTF',2,20+len(data)+len(tail),len(data),0x4e4f534a)+data+tail)
