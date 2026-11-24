@@ -33,6 +33,8 @@ export const distance = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.z - b.z)
 
 export const homeSpawn = p(2.04, 1.15)
 export const cafeSpawn = p(0, 3.9)
+export const forestCenterX = -11.8
+export const forestEntranceX = forestCenterX + 1.06
 
 export const npcPositions = [
   p(-4.30, -2.96), p(-1.10, -3.00), p(-3.24, -0.43), p(3.42, -2.74),
@@ -61,8 +63,9 @@ const stations = [
     { kind: 'door', arrival: 'home-entry' }, p(3.9, 3.05)),
   station('home-entry', 'street', p(0, 0.08), p(0, 1.2), [-0.84, 0.84, -0.15, 0.66],
     { kind: 'door', arrival: 'home-door' }, p(0, 1.6)),
-  station('cafe-entry', 'street', p(-11.8, 0.08), p(-11.8, 1.2), [-12.67, -10.93, -0.15, 0.68],
-    { kind: 'door', arrival: 'cafe-door' }, p(-11.8, 1.6)),
+  station('cafe-entry', 'street', p(forestEntranceX, 0.08), p(forestEntranceX, 1.2),
+    [forestEntranceX-.78, forestEntranceX+.78, -0.15, 0.68],
+    { kind: 'door', arrival: 'cafe-door' }, p(forestEntranceX, 1.6)),
   station('vision', 'street', p(8.1, 0.3), p(8.1, 1.4), [7.36, 8.84, -0.22, 0.65], { kind: 'vision' }),
   station('cafe-door', 'cafe', p(0, 4.58), p(0, 4.3), [-0.87, 0.87, 4.1, 4.9],
     { kind: 'door', arrival: 'cafe-entry' }, cafeSpawn),

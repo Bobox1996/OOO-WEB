@@ -3,9 +3,9 @@ const path = require('node:path')
 const { spawn } = require('node:child_process')
 
 const street = process.argv.includes('--sumiyoshi')
-const title = street ? 'OOO Sumiyoshi Street' : 'OOO Drive-In'
+const title = street ? 'OOO Sumiyoshi Pixelscape' : 'OOO Drive-In'
 const host = '127.0.0.1'
-const port = street ? 3018 : 3017
+const port = street ? 3021 : 3017
 const url = `http://${host}:${port}`
 const healthPath = '/__ooo_local_preview'
 const signature = title + ' local preview'

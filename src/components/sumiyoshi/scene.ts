@@ -3,7 +3,8 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { cameraDirector, opening, type View } from './camera'
 import { bottleLabel, furnishLight, rainField, television } from './objects'
 import { screenSurface } from './screenSurface'
-import { areas, stops, homeSpawn, npcPositions, memberStops, nearby, walkable, walkPath, slideMove, distance, type Point, type Stop } from './world'
+import { pixelViewport } from './pixelViewport'
+import { areas, stops, homeSpawn, forestCenterX, npcPositions, memberStops, nearby, walkable, walkPath, slideMove, distance, type Point, type Stop } from './world'
 
 type Controls={
   ready:()=>void;failure:(err:string)=>void;near:(id:Stop|null)=>void;arrive:(id:Stop)=>void;
@@ -23,7 +24,7 @@ function free(roots:T.Object3D[]){
   geometry.forEach(g=>g.dispose());material.forEach(m=>m.dispose());textures.forEach(t=>t.dispose())
 }
 export function createStreetGame(host:HTMLDivElement,events:Controls,vision:string){
-  const renderer=new T.WebGLRenderer({antialias:true,powerPreference:'high-performance'})
+  const renderer=new T.WebGLRenderer({antialias:false,powerPreference:'high-performance'})
   renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.04
   renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFShadowMap;renderer.shadowMap.autoUpdate=false
   const canvas=renderer.domElement;host.appendChild(canvas);canvas.setAttribute('aria-hidden','true')
@@ -42,9 +43,10 @@ export function createStreetGame(host:HTMLDivElement,events:Controls,vision:stri
   const ray=new T.Raycaster(),floor=new T.Plane(new T.Vector3(0,1,0),0),hit=new T.Vector3(),box=new T.Box3()
   const held=new Set<string>(),npcs:T.Object3D[]=[],heads:(T.Object3D|undefined)[]=[],facing:number[]=[]
   let player:T.Object3D|undefined,seated:T.Object3D|undefined,legs:(T.Object3D|undefined)[]=[],arm:T.Object3D|undefined
-  const cutaway:T.Object3D[]=[]
+  const cutaway:T.Object3D[]=[],cafeCeiling:T.Object3D[]=[]
   let view:View=opening,route:Point[]=[],goal:Stop|null=null,nearId:Stop|null=null
-  let disposed=false,ready=false,blocked=false,resizePending=true,frame=0,then=0,time=0,stride=0,pixelRatio=1,renderScale=1,samples=0,duration=0
+  let disposed=false,ready=false,blocked=false,resizePending=true,frame=0,then=0,time=0,stride=0
+  const rasterWidth=new URLSearchParams(location.search).get('pixels')==='480'?480:640
   let pointer:{x:number;y:number;angle:number}|null=null,bottleAngle=0,remotePulse=0
   let nearGround:T.Mesh|undefined
   function model(file:string,attach:(obj:T.Group)=>void){
@@ -60,14 +62,21 @@ export function createStreetGame(host:HTMLDivElement,events:Controls,vision:stri
   function applyVisibility(){
     avatar.visible=view.mode==='walk'
     cutaway.forEach(o=>{o.visible=view.mode==='seated'||view.mode==='focus'})
+    cafeCeiling.forEach(o=>{o.visible=view.mode!=='walk'||!director.elevated})
     if(seated)seated.visible=view.mode==='seated'
     if(player){const umbrella=player.getObjectByName('Player_Umbrella');if(umbrella)umbrella.visible=view.area==='street'
       const remote=player.getObjectByName('Player_Remote');if(remote)remote.visible=false}
     renderer.shadowMap.needsUpdate=true
   }
   const assets=[
-    model('house',g=>{g.traverse(o=>{if(o.name.startsWith('Cutaway'))cutaway.push(o)});scenes.home.add(g)}),model('street',g=>scenes.street.add(g)),model('cafe-front',g=>{g.position.x=-11.8;scenes.street.add(g)}),
-    model('cafe',g=>scenes.cafe.add(g)),model('cola',g=>bottleRig.add(g)),
+    model('house',g=>{g.traverse(o=>{if(o.name.startsWith('Cutaway'))cutaway.push(o)});scenes.home.add(g)}),model('street',g=>scenes.street.add(g)),model('cafe-front',g=>{g.position.x=forestCenterX;scenes.street.add(g)}),
+    model('cafe',g=>{
+      g.traverse(o=>{
+        if(o.name.startsWith('Cutaway'))cutaway.push(o)
+        if(o.name.startsWith('Ceiling_')){o.castShadow=false;cafeCeiling.push(o)}
+      })
+      scenes.cafe.add(g)
+    }),model('cola',g=>bottleRig.add(g)),
     model('people',g=>{
       player=g.getObjectByName('Player');seated=g.getObjectByName('PlayerSeated')
       if(!player||!seated)throw new Error('Missing player pose')
@@ -157,7 +166,7 @@ export function createStreetGame(host:HTMLDivElement,events:Controls,vision:stri
     let choice:Stop|null=null,closest=Infinity
     for(const id of areas[view.area].stops){
       const s=stops[id],[l,r,b,f]=s.hitbox
-      box.min.set(l,.005,b);box.max.set(r,s.action.kind==='door'?2.75:s.action.kind==='sofa'?.94:s.action.kind==='vision'?2.12:1.55,f)
+      box.min.set(l,.005,b);box.max.set(r,s.action.kind==='door'?2.15:s.action.kind==='sofa'?.94:s.action.kind==='vision'?2.12:1.78,f)
       if(ray.ray.intersectBox(box,hit)&&hit.distanceTo(camera.position)<closest){closest=hit.distanceTo(camera.position);choice=id}
     }
     if(choice){walkTo(stops[choice].approach,choice);return}
@@ -167,8 +176,8 @@ export function createStreetGame(host:HTMLDivElement,events:Controls,vision:stri
     const w=Math.max(1,host.clientWidth),h=Math.max(1,host.clientHeight)
     camera.aspect=w/h;camera.updateProjectionMatrix();bottleCam.aspect=w/h
     bottleCam.position.set(.0,.158,w/h<.8?.79:.63);bottleCam.lookAt(0,.145,0);bottleCam.updateProjectionMatrix()
-    pixelRatio=Math.min(devicePixelRatio||1,w<700?1.5:1.65)*renderScale
-    renderer.setPixelRatio(pixelRatio);renderer.setSize(w,h,false);director.cut()
+    const raster=pixelViewport(w,h,rasterWidth)
+    renderer.setSize(raster.width,raster.height,false);director.cut()
   }
   function render(now:number){
     if(disposed||document.hidden)return
@@ -176,13 +185,12 @@ export function createStreetGame(host:HTMLDivElement,events:Controls,vision:stri
     const dt=then?Math.min((now-then)/1000,.9):0;then=now
     if(!ready)return
     if(resizePending){resizePending=false;resize()}
-    time+=dt;duration+=dt;samples++
-    if(samples>35){if(duration/samples>.075&&renderScale>.73){renderScale*=.87;resize()}samples=0;duration=0}
+    time+=dt
     if(view.mode==='walk'&&!blocked){
       const steps=Math.max(1,Math.ceil(dt/.035))
       for(let i=0;i<steps;i++)walk(dt/steps)
     }
-    director.frame(view,avatar.position,dt,motion.matches,tvDocument.attached)
+    director.frame(view,avatar.position,dt,motion.matches,tvDocument.attached,canvas.width)
     if(tvDocument.attached&&view.mode==='focus')tvDocument.place(canvas.clientWidth,canvas.clientHeight)
     if(view.area!=='cafe')soaked[view.area](motion.matches?0:time)
     if(view.area==='street'){
@@ -222,11 +230,12 @@ export function createStreetGame(host:HTMLDivElement,events:Controls,vision:stri
       tvDocument.attach(el)
       if(el&&ready&&view.mode==='focus')tvDocument.place(canvas.clientWidth,canvas.clientHeight)
     },
-    pause(value:boolean){blocked=value;reset()},elevate:director.elevation,
+    pause(value:boolean){blocked=value;reset()},elevate(){director.elevation();applyVisibility()},
     turnBottle(by:number){bottleAngle+=by},
     dispose(){
       disposed=true;cancelAnimationFrame(frame);observe.disconnect();listeners.forEach(([el,n,fn])=>el.removeEventListener(n,fn))
-      tvDocument.attach(null);tv.dispose();free([...Object.values(scenes),bottleScene]);renderer.dispose();canvas.remove()
+      tvDocument.attach(null);tv.dispose();soaked.home.dispose();soaked.street.dispose()
+      free([...Object.values(scenes),bottleScene]);renderer.dispose();canvas.remove()
     },
   }
 }

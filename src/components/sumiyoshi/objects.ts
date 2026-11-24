@@ -1,60 +1,92 @@
 import * as T from 'three'
-import { seeded, texture } from '../drive-in/geometry'
+import { texture } from '../drive-in/geometry'
+import { display } from './pixelscapeEffects'
 import type { Area } from './world'
+export { rainField } from './pixelscapeEffects'
+
+function practical(scene:T.Scene,name:string,color:string,power:number,radius:number,x:number,y:number,z:number){
+  const light=new T.PointLight(color,power,radius,2)
+  light.name=name
+  light.position.set(x,y,z)
+  scene.add(light)
+  return light
+}
+
+function pendant(scene:T.Scene,name:string,color:string,candela:number,from:[number,number,number],to:[number,number,number]){
+  const light=new T.SpotLight(color,candela,5.2,.79,.84,2)
+  light.name=name
+  light.position.set(...from)
+  light.target.position.set(...to)
+  scene.add(light,light.target)
+}
 
 export function furnishLight(scene:T.Scene,area:Area){
   const street=area==='street',cafe=area==='cafe'
-  const color=street?'#8799a3':cafe?'#343133':'#171f21'
-  scene.background=new T.Color(color)
-  if(street)scene.fog=new T.Fog('#85959d',31,145)
-  scene.add(new T.HemisphereLight(street?'#dbe9ee':cafe?'#ffe7c9':'#dae8db',cafe?'#bc8771':street?'#a69d94':'#7c7d72',street?1.8:cafe?1.48:1.15))
-  const sun=new T.DirectionalLight(street?'#fff0d6':cafe?'#ffe3ba':'#e6f2d7',street?2.42:cafe?2.02:2.64)
-  sun.position.set(-5,13,street?8:-4);scene.add(sun,sun.target)
-  sun.castShadow=true;sun.shadow.mapSize.set(street?1024:1024,1024)
-  const extent=street?17:9
-  Object.assign(sun.shadow.camera,{left:-extent,right:extent,top:extent,bottom:-extent,near:.2,far:60})
-  sun.shadow.bias=-.00025;sun.shadow.normalBias=.015
-  const fill=new T.DirectionalLight(cafe?'#dab79c':street?'#b2c4d8':'#adc1cf',cafe?.72:street?.7:.58)
-  fill.position.set(4,4,6);scene.add(fill)
-  if(area==='home'){
-    const warm=new T.PointLight('#ffc48d',10,7,2);warm.position.set(3,2.1,1);scene.add(warm)
+  scene.background=new T.Color(street?'#16404d':cafe?'#172325':'#19363b')
+  if(street)scene.fog=new T.Fog('#123240',36,95)
+  scene.add(new T.HemisphereLight(cafe?'#bad0d2':'#a1c7d0',cafe?'#58483f':'#365152',cafe?.74:.91))
+  const key=new T.DirectionalLight(cafe?'#f4d9b7':'#a4d5df',cafe?.71:street?1.20:1.40)
+  key.name=cafe?'Warm reflected ceiling light':'Moonlight through cloud'
+  key.position.set(cafe?-2.8:-5,cafe?9:12,street?6:cafe?-3.5:-6)
+  scene.add(key,key.target)
+  key.castShadow=true;key.shadow.mapSize.set(1024,1024)
+  const extent=street?16:9
+  Object.assign(key.shadow.camera,{left:-extent,right:extent,top:extent,bottom:-extent,near:.2,far:60})
+  key.shadow.bias=-.00027;key.shadow.normalBias=.019
+  const fill=new T.DirectionalLight(cafe?'#9ac4cf':'#669aaa',cafe?.60:.61)
+  fill.position.set(5,3,6);scene.add(fill)
+  if(street){
+    practical(scene,'Forest window behind perforated screen','#ffe1ad',7.8,4.4,-13.90,1.45,-1.30)
+    practical(scene,'Forest recessed entrance','#ffd3a0',8.2,4.5,-10.74,1.68,-.65)
+    practical(scene,'Vending window spill','#b1f0de',8,3.8,8.10,1.30,.73)
+    practical(scene,'Shop counter light','#ffc07b',15,5.3,14.60,1.81,.36)
+    practical(scene,'Genkan light','#ffb872',4.5,3.0,-4.9,1.62,.35)
+  }else if(cafe){
+    pendant(scene,'Coffee bar pendant','#ffe0b5',9.6,[-3.65,2.52,-1.80],[-3.65,.96,-1.77])
+    pendant(scene,'Espresso and porcelain wash','#ffe4bd',7.2,[-4.02,2.49,-3.45],[-4.48,1.06,-4.19])
+    pendant(scene,'Reading table shade','#f9dab5',5.0,[3.75,2.46,-1.0],[4.45,.70,-1.56])
+  }else{
+    practical(scene,'Paper lamp and cedar surround','#ffbc77',8.4,4.9,-3.45,1.19,-1.1)
   }
-  return sun
-}
-
-export function rainField(scene:T.Scene,area:'home'|'street'){
-  const inside=area==='home',rand=seeded(inside?655:182)
-  const n=inside?440:680,spread=inside?11:50,back=inside?-9.6:-.5,depth=inside?5.4:8.0
-  const seeds=Array.from({length:n},()=>[(rand()-.5)*spread,rand()*8,back+rand()*depth,.09+rand()*.18])
-  const positions=new Float32Array(n*6),g=new T.BufferGeometry()
-  const attr=new T.BufferAttribute(positions,3).setUsage(T.DynamicDrawUsage)
-  g.setAttribute('position',attr)
-  const rainfall=new T.LineSegments(g,new T.LineBasicMaterial({color:'#d9ece7',transparent:true,opacity:inside?.25:.3,depthWrite:false}))
-  rainfall.frustumCulled=false;scene.add(rainfall)
-  const count=inside?35:62
-  const glints=new T.InstancedMesh(new T.RingGeometry(.86,1,12),new T.MeshBasicMaterial({color:'#d4e2da',opacity:.28,transparent:true,depthWrite:false}),count)
-  const ripples=Array.from({length:count},()=>[(rand()-.5)*(inside?8.8:45),inside?-3.65+rand()*.62:1+rand()*4.8,rand(),.8+rand()*.6])
-  const cursor=new T.Object3D();cursor.rotation.x=-Math.PI/2;glints.frustumCulled=false;scene.add(glints)
-  return (time:number)=>{
-    for(let i=0;i<n;i++){
-      const [x,start,z,size]=seeds[i],y=((start-time*(5.4+size*8))%8+8)%8,j=i*6
-      const drift=x+.073*(8-y)
-      positions[j]=drift;positions[j+1]=y;positions[j+2]=z;positions[j+3]=drift+.018;positions[j+4]=y-size;positions[j+5]=z
-    }
-    attr.needsUpdate=true
-    for(let i=0;i<count;i++){
-      const [x,z,phase,rate]=ripples[i],age=(time*.68*rate+phase)%1,s=age<.7?.01+age*.18:0
-      cursor.position.set(x,inside?.11:.040,z);cursor.scale.set(s,s,1);cursor.updateMatrix();glints.setMatrixAt(i,cursor.matrix)
-    }
-    glints.instanceMatrix.needsUpdate=true
-  }
+  return key
 }
 
 export function television(room:T.Scene){
   let ctx!:CanvasRenderingContext2D
   const map=texture(1440,810,c=>{ctx=c})
-  const face=new T.Mesh(new T.PlaneGeometry(3.32,1.8675),new T.MeshBasicMaterial({map,toneMapped:false}))
-  face.position.set(0,1.59,-2.392);room.add(face)
+  const face=new T.Mesh(new T.PlaneGeometry(display.width,display.height),new T.MeshBasicMaterial({map,toneMapped:false}))
+  face.name='Television_ProjectDisplay'
+  face.material.name='Television_ActiveProject'
+  face.position.set(0,display.y,display.z);room.add(face)
+  const emitters=[-.88,.88].map((x,i)=>practical(room,'Television spill '+(i+1),'#b6dacf',2,5.8,x,1.2,-2.06))
+  const emission=[new T.Color(),new T.Color()]
+  room.userData.televisionEmission=emission
+  const sample=document.createElement('canvas')
+  sample.width=12;sample.height=6
+  const small=sample.getContext('2d',{willReadFrequently:true})
+  const pixel=new T.Color()
+  function refresh(){
+    map.needsUpdate=true
+    room.userData.televisionRevision=(room.userData.televisionRevision||0)+1
+    if(!small)return
+    small.drawImage(ctx.canvas,0,0,sample.width,sample.height)
+    // Average in linear light; each half of the picture lights its own side of the room.
+    const patches=small.getImageData(0,0,sample.width,sample.height).data
+    for(let half=0;half<2;half++){
+      const light=emitters[half]
+      light.color.setRGB(0,0,0)
+      for(let y=0;y<sample.height;y++)for(let x=half*6;x<half*6+6;x++){
+        const i=(y*sample.width+x)*4
+        pixel.setRGB(patches[i]/255,patches[i+1]/255,patches[i+2]/255,T.SRGBColorSpace)
+        light.color.add(pixel)
+      }
+      light.color.multiplyScalar(1/36)
+      emission[half].copy(light.color)
+      const peak=Math.max(.001,light.color.r,light.color.g,light.color.b)
+      light.color.multiplyScalar(1/peak)
+      light.intensity=peak*12.6
+    }
+  }
   let sequence=0,source:HTMLImageElement|null=null
   function set(url:string|null,title:string){
     const id=++sequence
@@ -62,7 +94,7 @@ export function television(room:T.Scene){
     const slate=()=>{
       const {width:w,height:h}=ctx.canvas
       ctx.fillStyle='#232f2e';ctx.fillRect(0,0,w,h);ctx.fillStyle='#f6efd9';ctx.textAlign='center'
-      ctx.font='italic 58px Georgia';ctx.fillText(title||'Out Of Office',w/2,h/2,w*.86);map.needsUpdate=true
+      ctx.font='italic 58px Georgia';ctx.fillText(title||'Out Of Office',w/2,h/2,w*.86);refresh()
     }
     if(!url){slate();return}
     const img=new Image();source=img;img.crossOrigin='anonymous';img.decoding='async'
@@ -71,7 +103,7 @@ export function television(room:T.Scene){
       const {width:w,height:h}=ctx.canvas,iw=img.naturalWidth,ih=img.naturalHeight
       // Centered object-fit: cover. Portraits fill the entire 16:9 television.
       const scale=Math.max(w/iw,h/ih),sw=w/scale,sh=h/scale
-      ctx.drawImage(img,(iw-sw)/2,(ih-sh)/2,sw,sh,0,0,w,h);map.needsUpdate=true
+      ctx.drawImage(img,(iw-sw)/2,(ih-sh)/2,sw,sh,0,0,w,h);refresh()
     }
     img.onerror=()=>{if(id===sequence)slate()};img.src=url
   }

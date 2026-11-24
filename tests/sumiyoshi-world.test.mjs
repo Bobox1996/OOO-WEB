@@ -1,9 +1,25 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { pixelViewport } from '../src/components/sumiyoshi/pixelViewport.ts'
 import {
-  areas, cafeSpawn, distance, homeSpawn, members, nearby, pickStop,
+  areas, cafeSpawn, distance, forestCenterX, homeSpawn, members, nearby, pickStop,
   slideMove, stops, walkable, walkPath,
 } from '../src/components/sumiyoshi/world.ts'
+
+test('the two artwork resolutions use the same composition and the portrait canvas keeps its aspect', () => {
+  assert.deepEqual(pixelViewport(1280, 720, 640), { width: 640, height: 360 })
+  assert.deepEqual(pixelViewport(1280, 720, 480), { width: 480, height: 270 })
+  assert.deepEqual(pixelViewport(390, 844, 640), { width: 240, height: 520 })
+  assert.deepEqual(pixelViewport(390, 736, 640), { width: 276, height: 520 })
+})
+
+test('the Forest entrance is in the recessed bay to the right of the facade axis', () => {
+  const door = stops['cafe-entry']
+  assert.ok(Math.abs(door.point.x - forestCenterX - 1.06) < 1e-6)
+  assert.equal(pickStop('street', { x: forestCenterX, z: door.point.z }), null)
+  assert.equal(door.approach.x, door.point.x)
+  assert.equal(door.spawn.x, door.point.x)
+})
 
 function follow(area, start, end) {
   const route = walkPath(area, start, end)

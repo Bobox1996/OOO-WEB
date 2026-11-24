@@ -31,7 +31,7 @@ function Conversation({person,index,done}:{person:Member|undefined;index:number;
   const text=person?.description?.trim()==='CEO'?'I’m the CEO. Welcome to our café.':person?.description||'Welcome to the Forest café.'
   const pages=text.trim().split(/\r?\n\s*\r?\n/).filter(Boolean)
   return <section className={s.bubble+' '+s.conversation} aria-label="Member conversation">
-    <div className={s.dialogueTop}><small>Forest café · {roles[index]}</small><button onClick={done}>Done <kbd>E</kbd></button></div>
+    <div className={s.dialogueTop}><small>Forest café · {roles[index]}</small><button onClick={done}>Done <kbd>Space</kbd></button></div>
     <div className={s.bio}>{person?.portrait_url&&<div className={s.portrait}><Image fill sizes="64px" src={person.portrait_url} alt=""/></div>}
       <div><h2>{memberName(person,index)}</h2><p aria-live="polite">{pages[page]}</p></div></div>
     {pages.length>1&&<div className={s.speechPages}><button aria-label="Previous part" disabled={!page} onClick={()=>setPage(page-1)}>←</button>
@@ -62,6 +62,7 @@ export default function Sumiyoshi({projects,members:directory,vision,unavailable
   const host=useRef<HTMLDivElement>(null),game=useRef<Game|null>(null),spawn=useRef<Point|undefined>(undefined)
   const tvPage=useRef<HTMLElement|null>(null)
   const detailsButton=useRef<HTMLButtonElement>(null)
+  const tabNavigation=useRef(false)
   const surface=useCallback((el:HTMLElement|null)=>{tvPage.current=el;game.current?.attachTVDocument(el)},[])
   const filmstrip=useRef<HTMLDivElement>(null),num=projects.length
   const {area,mode,member}=view,film=projects[selected],person=members[member]
@@ -76,6 +77,7 @@ export default function Sumiyoshi({projects,members:directory,vision,unavailable
   },[imageCount])
   const remote=showingDetails?stepImage:flip
   const stand=()=>{setDetail(null);setView(v=>({...v,mode:'walk'}))}
+  const showBottle=useCallback(()=>{setHasCola(true);setView(v=>({...v,mode:'bottle'}))},[])
   const arrive=useCallback((id:Stop)=>{
     setPanel(null);setDestination(null)
     const act=stops[id].action
@@ -124,11 +126,18 @@ export default function Sumiyoshi({projects,members:directory,vision,unavailable
     function key(e:KeyboardEvent){
       if(panel||e.altKey||e.ctrlKey||e.metaKey||e.repeat)return
       const k=e.key.toLowerCase()
+      if(k==='tab'){tabNavigation.current=true;return}
       if(watching&&['arrowright','arrowleft'].includes(k)){e.preventDefault();remote(k==='arrowright'?1:-1)}
       else if(mode==='seated'&&k==='enter'&&e.target===document.body){e.preventDefault();focus()}
-      else if(k==='e'){
+      else if(e.code==='Space'||k===' '){
+        const target=e.target instanceof HTMLElement?e.target:null
+        if(target?.closest('input,textarea,select,[contenteditable=true]'))return
+        if(target?.closest('[aria-label="Project details on television"]')||
+          (tabNavigation.current&&target?.closest('button,a')))return
+        e.preventDefault()
         if(watching)stand()
         else if(mode==='walk'&&near)arrive(near)
+        else if(mode==='vendor')showBottle()
         else if(mode!=='walk')stand()
       }else if(k==='escape'){
         if(showingDetails){setDetail(null);detailsButton.current?.focus({preventScroll:true})}
@@ -138,11 +147,11 @@ export default function Sumiyoshi({projects,members:directory,vision,unavailable
       else if(k==='m'&&mode==='walk')setPanel('routes')
     }
     window.addEventListener('keydown',key);return ()=>window.removeEventListener('keydown',key)
-  },[panel,mode,watching,near,arrive,remote,focus,showingDetails])
+  },[panel,mode,watching,near,arrive,remote,focus,showingDetails,showBottle])
   const close=()=>setPanel(null)
-  const showBottle=()=>{setHasCola(true);setView(v=>({...v,mode:'bottle'}))}
   const title=film?.title||'Out Of Office'
   return <main data-sumiyoshi data-area={area} data-mode={mode} data-renderer={renderer} data-selected-project={selected}
+    onPointerDownCapture={()=>{tabNavigation.current=false}}
     data-tv-mode={showingDetails?(detail?.image===null?'overview':'gallery'):'cover'}
     className={s.game+' '+(watching?s.screening:'')}>
     <h1 className={s.sr}>Out Of Office · Sumiyoshi</h1>
@@ -166,7 +175,7 @@ export default function Sumiyoshi({projects,members:directory,vision,unavailable
         <div className={s.pills}>{mode==='seated'?<button onClick={focus}>Watch closely <span>↗</span></button>:<>
           {film&&<button ref={detailsButton} aria-expanded={showingDetails} onClick={()=>setDetail(showingDetails?null:{project:film.id,image:null})}>{showingDetails?'Back to cover':'Project details'}</button>}
           <button onClick={()=>{setDetail(null);setView(v=>({...v,mode:'seated'}))}}>Back to sofa</button></>}
-          <button onClick={stand}>Stand up <kbd>E</kbd></button></div>
+          <button onClick={stand}>Stand up <kbd>Space</kbd></button></div>
       </div>
       <section className={s.tray} aria-label="Project arcade">
         <div className={s.trayBar}><div className={s.arcadeTitle}><i/> Project arcade <small>{folio(selected)} / {String(num).padStart(2,'0')}</small></div>
@@ -181,7 +190,7 @@ export default function Sumiyoshi({projects,members:directory,vision,unavailable
     </>}
     {mode==='walk'&&<div className={s.walkHud}>
       <div className={s.walkInfo}><small><i/>{placeNames[area]}</small><p aria-live="polite">{destination?'Walking to '+destinationName(destination):'Click to walk · WASD'}</p></div>
-      <div className={s.pills}>{near&&<button className={s.primary} onClick={()=>arrive(near)}>{stops[near].action.kind==='member'?'Talk to ':''}{destinationName(near)} <kbd>E</kbd></button>}
+      <div className={s.pills}>{near&&<button className={s.primary} onClick={()=>arrive(near)}>{stops[near].action.kind==='member'?'Talk to ':''}{destinationName(near)} <kbd>Space</kbd></button>}
         <button onClick={()=>setPanel('routes')}>{area==='cafe'?'Meet the team':'Choose destination'} ↗</button>
         <button aria-label="Change camera height" onClick={()=>game.current?.elevate()}>View <kbd>C</kbd></button>
       </div>
@@ -192,7 +201,7 @@ export default function Sumiyoshi({projects,members:directory,vision,unavailable
     </section>}
     {mode==='bottle'&&<div className={s.bottleControls}><div className={s.pills}>
       <button aria-label="Rotate bottle" onClick={()=>game.current?.turnBottle(Math.PI/3)}>Rotate ↻</button><button onClick={()=>setPanel('label')}>Read label</button>
-      <button onClick={stand}>Done <kbd>E</kbd></button></div></div>}
+      <button onClick={stand}>Done <kbd>Space</kbd></button></div></div>}
     {panel==='routes'&&<Sheet title={area==='cafe'?'Inside the Forest café':placeNames[area]} close={close}>
       <div className={s.routes}>{areas[area].stops.map(id=><button key={id} onClick={()=>travel(id)}><span>{destinationName(id)}</span>
         <small>{stops[id].action.kind==='member'?roles[Number(id.slice(7))]:'Walk here'}</small><b>↗</b></button>)}</div>
@@ -200,7 +209,7 @@ export default function Sumiyoshi({projects,members:directory,vision,unavailable
     {panel==='label'&&<Sheet title="Studio vision" close={close}><div className={s.bottlePaper}><small>Out Of Office · OOO Cola</small><p>{vision||'Studio vision is currently unavailable.'}</p></div></Sheet>}
     {panel==='guide'&&<Sheet title="Sumiyoshi" close={close}><dl className={s.guide}>
       <dt>Garden room</dt><dd>Use the remote or the project strip to choose a cover. Watch closely and open Project details to read on the TV. In Gallery, swipe or use the arrows to browse photos. Esc returns to the cover.</dd>
-      <dt>On foot</dt><dd>Click the floor or use WASD and the arrow keys. Press E near a door, a seat or a person. C changes camera height.</dd>
+      <dt>On foot</dt><dd>Click the floor or use WASD and the arrow keys. Press Space near a door, a seat or a person. C changes camera height.</dd>
       <dt>On the street</dt><dd>Forest café is the second house to the left of the concrete house. The VISION machine is to the right.</dd></dl>
       <nav className={s.directory}><Link href="/works">Works ↗</Link><Link href="/team">Team ↗</Link><Link href="/vision">Vision ↗</Link></nav>
     </Sheet>}

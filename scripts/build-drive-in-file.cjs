@@ -7,9 +7,9 @@ const root = path.resolve(__dirname, '..')
 const street = process.argv[2] === '--sumiyoshi'
 const scene = street ? 'sumiyoshi' : 'drive-in'
 const component = street ? 'Sumiyoshi' : 'DriveIn'
-const title = street ? 'OOO Sumiyoshi Street' : 'OOO Drive-In Cinema'
+const title = street ? 'OOO Sumiyoshi Pixelscape' : 'OOO Drive-In Cinema'
 const temp = path.join(root, '.next', 'ooo-portable', scene)
-const defaultFile = street ? '../OOO-Sumiyoshi.html' : '../OOO-Drive-In.html'
+const defaultFile = street ? '../OOO-Sumiyoshi-Pixelscape.html' : '../OOO-Drive-In.html'
 const destination = path.resolve(process.argv[street ? 3 : 2] || path.join(root, defaultFile))
 const styles = fs.readFileSync(path.join(root, 'src/components', scene, scene + '.module.css'), 'utf8')
 const snapshot = JSON.parse(fs.readFileSync(path.join(root, 'src/lib/drive-in-snapshot.json'), 'utf8'))
