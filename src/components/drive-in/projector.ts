@@ -15,9 +15,9 @@ function intermission(c:CanvasRenderingContext2D,title:string) {
   c.fillStyle='#f6ebd8';c.font='19px monospace';c.fillText('OUT OF OFFICE   /   PICTURES',w*.057,h*.13)
   c.font='italic '+Math.round(h*.17)+'px Georgia';c.fillText(title||'Intermission',w*.052,h*.87,w*.90)
 }
-export function projector(p:T.Object3D,frame:{x:number;y:number;z:number;w:number;h:number}) {
+export function projector(p:T.Object3D,frame:{x:number;y:number;z:number;w:number;h:number},painted:()=>void) {
   let ctx!:CanvasRenderingContext2D
-  const map=texture(1200,612,c=>{ctx=c;intermission(c,'Intermission')})
+  const map=texture(1280,720,c=>{ctx=c;intermission(c,'Intermission')})
   const {x,y,z,w,h}=frame
   const screen=face(p,x,y,z+.034,w,h,map)
   screen.material.transparent=false
@@ -40,7 +40,7 @@ export function projector(p:T.Object3D,frame:{x:number;y:number;z:number;w:numbe
   function set(url:string|null,title:string) {
     const token=++generation
     if(activeImage){activeImage.onload=null;activeImage.onerror=null}
-    intermission(ctx,title);map.needsUpdate=true
+    intermission(ctx,title);map.needsUpdate=true;painted()
     if(!url)return
     const img=new Image();activeImage=img;img.crossOrigin='anonymous';img.decoding='async'
     img.onload=()=>{
@@ -48,9 +48,9 @@ export function projector(p:T.Object3D,frame:{x:number;y:number;z:number;w:numbe
       const w=ctx.canvas.width,h=ctx.canvas.height,scale=Math.min(w/img.naturalWidth,h/img.naturalHeight)
       ctx.fillStyle='#202831';ctx.fillRect(0,0,w,h)
       ctx.drawImage(img,(w-img.naturalWidth*scale)/2,(h-img.naturalHeight*scale)/2,img.naturalWidth*scale,img.naturalHeight*scale)
-      map.needsUpdate=true
+      map.needsUpdate=true;painted()
     }
     img.src=url
   }
-  return {set,dispose(){generation++;if(activeImage){activeImage.onload=null;activeImage.onerror=null}map.dispose()}}
+  return {set,canvas:ctx.canvas,screen,dispose(){generation++;if(activeImage){activeImage.onload=null;activeImage.onerror=null}map.dispose()}}
 }

@@ -136,3 +136,30 @@
   .seat {bottom:14px}.lotHud,.station {bottom:8px}.person p,.ticket p {max-height:23svh}
 }
 @media(prefers-reduced-motion:reduce){.game *,.dialog *{animation:none!important;transition:none!important}}
+.flatScene {z-index:1;pointer-events:none}
+.flatScene button {pointer-events:auto}
+.seat,.lotHud,.station {z-index:2}
+.commands {display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.commands button,.stationBar button {display:inline-flex;align-items:center;gap:12px}
+.commands kbd,.stationBar kbd {font:10px ui-monospace,monospace;line-height:1;padding:3px 5px;border:1px solid #b9c9be70;border-radius:3px}
+.quiet {font-size:13px;background:#14252cde;border:1px solid #b5cebe65;border-radius:6px;min-height:38px;padding:8px 13px}
+.quiet span {color:var(--peach)}
+.seat {max-width:none;bottom:max(21px,4vh);left:clamp(15px,3vw,44px)}
+.lotHud {left:clamp(12px,3vw,44px);transform:none;text-align:left;background:#172830e5;border-radius:12px;width:max-content;padding:12px 15px}
+.lotHud .location,.lotHud nav {justify-content:flex-start}
+.lotHud .near {margin:2px 0 8px}
+.station {max-height:50svh;overflow:auto}
+.dialog .console {position:static;inset:auto;width:100%;padding:0;background:none;border:0;box-shadow:none;border-radius:0}
+.dialog .console .frontCard {height:clamp(118px,18vh,174px)}
+.dialog .console .consoleBar {border:none}
+.dialog .console .cardText strong {font-size:clamp(23px,3vw,30px)}
+.directory {display:grid;gap:4px}
+.directory button {display:grid;grid-template-columns:26px 1fr auto;align-items:center;gap:10px;width:100%;text-align:left;color:#f5eddc;border-bottom:1px solid #b5c4b634;padding:7px 5px}
+.directory button:hover {background:#b3cabc16}
+.directory button>span,.directory small {font:10px monospace;color:#b8d0c1}
+.directory small {display:block;margin-top:3px}
+.directory button>b {color:var(--peach)}
+.hello {display:block;color:#c3d4c6;font:11px/1.3 var(--studio-font);margin-bottom:2px}
+.studioIntro {font-size:13px;line-height:1.5;margin:12px 0;white-space:pre-line}
+.stage canvas {touch-action:none}
+@media(max-width:700px){.game{min-height:0}.seat{max-width:90%}.seat .location{font-size:10px}.lotHud{max-width:calc(100% - 24px)}.commands button{font-size:13px}.dialog .console .frontCard{height:135px}.guide{min-height:40px}}
