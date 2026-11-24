@@ -2,6 +2,7 @@ import * as T from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { cameraDirector, opening, type View } from './camera'
 import { bottleLabel, furnishLight, rainField, television } from './objects'
+import { screenSurface } from './screenSurface'
 import { areas, stops, homeSpawn, npcPositions, memberStops, nearby, walkable, walkPath, slideMove, distance, type Point, type Stop } from './world'
 
 type Controls={
@@ -30,6 +31,7 @@ export function createStreetGame(host:HTMLDivElement,events:Controls,vision:stri
   const keyLights={home:furnishLight(scenes.home,'home'),street:furnishLight(scenes.street,'street'),cafe:furnishLight(scenes.cafe,'cafe')}
   const soaked={home:rainField(scenes.home,'home'),street:rainField(scenes.street,'street')}
   const camera=new T.PerspectiveCamera(48,1,.035,95),director=cameraDirector(camera),tv=television(scenes.home)
+  const tvDocument=screenSurface(tv.face,camera)
   const avatar=new T.Group();scenes.home.add(avatar);avatar.position.set(homeSpawn.x,0,homeSpawn.z)
   const bottleScene=new T.Scene(),bottleRig=new T.Group(),bottleCam=new T.PerspectiveCamera(36,1,.015,5)
   bottleScene.add(bottleRig);bottleScene.add(new T.HemisphereLight('#fff0d7','#e6b883',2.05))
@@ -180,7 +182,8 @@ export function createStreetGame(host:HTMLDivElement,events:Controls,vision:stri
       const steps=Math.max(1,Math.ceil(dt/.035))
       for(let i=0;i<steps;i++)walk(dt/steps)
     }
-    director.frame(view,avatar.position,dt,motion.matches)
+    director.frame(view,avatar.position,dt,motion.matches,tvDocument.attached)
+    if(tvDocument.attached&&view.mode==='focus')tvDocument.place(canvas.clientWidth,canvas.clientHeight)
     if(view.area!=='cafe')soaked[view.area](motion.matches?0:time)
     if(view.area==='street'){
       keyLights.street.target.position.x=avatar.position.x;keyLights.street.position.x=avatar.position.x-5
@@ -215,11 +218,15 @@ export function createStreetGame(host:HTMLDivElement,events:Controls,vision:stri
   return {
     setView,go(id:Stop){return walkTo(stops[id].approach,id)},
     setFilm(url:string|null,title:string){tv.set(url,title);remotePulse=1},
+    attachTVDocument(el:HTMLElement|null){
+      tvDocument.attach(el)
+      if(el&&ready&&view.mode==='focus')tvDocument.place(canvas.clientWidth,canvas.clientHeight)
+    },
     pause(value:boolean){blocked=value;reset()},elevate:director.elevation,
     turnBottle(by:number){bottleAngle+=by},
     dispose(){
       disposed=true;cancelAnimationFrame(frame);observe.disconnect();listeners.forEach(([el,n,fn])=>el.removeEventListener(n,fn))
-      tv.dispose();free([...Object.values(scenes),bottleScene]);renderer.dispose();canvas.remove()
+      tvDocument.attach(null);tv.dispose();free([...Object.values(scenes),bottleScene]);renderer.dispose();canvas.remove()
     },
   }
 }

@@ -13,4 +13,20 @@
 @media(prefers-reduced-motion:reduce){.game *{scroll-behavior:auto!important;animation:none!important}}
 .speechPages{display:flex;align-items:center;justify-content:flex-end;gap:10px;border-top:1px solid #8fa18b55;margin-top:9px;padding-top:6px}
 .speechPages button{font-size:12px;min-height:29px;padding:2px 5px}.speechPages span{font:9px monospace;color:#5e705c}
+.tvPaper{position:absolute;top:0;left:0;z-index:2;visibility:hidden;transform-origin:0 0;overflow:hidden;isolation:isolate;container:television / inline-size;background:#f4f0e5;color:#222a24;display:flex;flex-direction:column;text-shadow:none}
+.flatPaper{visibility:visible;left:50%;top:calc((100% - var(--rail)) * .48);transform:translate(-50%,-50%);width:min(91%,1050px,105vh);aspect-ratio:16/9}
+.tvMast{flex:none;display:flex;align-items:center;justify-content:space-between;min-height:25px;padding:1.1cqw 2.6cqw;border-bottom:1px solid #b7b9a8;gap:8px;background:#e8e9dc}
+.projectNo{display:flex;align-items:center;gap:.8em;font:600 clamp(9px,1.25cqw,15px)/1 ui-monospace,Consolas,monospace;text-transform:uppercase;letter-spacing:.08em}.projectNo i{width:.52em;height:.52em;border-radius:50%;background:#495c35}
+.tvMast nav,.photoControls{display:flex;align-items:center}.tvMast nav{gap:3px}
+.tvPaper button{color:inherit;border:0;background:none}.tvPaper button:focus-visible,.tvReading:focus-visible{outline:2px solid #5e793b;outline-offset:-2px}
+.tvMast button{font-size:clamp(11px,1.45cqw,16px);line-height:1.2;border:1px solid transparent;border-radius:15px;padding:.32em .85em}.tvMast button[aria-pressed=true]{border-color:#76826c;background:#d6dec8}.tvMast button:hover{background:#dfe4d5}
+.tvOverview{flex:1;min-height:0;display:flex}.tvReading{flex:1;min-width:0;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#9d9f8b transparent;padding:2.8cqw 3cqw 4cqw}
+.tvReading h2{margin:0 0 .55em;overflow-wrap:anywhere;font:400 clamp(17px,3.7cqw,47px)/1.04 Georgia,serif;letter-spacing:-.04em}
+.tvFacts{margin:0 0 1em;display:grid;gap:.25em;font-size:clamp(11px,1.48cqw,17px);line-height:1.32}.tvFacts div{display:grid;grid-template-columns:5em 1fr;gap:.55em}.tvFacts dt{color:#53604f}.tvFacts dd{margin:0;white-space:pre-line}
+.tvReading p{margin:1em 0 0;border-top:1px solid #b7b9a8;padding-top:.9em;white-space:pre-wrap;overflow-wrap:anywhere;font-size:clamp(12px,1.73cqw,20px);line-height:1.5}
+.tvPaper .tvHero{position:relative;display:block;flex:none;width:46%;height:100%;overflow:hidden;padding:0;background:#202823;cursor:zoom-in}.tvHero img{object-fit:cover}
+.tvGallery{flex:1;min-height:0;background:#141a17;color:#f6f1e4;display:flex;flex-direction:column}.tvFigure{position:relative;min-height:0;flex:1;touch-action:pan-y}.tvFigure img{object-fit:contain}
+.photoControls{flex:none;gap:1cqw;padding:2px 2.1cqw;border-top:1px solid #74817570;min-height:25px}.photoControls h2{margin:0 auto 0 0;font:400 clamp(10px,1.5cqw,17px)/1.2 Georgia,serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.photoControls span{white-space:nowrap;font:clamp(9px,1.2cqw,14px)/1 monospace}.photoControls button{min-width:2.3em;min-height:1.8em;font:clamp(13px,1.75cqw,21px)/1 monospace}
+.game:has(.tvPaper) .tvCaption{visibility:hidden}
+@container television (max-width:420px){.tvPaper .tvHero{width:33%}.tvMast{padding:3px 8px}.tvReading{padding:7px 9px 13px}.tvFacts div{grid-template-columns:auto 1fr;gap:6px}.tvMast button,.photoControls button{min-height:24px}}
 @media(min-width:801px){.conversation{left:auto;right:var(--pad);transform:none;width:min(32vw,430px)}}

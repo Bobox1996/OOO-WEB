@@ -13,6 +13,9 @@ const defaultFile = street ? '../OOO-Sumiyoshi.html' : '../OOO-Drive-In.html'
 const destination = path.resolve(process.argv[street ? 3 : 2] || path.join(root, defaultFile))
 const styles = fs.readFileSync(path.join(root, 'src/components', scene, scene + '.module.css'), 'utf8')
 const snapshot = JSON.parse(fs.readFileSync(path.join(root, 'src/lib/drive-in-snapshot.json'), 'utf8'))
+if (street) {
+  snapshot.projectDetails = JSON.parse(fs.readFileSync(path.join(root, 'src/lib/sumiyoshi-project-snapshot.json'), 'utf8'))
+}
 const publicRoot = path.join(root, 'public')
 
 fs.mkdirSync(temp, { recursive: true })
@@ -52,20 +55,33 @@ const entry = writeModule('entry.tsx', `
 
   const packed = document.getElementById('cinema-assets')
   const {assets, snapshot} = JSON.parse(packed.textContent)
+  packed.textContent = ''
   packed.remove()
   const urls = new Map()
-  for (const [url, [type, base64]] of Object.entries(assets)) {
+  function packedURL(url) {
+    if (urls.has(url)) return urls.get(url)
+    if (!assets[url]) return url
+    const [type, base64] = assets[url]
     const bytes = Uint8Array.fromBase64 ? Uint8Array.fromBase64(base64) :
       Uint8Array.from(atob(base64), char => char.charCodeAt(0))
-    urls.set(url, URL.createObjectURL(new Blob([bytes], {type})))
+    const objectURL = URL.createObjectURL(new Blob([bytes], {type}))
+    urls.set(url, objectURL)
     delete assets[url]
+    return objectURL
   }
-  DefaultLoadingManager.setURLModifier(url => urls.get(url) || url)
+  DefaultLoadingManager.setURLModifier(packedURL)
   for (const film of snapshot.projects) {
-    if (film.cover) film.cover.url = urls.get(film.cover.url)
+    if (film.cover) film.cover.url = packedURL(film.cover.url)
+  }
+  for (const project of Object.values(snapshot.projectDetails || {})) {
+    // Photo essays contain many images. Only decode the ones the reader opens.
+    for (const image of project.images) {
+      const source = image.url
+      Object.defineProperty(image, 'url', { enumerable: true, get: () => packedURL(source) })
+    }
   }
   for (const member of snapshot.members) {
-    if (member.portrait_url) member.portrait_url = urls.get(member.portrait_url)
+    if (member.portrait_url) member.portrait_url = packedURL(member.portrait_url)
   }
   createRoot(document.getElementById('cinema')).render(<Game {...snapshot} unavailable={false}/>)
 `)
@@ -85,12 +101,15 @@ function packAssets() {
   for (const film of snapshot.projects) {
     if (film.cover) urls.set(film.cover.url, 'image/webp')
   }
+  for (const project of Object.values(snapshot.projectDetails || {})) {
+    for (const image of project.images) urls.set(image.url, 'image/webp')
+  }
   for (const member of snapshot.members) {
     if (member.portrait_url) urls.set(member.portrait_url, 'image/webp')
   }
   const assets = {}
   for (const [url, type] of urls) {
-    if (!url.startsWith(modelDir) && !url.startsWith('/drive-in/content/')) {
+    if (!url.startsWith(modelDir) && !url.startsWith('/drive-in/content/') && !(street && url.startsWith('/sumiyoshi/projects/'))) {
       throw new Error('Missing local snapshot media: ' + url)
     }
     assets[url] = [type, fs.readFileSync(path.join(publicRoot, url)).toString('base64')]

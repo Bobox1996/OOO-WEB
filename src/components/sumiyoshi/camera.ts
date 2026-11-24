@@ -10,7 +10,7 @@ export function cameraDirector(camera:T.PerspectiveCamera){
   let snap=true,high=false
   return {
     cut(){snap=true}, elevation(){high=!high},
-    frame(view:View,player:Point,dt:number,reduced:boolean){
+    frame(view:View,player:Point,dt:number,reduced:boolean,reading=false){
       const {area,mode,member}=view,{x,z}=player
       const a=camera.aspect,portrait=a<.87
       let fov=48
@@ -21,7 +21,8 @@ export function cameraDirector(camera:T.PerspectiveCamera){
       }else if(mode==='focus'){
         // A first-person lean toward the set. The entire display and a leafy margin stay in frame.
         const vfov=portrait?51:43
-        const dist=1.66/(Math.tan(T.MathUtils.degToRad(vfov*.5))*a*.80)
+        const widthFraction=reading&&portrait?.92:.80
+        const dist=1.66/(Math.tan(T.MathUtils.degToRad(vfov*.5))*a*widthFraction)
         eye.set(.0,1.58,-2.4+Math.max(dist,2.80));aim.set(0,1.59,-2.4);fov=vfov
       }else if(mode==='talk'){
         const p=npcPositions[member],side=member===0||member===1?1:member===5?1:-1

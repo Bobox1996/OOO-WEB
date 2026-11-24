@@ -5,16 +5,18 @@ import Link from 'next/link'
 import Image from '@/components/sections/PortfolioImage'
 import StudioLogo from '@/components/layout/StudioLogo'
 import { folio } from '@/lib/portfolio'
+import type { ProjectDetails } from '@/lib/sumiyoshi-projects'
 import roster from '../../../art/sumiyoshi/cast/roster.json'
 import type { Film } from '../drive-in/ProjectDeck'
 import type { TeamMember } from '@/types'
 import { opening, type View } from './camera'
 import { areas, stops, memberStops, type Point, type Stop } from './world'
 import type { Game } from './scene'
+import { projectImages, TVProject } from './TVProject'
 import s from './sumiyoshi.module.css'
 
 type Member=Pick<TeamMember,'id'|'first_name'|'last_name'|'description'|'portrait_url'>
-type Props={projects:Film[];members:Member[];vision:string|null;intro:string|null;unavailable:boolean}
+type Props={projects:Film[];members:Member[];vision:string|null;intro:string|null;unavailable:boolean;projectDetails:ProjectDetails}
 type Panel='guide'|'routes'|'label'|null
 const placeNames={home:'Garden room',street:'Sumiyoshi street',cafe:'Forest café'}
 const stopNames:Record<Exclude<Stop,(typeof memberStops)[number]>,string>={
@@ -50,18 +52,30 @@ function Sheet({title,close,children}:{title:string;close:()=>void;children:Reac
   </dialog>
 }
 
-export default function Sumiyoshi({projects,members:directory,vision,unavailable}:Props){
+export default function Sumiyoshi({projects,members:directory,vision,unavailable,projectDetails}:Props){
   const members=residentIds.map(id=>directory.find(m=>m.id===id))
   const [view,setView]=useState<View>(opening),[selected,setSelected]=useState(0),[panel,setPanel]=useState<Panel>(null)
   const [renderer,setRenderer]=useState<'loading'|'ready'|'off'>('loading'),[retry,setRetry]=useState(0)
   const [near,setNear]=useState<Stop|null>(null),[destination,setDestination]=useState<Stop|null>(null)
   const [hasCola,setHasCola]=useState(false)
+  const [detail,setDetail]=useState<{project:string;image:number|null}|null>(null)
   const host=useRef<HTMLDivElement>(null),game=useRef<Game|null>(null),spawn=useRef<Point|undefined>(undefined)
+  const tvPage=useRef<HTMLElement|null>(null)
+  const detailsButton=useRef<HTMLButtonElement>(null)
+  const surface=useCallback((el:HTMLElement|null)=>{tvPage.current=el;game.current?.attachTVDocument(el)},[])
   const filmstrip=useRef<HTMLDivElement>(null),num=projects.length
   const {area,mode,member}=view,film=projects[selected],person=members[member]
   const watching=mode==='seated'||mode==='focus'
-  const flip=useCallback((by:number)=>setSelected(i=>num?(i+num+by)%num:0),[num])
-  const stand=()=>setView(v=>({...v,mode:'walk'}))
+  const showingDetails=!!film&&mode==='focus'&&detail?.project===film.id
+  const info=film?projectDetails?.[film.id]:undefined
+  const imageCount=film?projectImages(film,info).length:0
+  const flip=useCallback((by:number)=>{setDetail(null);setSelected(i=>num?(i+num+by)%num:0)},[num])
+  const stepImage=useCallback((by:number)=>{
+    if(!imageCount)return
+    setDetail(d=>d?{...d,image:d.image===null?(by>0?0:imageCount-1):(d.image+by+imageCount)%imageCount}:null)
+  },[imageCount])
+  const remote=showingDetails?stepImage:flip
+  const stand=()=>{setDetail(null);setView(v=>({...v,mode:'walk'}))}
   const arrive=useCallback((id:Stop)=>{
     setPanel(null);setDestination(null)
     const act=stops[id].action
@@ -90,6 +104,7 @@ export default function Sumiyoshi({projects,members:directory,vision,unavailable
   useEffect(()=>{game.current?.setView(view,spawn.current);spawn.current=undefined},[view,renderer])
   useEffect(()=>{game.current?.setFilm(film?.cover?.url||null,film?.title||'Out Of Office')},[film,renderer])
   useEffect(()=>{game.current?.pause(!!panel)},[panel,renderer])
+  useEffect(()=>{game.current?.attachTVDocument(tvPage.current)},[renderer])
   useEffect(()=>{
     const strip=filmstrip.current,card=strip?.children[selected] as HTMLElement|undefined
     if(strip&&card){
@@ -109,24 +124,26 @@ export default function Sumiyoshi({projects,members:directory,vision,unavailable
     function key(e:KeyboardEvent){
       if(panel||e.altKey||e.ctrlKey||e.metaKey||e.repeat)return
       const k=e.key.toLowerCase()
-      if(watching&&['arrowright','arrowleft'].includes(k)){e.preventDefault();flip(k==='arrowright'?1:-1)}
+      if(watching&&['arrowright','arrowleft'].includes(k)){e.preventDefault();remote(k==='arrowright'?1:-1)}
       else if(mode==='seated'&&k==='enter'&&e.target===document.body){e.preventDefault();focus()}
       else if(k==='e'){
         if(watching)stand()
         else if(mode==='walk'&&near)arrive(near)
         else if(mode!=='walk')stand()
       }else if(k==='escape'){
-        if(mode==='focus')setView(v=>({...v,mode:'seated'}))
+        if(showingDetails){setDetail(null);detailsButton.current?.focus({preventScroll:true})}
+        else if(mode==='focus')setView(v=>({...v,mode:'seated'}))
         else if(mode!=='walk'&&mode!=='seated')stand()
       }else if(k==='c'&&mode==='walk')game.current?.elevate()
       else if(k==='m'&&mode==='walk')setPanel('routes')
     }
     window.addEventListener('keydown',key);return ()=>window.removeEventListener('keydown',key)
-  },[panel,mode,watching,near,arrive,flip,focus])
+  },[panel,mode,watching,near,arrive,remote,focus,showingDetails])
   const close=()=>setPanel(null)
   const showBottle=()=>{setHasCola(true);setView(v=>({...v,mode:'bottle'}))}
   const title=film?.title||'Out Of Office'
   return <main data-sumiyoshi data-area={area} data-mode={mode} data-renderer={renderer} data-selected-project={selected}
+    data-tv-mode={showingDetails?(detail?.image===null?'overview':'gallery'):'cover'}
     className={s.game+' '+(watching?s.screening:'')}>
     <h1 className={s.sr}>Out Of Office · Sumiyoshi</h1>
     <div className={s.viewport} ref={host}/>
@@ -135,6 +152,9 @@ export default function Sumiyoshi({projects,members:directory,vision,unavailable
       <span role="status">{renderer==='loading'?'Opening the garden room…':'3D view unavailable'}
       {renderer==='off'&&<button onClick={()=>{setRenderer('loading');setRetry(x=>x+1)}}>Retry 3D</button>}</span>
     </div>}
+    {showingDetails&&film&&detail&&<TVProject key={film.id} surface={surface} flat={renderer!=='ready'} film={film}
+      details={info} number={film.index||folio(selected)} imageIndex={detail.image}
+      selectImage={image=>setDetail({project:film.id,image})} step={stepImage}/>}
     <header className={s.header}>
       <div className={s.signature}><StudioLogo className={s.logo}/><div><b>Out Of Office</b><small>Sumiyoshi · 住吉</small></div></div>
       <div className={s.headButtons}>{mode==='walk'&&<button onClick={()=>setPanel('routes')}>Destinations <span>↗</span></button>}
@@ -144,16 +164,16 @@ export default function Sumiyoshi({projects,members:directory,vision,unavailable
       <div className={s.watchHud}>
         <div className={s.tvCaption}><small><i/> {mode==='focus'?'On screen':'Now showing'}</small><b>{title}</b></div>
         <div className={s.pills}>{mode==='seated'?<button onClick={focus}>Watch closely <span>↗</span></button>:<>
-          {film&&<Link href={(film.cover?.url.startsWith('/drive-in/content/')?'https://ooo-web.vercel.app':'')+'/project/'+film.id} target="_blank" rel="noreferrer">Project details ↗</Link>}
-          <button onClick={()=>setView(v=>({...v,mode:'seated'}))}>Back to sofa</button></>}
+          {film&&<button ref={detailsButton} aria-expanded={showingDetails} onClick={()=>setDetail(showingDetails?null:{project:film.id,image:null})}>{showingDetails?'Back to cover':'Project details'}</button>}
+          <button onClick={()=>{setDetail(null);setView(v=>({...v,mode:'seated'}))}}>Back to sofa</button></>}
           <button onClick={stand}>Stand up <kbd>E</kbd></button></div>
       </div>
       <section className={s.tray} aria-label="Project arcade">
         <div className={s.trayBar}><div className={s.arcadeTitle}><i/> Project arcade <small>{folio(selected)} / {String(num).padStart(2,'0')}</small></div>
-          <div className={s.remote} aria-label="TV remote"><button disabled={num<2} aria-label="Previous project" onClick={()=>flip(-1)}>←</button>
-          <button disabled={num<2} aria-label="Next project" onClick={()=>flip(1)}>→</button></div></div>
+          <div className={s.remote} aria-label="TV remote"><button disabled={showingDetails?!imageCount:num<2} aria-label={showingDetails?'Previous gallery image':'Previous project'} onClick={()=>remote(-1)}>←</button>
+          <button disabled={showingDetails?!imageCount:num<2} aria-label={showingDetails?'Next gallery image':'Next project'} onClick={()=>remote(1)}>→</button></div></div>
         <div className={s.strip} ref={filmstrip}>{projects.map((p,i)=>
-          <button key={p.id} aria-label={folio(i)+' '+p.title} aria-pressed={i===selected} title={p.title} onClick={()=>setSelected(i)} className={s.frame}>
+          <button key={p.id} aria-label={folio(i)+' '+p.title} aria-pressed={i===selected} title={p.title} onClick={()=>{setDetail(null);setSelected(i)}} className={s.frame}>
             <span>{p.index||folio(i)}</span>{p.cover?<Image fill sizes="180px" src={p.cover.url} alt=""/>:<em>{p.title}</em>}
           </button>)}</div>
         {!num&&<p>{unavailable?'Project covers are currently unavailable.':'No projects in the programme yet.'}</p>}
@@ -179,7 +199,7 @@ export default function Sumiyoshi({projects,members:directory,vision,unavailable
     </Sheet>}
     {panel==='label'&&<Sheet title="Studio vision" close={close}><div className={s.bottlePaper}><small>Out Of Office · OOO Cola</small><p>{vision||'Studio vision is currently unavailable.'}</p></div></Sheet>}
     {panel==='guide'&&<Sheet title="Sumiyoshi" close={close}><dl className={s.guide}>
-      <dt>Garden room</dt><dd>Use the remote arrows or the black project strip to change the TV. Click the TV for a closer view. Stand up to explore.</dd>
+      <dt>Garden room</dt><dd>Use the remote or the project strip to choose a cover. Watch closely and open Project details to read on the TV. In Gallery, swipe or use the arrows to browse photos. Esc returns to the cover.</dd>
       <dt>On foot</dt><dd>Click the floor or use WASD and the arrow keys. Press E near a door, a seat or a person. C changes camera height.</dd>
       <dt>On the street</dt><dd>Forest café is the second house to the left of the concrete house. The VISION machine is to the right.</dd></dl>
       <nav className={s.directory}><Link href="/works">Works ↗</Link><Link href="/team">Team ↗</Link><Link href="/vision">Vision ↗</Link></nav>
