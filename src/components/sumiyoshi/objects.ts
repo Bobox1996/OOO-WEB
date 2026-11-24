@@ -1,7 +1,7 @@
 import * as T from 'three'
+import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js'
 import { glowTexture, texture } from '../drive-in/geometry'
-import { display } from './pixelscapeEffects'
-import type { Area } from './world'
+import { homeDisplay as display, type Area } from './world'
 export { cafeWindowRain, rainField } from './pixelscapeEffects'
 
 function practical(scene:T.Scene,name:string,color:string,power:number,radius:number,x:number,y:number,z:number){
@@ -69,25 +69,93 @@ function gardenWindowLight(scene:T.Scene) {
   spill.name='Rain-blue glass on quarry tiles'; scene.add(spill)
 }
 
+function softbox(scene:T.Scene,name:string,color:string,radiance:number,width:number,height:number,from:Position,to:Position) {
+  const source=new T.RectAreaLight(color,radiance,width,height)
+  source.name=name
+  source.position.set(...from)
+  source.lookAt(...to)
+  scene.add(source)
+}
+
+function rugContact(scene:T.Scene) {
+  // Occlusion under the three low bases. Keep it on the wool itself, so raking
+  // light still describes the furniture above the soft grounded outlines.
+  const width=7.85,depth=4.98,cx=-.65,cz=.08
+  const map=texture(512,324,ctx=>{
+    ctx.scale(512/width,324/depth)
+    const bases=[
+      [0,1.22,3.04,1.04,0,.12],[-.71,-.48,1.50,.78,0,.065],
+      [-3.30,-1.03,1.46,1.08,-.63,.41],
+    ]
+    for(const [x,z,w,d,angle,r] of bases){
+      ctx.save()
+      ctx.translate(x-cx+width/2,z-cz+depth/2);ctx.rotate(angle)
+      ctx.fillStyle='rgba(32,24,24,.40)'
+      ctx.shadowColor='rgba(29,21,24,.70)';ctx.shadowBlur=11
+      ctx.beginPath();ctx.roundRect(-w/2,-d/2,w,d,r);ctx.fill()
+      ctx.restore()
+    }
+  })
+  const shade=new T.Mesh(new T.PlaneGeometry(width,depth),new T.MeshBasicMaterial({
+    map,transparent:true,depthWrite:false,toneMapped:false,
+  }))
+  shade.name='Soft contact beneath the furniture'
+  shade.rotation.x=-Math.PI/2;shade.position.set(cx,.036,cz);scene.add(shade)
+}
+
+function listeningRoomLight(scene:T.Scene) {
+  scene.background=new T.Color('#384e62')
+  RectAreaLightUniformsLib.init()
+
+  // Plaster and wool return a soft amber light to the ceiling and leeward
+  // faces of the cabinetry. The much larger seaward opening is cool silver.
+  const bounce=new T.HemisphereLight('#f4e4cd','#b3937e',.76)
+  bounce.name='Reflected light from plaster and oat wool'
+  scene.add(bounce)
+  softbox(scene,'Overcast sea through the picture window','#c0ddf0',1.77,7.2,1.95,
+    [1.36,1.88,-3.84],[.35,1.47,2.44])
+  const key=new T.DirectionalLight('#dce4e9',.82)
+  key.name='Low silver light across the sill'
+  key.position.set(2.22,3.54,-8.1)
+  key.target.position.set(-1.65,.45,2.7)
+  key.castShadow=true
+  key.shadow.mapSize.set(1024,1024)
+  Object.assign(key.shadow.camera,{left:-7,right:7,top:5,bottom:-5,near:.15,far:22})
+  key.shadow.bias=-.00024;key.shadow.normalBias=.011
+  scene.add(key,key.target)
+
+  // Linear, recessed emitter and its first bounce along the oak panels.
+  // Using the full length spreads the reflection across the veneer and rug.
+  softbox(scene,'Concealed ribbon inside the hearth','#ffc184',11.5,2.22,.12,
+    [-3.91,.38,-3.48],[-3.90,.26,.5])
+  softbox(scene,'Warm hearth grazing the veneer','#ffcc9b',3.05,2.83,.30,
+    [-3.91,.44,-2.98],[-3.91,1.38,-3.46])
+  pendant(scene,'Light below the black mushroom shade','#ffda9d',.60,
+    [-.98,.557,-.24],[-.98,.18,-.24],1.26)
+  practical(scene,'Frosted brass reading lamp','#ffc87f',1.48,2.8,-2.09,.355,-1.38)
+  rugContact(scene)
+  return key
+}
+
 export function furnishLight(scene:T.Scene,area:Area){
+  if(area==='home')return listeningRoomLight(scene)
   const street=area==='street',cafe=area==='cafe'
-  scene.background=new T.Color(street?'#203c60':cafe?'#182439':'#253c53')
+  scene.background=new T.Color(street?'#203c60':'#182439')
   if(street)scene.fog=new T.Fog('#294b70',26,90)
   const sky=new T.HemisphereLight(
-    cafe?'#accaff':'#94bef7',cafe?'#806066':street?'#526483':'#6b606e',
-    cafe?1.18:street?1.18:1.48,
+    cafe?'#accaff':'#94bef7',cafe?'#806066':'#526483',1.18,
   )
   sky.name='Rain sky and reflected pavement light'
   scene.add(sky)
-  const key=new T.DirectionalLight(cafe?'#ffe1bd':street?'#a3beef':'#a4d7ff',cafe?.78:street?1.08:1.36)
+  const key=new T.DirectionalLight(cafe?'#ffe1bd':'#a3beef',cafe?.78:1.08)
   key.name=cafe?'Warm reflected ceiling light':'Moonlight through rain clouds'
-  key.position.set(cafe?-2.8:-5,cafe?9:12,street?6:cafe?-3.5:-6)
+  key.position.set(cafe?-2.8:-5,cafe?9:12,street?6:-3.5)
   scene.add(key,key.target)
   key.castShadow=true;key.shadow.mapSize.set(1024,1024)
   const extent=street?16:9
   Object.assign(key.shadow.camera,{left:-extent,right:extent,top:extent,bottom:-extent,near:.2,far:60})
   key.shadow.bias=-.00027;key.shadow.normalBias=.019
-  const fill=new T.DirectionalLight(cafe?'#a5b9e4':street?'#839be5':'#a9b3e5',cafe?.72:street?.61:.76)
+  const fill=new T.DirectionalLight(cafe?'#a5b9e4':'#839be5',cafe?.72:.61)
   fill.position.set(5,3,6);scene.add(fill)
   const diffusion=glowTexture()
   if(street){
@@ -101,7 +169,7 @@ export function furnishLight(scene:T.Scene,area:Area){
       luminousFace(scene,diffusion,'Humidity around cafe shelf light',[x,2.09,-2.17],1.48,.38,'#ffb57e',.24)
     }
     luminousFace(scene,diffusion,'Lacquered beverage case',[8.10,1.49,.615],1.10,.86,'#aadfff',.13)
-  }else if(cafe){
+  }else{
     // A broad paper ceiling and three smaller enamel shades have distinct jobs.
     pendant(scene,'Light through the shoji ceiling','#ffce9a',25,[-3.1,3.23,-1.20],[-3.1,.06,-1.2],1.21)
     for(const x of [-5.15,-3.45,-1.75]){
@@ -110,11 +178,6 @@ export function furnishLight(scene:T.Scene,area:Area){
     }
     pendant(scene,'Rain light through east windows','#91c3ff',17,[4.06,2.43,-4.48],[2.35,.60,-1.06],1.05)
     gardenWindowLight(scene)
-  }else{
-    practical(scene,'Paper lamp and cedar surround','#ffbc85',15,6.4,-3.45,1.17,-1.1)
-    luminousFace(scene,diffusion,'Washi fibres against wet glass',[-3.45,1.19,-1.42],1.65,1.67,'#ffad75',.37)
-    pendant(scene,'East reading downlight','#ffc293',14,[3.90,3.20,.56],[3.55,.06,.37])
-    practical(scene,'Blue court light returning through the sill','#91c7ff',9.2,6,1.90,1.80,-3.46)
   }
   return key
 }
@@ -125,17 +188,15 @@ export function television(room:T.Scene){
   const face=new T.Mesh(new T.PlaneGeometry(display.width,display.height),new T.MeshBasicMaterial({map,toneMapped:false}))
   face.name='Television_ProjectDisplay'
   face.material.name='Television_ActiveProject'
-  face.position.set(0,display.y,display.z);room.add(face)
-  const emitters=[-.88,.88].map((x,i)=>practical(room,'Television spill '+(i+1),'#b6dacf',2,5.8,x,1.2,-2.06))
-  const emission=[new T.Color(),new T.Color()]
-  room.userData.televisionEmission=emission
+  face.position.set(display.x,display.y,display.z);room.add(face)
+  const emitters=[-.88,.88].map((offset,i)=>practical(room,'Television spill '+(i+1),'#b6dacf',2,5.8,
+    display.x+offset,display.y-.39,display.z+.332))
   const sample=document.createElement('canvas')
   sample.width=12;sample.height=6
   const small=sample.getContext('2d',{willReadFrequently:true})
   const pixel=new T.Color()
   function refresh(){
     map.needsUpdate=true
-    room.userData.televisionRevision=(room.userData.televisionRevision||0)+1
     if(!small)return
     small.drawImage(ctx.canvas,0,0,sample.width,sample.height)
     // Average in linear light; each half of the picture lights its own side of the room.
@@ -149,7 +210,6 @@ export function television(room:T.Scene){
         light.color.add(pixel)
       }
       light.color.multiplyScalar(1/36)
-      emission[half].copy(light.color)
       const peak=Math.max(.001,light.color.r,light.color.g,light.color.b)
       light.color.multiplyScalar(1/peak)
       light.intensity=peak*12.6

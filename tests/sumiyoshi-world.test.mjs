@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { PerspectiveCamera, Vector3 } from 'three'
 import { artworkWidth, pixelViewport } from '../src/components/sumiyoshi/pixelViewport.ts'
+import { placeHomeWalkCamera } from '../src/components/sumiyoshi/homeWalkCamera.ts'
 import {
-  areas, cafeSpawn, distance, forestCenterX, homeSpawn, members, nearby, pickStop,
+  areas, cafeSpawn, distance, forestCenterX, homeDisplay, homeSpawn, members, nearby, pickStop,
   slideMove, stops, walkable, walkPath,
 } from '../src/components/sumiyoshi/world.ts'
 
@@ -81,15 +83,59 @@ test('the 7 cafe encounters, vending machine and both door pairs form a complete
   ])
 })
 
-test('the walker slides around the sofa and cannot cross tables, people, walls or the water court', () => {
+test('the walker slides around the sofa and cannot cross furniture, people or the sea window', () => {
   const edge = { x: 1.93, z: 1.15 }
   assert.deepEqual(slideMove('home', edge, -0.25, 0.25), { x: 1.93, z: 1.4 })
   assert.deepEqual(slideMove('home', homeSpawn, -5, 0), homeSpawn)
-  assert.equal(nearby('home', { x: -2, z: 1 }), 'sofa')
+  assert.equal(nearby('home', { x: -1.35, z: 2.19 }), 'sofa')
   assert.deepEqual(walkPath('home', homeSpawn, { x: 0, z: -3.4 }), [])
   assert.deepEqual(walkPath('street', stops['home-entry'].spawn, { x: 0, z: 6 }), [])
   assert.deepEqual(walkPath('cafe', cafeSpawn, { x: 4.48, z: -2.75 }), [])
   for (const station of members) assert.equal(walkable('cafe', station.point), false)
   assert.equal(pickStop('street', { x: -5, z: 3 }), null)
   assert.equal(nearby('street', { x: 21, z: 3 }), null)
+})
+
+test('the lounge furniture has solid footprints and the sea window is reachable on either side of the TV', () => {
+  const occupied = [[-.71,-.47], [-3.31,-1.05], [-1.84,1.23], [-4.06,3.88], [-2.09,-1.38],
+    [2,-3.51], [homeDisplay.x,-2.48]]
+  for (const [x,z] of occupied) assert.equal(walkable('home',{x,z}),false)
+  for (const point of [{x:-1.4,z:-2.81}, {x:4.12,z:-2.84}, {x:-4.70,z:2.87}]) {
+    follow('home',homeSpawn,point)
+    follow('home',point,stops['home-door'].approach)
+  }
+})
+
+test('both walking cameras remain indoors and frame a standing visitor throughout the lounge', () => {
+  const target = new Vector3()
+  const [left, right, back, front] = areas.home.bounds
+  for (const aspect of [1280/720, 390/844]) for (const elevated of [false,true]) {
+    const cam = new PerspectiveCamera(45,aspect,.035,95)
+    for (let x=left; x<=right; x+=.28) for (let z=back; z<=front; z+=.28) {
+      if (!walkable('home',{x,z})) continue
+      cam.fov = placeHomeWalkCamera(cam.position,target,{x,z},aspect<.87,elevated)
+      cam.lookAt(target)
+      cam.updateProjectionMatrix()
+      cam.updateMatrixWorld()
+      assert.ok(cam.position.y>1.7 && cam.position.y<3.12, 'eye and near plane stay below the ceiling')
+      assert.ok(Math.abs(cam.position.x)<5.22 && cam.position.z<4.14 && cam.position.z>-3.50, 'inside wall finishes')
+      assert.ok(target.z<cam.position.z, 'screen-up keeps its oceanward direction')
+      for (const height of [.03,1.72]) {
+        const point = new Vector3(x,height,z).project(cam)
+        assert.ok(Math.abs(point.x)<.90 && Math.abs(point.y)<.90 && point.z<1 && point.z>-1, 'feet and head are in frame')
+      }
+    }
+  }
+})
+
+test('standing up immediately reveals the plaster ceiling over the sea window', () => {
+  for (const aspect of [1280/720,390/844]) {
+    const camera = new PerspectiveCamera(45,aspect,.035,95), aim = new Vector3()
+    camera.fov = placeHomeWalkCamera(camera.position,aim,homeSpawn,aspect<.87,false)
+    camera.lookAt(aim)
+    camera.updateProjectionMatrix()
+    camera.updateMatrixWorld()
+    const corner = new Vector3(homeDisplay.x,3.30,-3.60).project(camera)
+    assert.ok(corner.y < .90 && corner.y > .50, 'the junction leaves a visible band of ceiling at the top')
+  }
 })

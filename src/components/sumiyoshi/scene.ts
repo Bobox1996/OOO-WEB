@@ -2,6 +2,7 @@ import * as T from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { cameraDirector, opening, type View } from './camera'
 import { bottleLabel, cafeWindowRain, furnishLight, rainField, television } from './objects'
+import { rainCoast } from './rainCoast'
 import { createCanopyBreeze } from './canopyBreeze'
 import { screenSurface } from './screenSurface'
 import { artworkWidth, pixelViewport } from './pixelViewport'
@@ -31,7 +32,8 @@ export function createStreetGame(host:HTMLDivElement,events:Controls,vision:stri
   const canvas=renderer.domElement;host.appendChild(canvas);canvas.setAttribute('aria-hidden','true')
   const scenes={home:new T.Scene(),street:new T.Scene(),cafe:new T.Scene()}
   const keyLights={home:furnishLight(scenes.home,'home'),street:furnishLight(scenes.street,'street'),cafe:furnishLight(scenes.cafe,'cafe')}
-  const soaked={home:rainField(scenes.home,'home'),street:rainField(scenes.street,'street')}
+  const coast=rainCoast(scenes.home)
+  const streetRain=rainField(scenes.street)
   const cafeGlass=cafeWindowRain(scenes.cafe)
   const breeze=createCanopyBreeze()
   const camera=new T.PerspectiveCamera(48,1,.035,95),director=cameraDirector(camera),tv=television(scenes.home)
@@ -48,7 +50,7 @@ export function createStreetGame(host:HTMLDivElement,events:Controls,vision:stri
   const position=new T.Vector3()
   let player:T.Object3D|undefined,seated:T.Object3D|undefined,walking=false
   let seatedFrames:T.Mesh[]=[]
-  const cutaway:T.Object3D[]=[],cafeCeiling:T.Object3D[]=[]
+  const cafeCeiling:T.Object3D[]=[]
   let view:View=opening,route:Point[]=[],goal:Stop|null=null,nearId:Stop|null=null
   let disposed=false,ready=false,blocked=false,resizePending=true,frame=0,then=0,time=0,stride=0
   const rasterWidth=artworkWidth(new URLSearchParams(location.search).get('pixels'))
@@ -75,22 +77,22 @@ export function createStreetGame(host:HTMLDivElement,events:Controls,vision:stri
         map.magFilter=T.NearestFilter;map.minFilter=T.LinearMipmapLinearFilter
         map.anisotropy=paintAnisotropy;map.needsUpdate=true
       }
-      if(file==='house'||file==='street'||file==='cafe-front')breeze.attach(g.scene)
+      if(file==='street'||file==='cafe-front')breeze.attach(g.scene)
       attach(g.scene)
     })
   }
   function applyVisibility(){
     avatar.visible=view.mode==='walk'
-    cutaway.forEach(o=>{o.visible=view.mode==='seated'||view.mode==='focus'})
     cafeCeiling.forEach(o=>{o.visible=view.mode!=='walk'||!director.elevated})
     if(seated)seated.visible=view.mode==='seated'
     renderer.shadowMap.needsUpdate=true
   }
   const assets=[
-    model('house',g=>{g.traverse(o=>{if(o.name.startsWith('Cutaway'))cutaway.push(o)});scenes.home.add(g)}),model('street',g=>scenes.street.add(g)),model('cafe-front',g=>{g.position.x=forestCenterX;scenes.street.add(g)}),
+    coast.ready,
+    model('house',g=>scenes.home.add(g)),model('street',g=>scenes.street.add(g)),model('cafe-front',g=>{g.position.x=forestCenterX;scenes.street.add(g)}),
     model('cafe',g=>{
       g.traverse(o=>{
-        if(o.name.startsWith('Cutaway'))cutaway.push(o)
+        if(o.name.startsWith('Cutaway'))o.visible=false
         if(o.name.startsWith('Ceiling_')){o.castShadow=false;cafeCeiling.push(o)}
       })
       scenes.cafe.add(g)
@@ -243,8 +245,9 @@ export function createStreetGame(host:HTMLDivElement,events:Controls,vision:stri
     director.frame(view,avatar.position,dt,motion.matches,tvDocument.attached,canvas.width)
     if(tvDocument.attached&&view.mode==='focus')tvDocument.place(canvas.clientWidth,canvas.clientHeight)
     const weatherTime=motion.matches?0:time
-    if(view.area==='cafe')cafeGlass(weatherTime)
-    else soaked[view.area](weatherTime)
+    if(view.area==='home')coast.update(weatherTime)
+    else if(view.area==='street')streetRain(weatherTime)
+    else cafeGlass(weatherTime)
     breeze.update(time,motion.matches)
     if(view.area==='street'){
       keyLights.street.target.position.x=avatar.position.x;keyLights.street.position.x=avatar.position.x-5
@@ -302,7 +305,7 @@ export function createStreetGame(host:HTMLDivElement,events:Controls,vision:stri
     turnBottle(by:number){bottleAngle+=by},
     dispose(){
       disposed=true;cancelAnimationFrame(frame);observe.disconnect();listeners.forEach(([el,n,fn])=>el.removeEventListener(n,fn))
-      tvDocument.attach(null);tv.dispose();soaked.home.dispose();soaked.street.dispose()
+      tvDocument.attach(null);tv.dispose();coast.dispose();streetRain.dispose()
       free([...Object.values(scenes),bottleScene]);renderer.dispose();canvas.remove()
     },
   }

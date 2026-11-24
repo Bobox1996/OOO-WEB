@@ -19,9 +19,9 @@ import s from './sumiyoshi.module.css'
 type Member=Pick<TeamMember,'id'|'first_name'|'last_name'|'description'|'portrait_url'>
 type Props={projects:Film[];members:Member[];vision:string|null;intro:string|null;unavailable:boolean;projectDetails:ProjectDetails}
 type Panel='guide'|'routes'|'label'|null
-const placeNames={home:'Garden room',street:'Sumiyoshi street',cafe:'Forest café'}
+const placeNames={home:'Sea lounge',street:'Sumiyoshi street',cafe:'Forest café'}
 const stopNames:Record<Exclude<Stop,(typeof memberStops)[number]>,string>={
-  sofa:'Sit on sofa','home-door':'Front door','home-entry':'Garden house','cafe-entry':'Forest café','cafe-door':'Back to street',vision:'VISION vending machine',
+  sofa:'Sit on sofa','home-door':'Front door','home-entry':'Seaside house','cafe-entry':'Forest café','cafe-door':'Back to street',vision:'VISION vending machine',
 }
 const roles=['At the coffee bar','Behind the counter','Ordering coffee','At the window table','Beside the long bench','At the corner table','By the café entrance']
 const residentIds=roster.people.filter(p=>p.memberId).map(p=>p.memberId)
@@ -162,7 +162,7 @@ export default function Sumiyoshi({projects,members:directory,vision,unavailable
     <div className={s.viewport} ref={host}/>
     {renderer!=='ready'&&<div className={s.fallback}>
       {film?.cover&&<Image fill sizes="100vw" src={film.cover.url} alt=""/>}
-      <span role="status">{renderer==='loading'?'Opening the garden room…':'3D view unavailable'}
+      <span role="status">{renderer==='loading'?'Opening the sea lounge…':'3D view unavailable'}
       {renderer==='off'&&<button onClick={()=>{setRenderer('loading');setRetry(x=>x+1)}}>Retry 3D</button>}</span>
     </div>}
     {showingDetails&&film&&detail&&<TVProject key={film.id} surface={surface} flat={renderer!=='ready'} film={film}
@@ -212,7 +212,7 @@ export default function Sumiyoshi({projects,members:directory,vision,unavailable
     </Sheet>}
     {panel==='label'&&<Sheet title="Studio vision" close={close}><div className={s.bottlePaper}><small>Out Of Office · OOO Cola</small><p>{vision||'Studio vision is currently unavailable.'}</p></div></Sheet>}
     {panel==='guide'&&<Sheet title="Sumiyoshi" close={close}><dl className={s.guide}>
-      <dt>Garden room</dt><dd>Use the remote or the project strip to choose a cover. Watch closely and open Project details to read on the TV. In Gallery, swipe or use the arrows to browse photos. Esc returns to the cover.</dd>
+      <dt>Sea lounge</dt><dd>Use the remote or the project strip to choose a cover. Watch closely and open Project details to read on the TV. In Gallery, swipe or use the arrows to browse photos. Esc returns to the cover.</dd>
       <dt>On foot</dt><dd>Click the floor or use WASD and the arrow keys. Press Space near a door, a seat or a person. C changes camera height.</dd>
       <dt>On the street</dt><dd>Forest café is the second house to the left of the concrete house. The VISION machine is to the right.</dd></dl>
       <nav className={s.directory}><Link href="/works">Works ↗</Link><Link href="/team">Team ↗</Link><Link href="/vision">Vision ↗</Link></nav>

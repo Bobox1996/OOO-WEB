@@ -32,6 +32,7 @@ const circle = (x: number, z: number, radius: number): Obstacle => ({ center: p(
 export const distance = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.z - b.z)
 
 export const homeSpawn = p(2.04, 1.15)
+export const homeDisplay = { x: 1.70, y: 1.59, z: -2.392, width: 3.32, height: 1.8675 } as const
 export const cafeSpawn = p(0, 3.9)
 export const forestCenterX = -11.8
 export const forestEntranceX = forestCenterX + 1.06
@@ -81,8 +82,15 @@ function layout(id: Area, bounds: Rect, obstacles: Obstacle[]): AreaLayout {
 
 // Rectangles and disks describe the actual furniture footprints; navigation expands them for the walker.
 export const areas: Record<Area, AreaLayout> = {
-  home: layout('home', [-5.2, 5.2, -4.2, 4.2], [
-    box(-1.6, 1.6, 0.63, 1.83), box(-1.72, 1.72, -2.64, -2.36), box(-4.76, 4.76, -3.83, -2.88),
+  home: layout('home', [-5.02, 5.02, -3.30, 3.94], [
+    box(-1.60, 1.60, .63, 1.83),                        // sofa
+    box(-2.07, -1.62, 1.00, 1.46),                      // side table
+    box(-1.55, .13, -.93, -.03),                        // low stone table
+    box(-4.08, -2.54, -1.88, -.23),                     // floor lounger
+    circle(-2.09, -1.38, .12),                          // portable reading lamp
+    box(homeDisplay.x-1.70, homeDisplay.x+1.70, -2.71, -2.29),
+    box(-2.48, 5.24, -3.94, -3.23),                     // cabinet under the sea window
+    box(-5.16, -2.96, 3.52, 4.24),                      // low oak millwork at the rear
   ]),
   street: layout('street', [-23, 23, 0.75, 5.6], [
     box(7.47, 8.73, -0.22, 0.53),

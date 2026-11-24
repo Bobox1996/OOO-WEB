@@ -1,5 +1,6 @@
 import * as T from 'three'
-import { forestCenterX, forestEntranceX, npcPositions, type Area, type Point } from './world'
+import { forestCenterX, forestEntranceX, homeDisplay, npcPositions, type Area, type Point } from './world'
+import { placeHomeWalkCamera } from './homeWalkCamera'
 
 export type Mode='seated'|'focus'|'walk'|'talk'|'vendor'|'bottle'
 export type View={area:Area;mode:Mode;member:number}
@@ -17,17 +18,21 @@ export function cameraDirector(camera:T.PerspectiveCamera){
       let fov=48
       const alongStreet=area==='street'&&mode==='walk'&&!high
       if(mode==='seated'){
-        // From the seated eye, leave a wider strip of the planted window on the phone.
-        eye.set(portrait?.14:-2.25,portrait?1.55:1.87,portrait?3.79:3.85)
-        aim.set(portrait?-.13:0,portrait?.93:1.38,-2.45)
-        fov=portrait?T.MathUtils.radToDeg(2*Math.atan(2.77/(6.24*a))):48
+        // A diagonal view across the rug: the long hearth on the left and a clear
+        // strip of sea between it and the freestanding screen on the right.
+        eye.set(portrait?-2.39:-2.63,portrait?1.91:1.98,portrait?4.00:3.94)
+        aim.set(portrait?.55:-.49,portrait?1.13:1.38,homeDisplay.z)
+        const distance=Math.hypot(eye.x-aim.x,eye.z-aim.z)
+        const span=portrait?7.35:9.95
+        fov=Math.max(38,T.MathUtils.radToDeg(2*Math.atan(span/(2*distance*a))))
       }else if(mode==='focus'){
-        // A first-person lean toward the set. The entire display and a leafy margin stay in frame.
-        const widthFraction=reading&&portrait?.92:.80
-        // A portrait lens opens wider at the sofa, staying inside the rear wall.
-        const dist=portrait?4.35:1.66/(Math.tan(T.MathUtils.degToRad(21.5))*a*widthFraction)
-        const vfov=portrait?T.MathUtils.radToDeg(2*Math.atan(1.66/(dist*a*widthFraction))):43
-        eye.set(.0,1.58,-2.4+Math.max(dist,2.80));aim.set(0,1.59,-2.4);fov=vfov
+        // Read the real TV surface head-on, using both axes to retain the full bezel.
+        const widthFraction=reading&&portrait?.92:.82
+        const frameHeight=Math.max(homeDisplay.height/.84,homeDisplay.width/(a*widthFraction))
+        const dist=portrait?T.MathUtils.clamp(frameHeight*.48,4.35,6.17):T.MathUtils.clamp(frameHeight,2.85,5.80)
+        eye.set(homeDisplay.x,homeDisplay.y,homeDisplay.z+dist)
+        aim.set(homeDisplay.x,homeDisplay.y,homeDisplay.z)
+        fov=T.MathUtils.radToDeg(2*Math.atan(frameHeight/(2*dist)))
       }else if(mode==='talk'){
         const p=npcPositions[member],side=member===0||member===1?1:member===5?1:-1
         const dz=member<2?.05:1.55
@@ -57,14 +62,14 @@ export function cameraDirector(camera:T.PerspectiveCamera){
           aim.set(column,portrait?3.25:2.80,0)
           fov=T.MathUtils.radToDeg(2*Math.atan(span/(2*depth*a)))
         }
+      }else if(area==='home'){
+        fov=placeHomeWalkCamera(eye,aim,player,portrait,high)
       }else{
-        const home=area==='home'
         if(high){
-          eye.set(x*.62,portrait?11:9.4,z*.47+(home?6.7:8.0))
+          eye.set(x*.62,portrait?11:9.4,z*.47+8.0)
           aim.set(x*.75,.63,z*.57-.57);fov=portrait?60:51
         }else{
-          const depth=home?6.6:7.15
-          eye.set(x*.67+(portrait?.16:.62),portrait?2.45:2.30,depth+z*.41)
+          eye.set(x*.67+(portrait?.16:.62),portrait?2.45:2.30,7.15+z*.41)
           aim.set(x*.73-(portrait?0:.25),portrait?1.18:1.23,z*.40-1.35)
           fov=portrait?63:46
         }
