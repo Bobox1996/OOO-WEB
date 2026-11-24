@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "preview:sumiyoshi": "node scripts/preview-drive-in.cjs --sumiyoshi",
+    "package:sumiyoshi": "node scripts/build-drive-in-file.cjs --sumiyoshi",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"

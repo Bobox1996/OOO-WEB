@@ -4,9 +4,14 @@ const path = require('node:path')
 const { webpack, LimitChunkCountPlugin } = require('next/dist/compiled/webpack/webpack')
 
 const root = path.resolve(__dirname, '..')
-const temp = path.join(root, '.next/ooo-rain-qa/portable')
-const destination = path.resolve(process.argv[2] || path.join(root, '../OOO-Drive-In.html'))
-const styles = fs.readFileSync(path.join(root, 'src/components/drive-in/drive-in.module.css'), 'utf8')
+const street = process.argv[2] === '--sumiyoshi'
+const scene = street ? 'sumiyoshi' : 'drive-in'
+const component = street ? 'Sumiyoshi' : 'DriveIn'
+const title = street ? 'OOO Sumiyoshi Street' : 'OOO Drive-In Cinema'
+const temp = path.join(root, '.next', 'ooo-portable', scene)
+const defaultFile = street ? '../OOO-Sumiyoshi.html' : '../OOO-Drive-In.html'
+const destination = path.resolve(process.argv[street ? 3 : 2] || path.join(root, defaultFile))
+const styles = fs.readFileSync(path.join(root, 'src/components', scene, scene + '.module.css'), 'utf8')
 const snapshot = JSON.parse(fs.readFileSync(path.join(root, 'src/lib/drive-in-snapshot.json'), 'utf8'))
 const publicRoot = path.join(root, 'public')
 
@@ -43,7 +48,7 @@ const linkShim = writeModule('link.tsx', `
 const entry = writeModule('entry.tsx', `
   import {createRoot} from 'react-dom/client'
   import {DefaultLoadingManager} from 'three'
-  import DriveIn from '@/components/drive-in/DriveIn'
+  import Game from '@/components/${scene}/${component}'
 
   const packed = document.getElementById('cinema-assets')
   const {assets, snapshot} = JSON.parse(packed.textContent)
@@ -62,13 +67,20 @@ const entry = writeModule('entry.tsx', `
   for (const member of snapshot.members) {
     if (member.portrait_url) member.portrait_url = urls.get(member.portrait_url)
   }
-  createRoot(document.getElementById('cinema')).render(<DriveIn {...snapshot} unavailable={false}/>)
+  createRoot(document.getElementById('cinema')).render(<Game {...snapshot} unavailable={false}/>)
 `)
 
 function packAssets() {
   const urls = new Map()
-  for (const name of fs.readdirSync(path.join(publicRoot, 'drive-in/models'))) {
-    if (name.endsWith('.glb')) urls.set('/drive-in/models/' + name, 'model/gltf-binary')
+  const modelDir = '/' + scene + '/models/'
+  const models = fs.readdirSync(path.join(publicRoot, modelDir)).filter(name => name.endsWith('.glb'))
+  if (street) {
+    for (const required of ['house','street','cafe-front','cafe','people','cola']) {
+      if (!models.includes(required + '.glb')) throw new Error('Missing model: ' + modelDir + required + '.glb')
+    }
+  }
+  for (const name of models) {
+    urls.set(modelDir + name, 'model/gltf-binary')
   }
   for (const film of snapshot.projects) {
     if (film.cover) urls.set(film.cover.url, 'image/webp')
@@ -78,7 +90,9 @@ function packAssets() {
   }
   const assets = {}
   for (const [url, type] of urls) {
-    if (!url.startsWith('/drive-in/')) throw new Error('Missing local snapshot media: ' + url)
+    if (!url.startsWith(modelDir) && !url.startsWith('/drive-in/content/')) {
+      throw new Error('Missing local snapshot media: ' + url)
+    }
     assets[url] = [type, fs.readFileSync(path.join(publicRoot, url)).toString('base64')]
   }
   return assets
@@ -91,7 +105,7 @@ function inlineGame() {
   const logo = fs.readFileSync(path.join(publicRoot, 'brand/out-of-office-tab-dark.png')).toString('base64')
   const html = `<!doctype html><html lang="en"><head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-    <meta name="color-scheme" content="dark"><title>OOO Drive-In Cinema · Local Preview</title>
+    <meta name="color-scheme" content="${street ? 'light' : 'dark'}"><title>${title} · Local Preview</title>
     <link rel="icon" href="data:image/png;base64,${logo}">
     <style>*{box-sizing:border-box}html,body,#cinema{margin:0;width:100%;height:100%}
     body{--studio-font:Arial,Helvetica,sans-serif;background:#1e3040}p,h1,h2,h3,dl,dd{margin:0}

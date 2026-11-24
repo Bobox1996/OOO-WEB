@@ -20,6 +20,12 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Sumiyoshi Street local preview
+
+Open `OOO-Sumiyoshi.html` beside the repository in Chrome or Edge to play the portable build. It includes the Blender scenes, project covers, member portraits and studio content.
+
+For live editing on `dev/sumiyoshi-street`, double-click `Preview-Sumiyoshi.cmd` or run `npm run preview:sumiyoshi`. The development site opens at [127.0.0.1:3018](http://127.0.0.1:3018). Run `npm run package:sumiyoshi` to rebuild the portable file from this checkout. The rainy cinema remains available in `OOO-Drive-In.html` and on the `dev/drive-in` branch.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

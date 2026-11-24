@@ -2,11 +2,13 @@ const http = require('node:http')
 const path = require('node:path')
 const { spawn } = require('node:child_process')
 
+const street = process.argv.includes('--sumiyoshi')
+const title = street ? 'OOO Sumiyoshi Street' : 'OOO Drive-In'
 const host = '127.0.0.1'
-const port = 3017
+const port = street ? 3018 : 3017
 const url = `http://${host}:${port}`
 const healthPath = '/__ooo_local_preview'
-const signature = 'OOO Drive-In local preview'
+const signature = title + ' local preview'
 
 function openPreview() {
   console.log(`Open ${url} in your browser.`)
@@ -63,7 +65,7 @@ async function main() {
     await app.prepare()
     const handle = app.getRequestHandler()
     ready(handle)
-    console.log('OOO Drive-In is ready. Keep this window open during the preview.')
+    console.log(title + ' is ready. Keep this window open during the preview.')
     openPreview()
   } catch (error) {
     failed(error)

@@ -1,5 +1,5 @@
 import { createClient } from '@/services/supabase/server'
-import DriveIn from '@/components/drive-in/DriveIn'
+import Sumiyoshi from '@/components/sumiyoshi/Sumiyoshi'
 import { makeCatalog } from '@/lib/portfolio'
 
 export default async function HomePage() {
@@ -7,7 +7,7 @@ export default async function HomePage() {
     ? (await import('@/lib/drive-in-snapshot.json')).default
     : null
   if (snapshot && (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)) {
-    return <DriveIn projects={snapshot.projects} members={snapshot.members}
+    return <Sumiyoshi projects={snapshot.projects} members={snapshot.members}
       vision={snapshot.vision} intro={snapshot.intro} unavailable={false} />
   }
 
@@ -27,7 +27,7 @@ export default async function HomePage() {
   ])
   const projects = films.error && snapshot ? snapshot.projects :
     makeCatalog(films.data || []).map(({ id,index,title,category,cover }) => ({ id,index,title,category,cover }))
-  return <DriveIn projects={projects} members={people.error && snapshot ? snapshot.members : people.data || []}
+  return <Sumiyoshi projects={projects} members={people.error && snapshot ? snapshot.members : people.data || []}
     vision={statement.error && snapshot ? snapshot.vision : statement.data?.content ?? null}
     intro={team.error && snapshot ? snapshot.intro : team.data?.content ?? null}
     unavailable={Boolean(films.error && !snapshot)} />
