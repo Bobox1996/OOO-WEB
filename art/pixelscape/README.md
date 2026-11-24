@@ -29,7 +29,7 @@
 | 客厅、雨庭 | [Garden-room.blend](house/Garden-room.blend) | `house/build.py`、`house/paint.cjs` 及 `house/paint/` 的独立像素图层 |
 | 住吉街道和周边建筑 | [Sumiyoshi-night.blend](street/Sumiyoshi-night.blend) | `street/build_street.py`、`street/paint.py` 与 `street/street-atlas.png` |
 | Forest 立面、咖啡馆室内 | [cafe-front.blend](cafe/cafe-front.blend)、[cafe.blend](cafe/cafe.blend) | `cafe/build.py`、`cafe/paint.cjs` 及树冠、网板与货架图集 |
-| 七位成员及玩家两种姿态 | [Residents.blend](cast/Residents.blend) | `cast/build_cast.py`、`cast/portrait_atlas.cjs` 与项目成员肖像 |
+| 七位成员及玩家的坐姿、步态和转向 | [Residents.blend](cast/Residents.blend) | 编辑 `cast/cast-sheet.png`、`cast/player-sheet.png`，运行 `node art/pixelscape/cast/prepare_sprites.cjs`，然后用 Blender 运行 `cast/build_cast.py`。人物图集经过最近邻采样，置于三维场景中参与遮挡和投影。 |
 | VISION 玻璃瓶 | [Returnable-Cola.blend](cast/Returnable-Cola.blend) | `cast/build_cola.py`，瓶身文字取自工作室愿景 |
 
 六个 GLB 均位于 `public/sumiyoshi/models/`。镜头、可交互范围、光源与湿面反射分别由 `src/components/sumiyoshi/` 下的 `camera.ts`、`world.ts`、`objects.ts` 和 `pixelscapeEffects.ts` 控制。雨纹和倒影用世界坐标定位，两侧的电视补光从当前封面左右区域采样。PNG 图集可直接修绘，打包过程不依赖 Aseprite。

@@ -32,6 +32,7 @@
 @media(min-width:801px){.conversation{left:auto;right:var(--pad);transform:none;width:min(32vw,430px)}}
 
 .viewport canvas{image-rendering:pixelated}
+.drawnPortrait{width:clamp(76px,8vw,108px);aspect-ratio:1;flex:none;align-self:flex-start;background-size:700% 100%;background-repeat:no-repeat;image-rendering:pixelated;border-radius:2px}
 .game{--ivory:#eff2e7;--accent:#ffd88d}
 .header{background:linear-gradient(#06151db8,transparent)}
 .signature small{color:#c6d9d6}

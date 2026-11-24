@@ -41,8 +41,10 @@ export function createStreetGame(host:HTMLDivElement,events:Controls,vision:stri
   bottleLabel(bottleRig,vision)
   const loader=new GLTFLoader(),motion=window.matchMedia('(prefers-reduced-motion: reduce)')
   const ray=new T.Raycaster(),floor=new T.Plane(new T.Vector3(0,1,0),0),hit=new T.Vector3(),box=new T.Box3()
-  const held=new Set<string>(),npcs:T.Object3D[]=[],heads:(T.Object3D|undefined)[]=[],facing:number[]=[]
-  let player:T.Object3D|undefined,seated:T.Object3D|undefined,legs:(T.Object3D|undefined)[]=[],arm:T.Object3D|undefined
+  const held=new Set<string>(),npcs:T.Object3D[]=[],poses=new Map<string,T.Object3D>()
+  const position=new T.Vector3()
+  let player:T.Object3D|undefined,seated:T.Object3D|undefined,walking=false
+  let seatedFrames:T.Mesh[]=[]
   const cutaway:T.Object3D[]=[],cafeCeiling:T.Object3D[]=[]
   let view:View=opening,route:Point[]=[],goal:Stop|null=null,nearId:Stop|null=null
   let disposed=false,ready=false,blocked=false,resizePending=true,frame=0,then=0,time=0,stride=0
@@ -64,8 +66,6 @@ export function createStreetGame(host:HTMLDivElement,events:Controls,vision:stri
     cutaway.forEach(o=>{o.visible=view.mode==='seated'||view.mode==='focus'})
     cafeCeiling.forEach(o=>{o.visible=view.mode!=='walk'||!director.elevated})
     if(seated)seated.visible=view.mode==='seated'
-    if(player){const umbrella=player.getObjectByName('Player_Umbrella');if(umbrella)umbrella.visible=view.area==='street'
-      const remote=player.getObjectByName('Player_Remote');if(remote)remote.visible=false}
     renderer.shadowMap.needsUpdate=true
   }
   const assets=[
@@ -81,15 +81,39 @@ export function createStreetGame(host:HTMLDivElement,events:Controls,vision:stri
       player=g.getObjectByName('Player');seated=g.getObjectByName('PlayerSeated')
       if(!player||!seated)throw new Error('Missing player pose')
       avatar.add(player);player.position.set(0,0,0)
-      legs=[player.getObjectByName('Player_LegL'),player.getObjectByName('Player_LegR')];arm=player.getObjectByName('Player_ArmL')
-      scenes.home.add(seated);seated.position.set(.72,.48,1.27);seated.rotation.y=Math.PI
+      const inks=new Map<T.Material,T.MeshBasicMaterial>()
+      for(const body of [player,seated,...memberStops.map((_,i)=>g.getObjectByName('Member'+String(i+1).padStart(2,'0')))]){
+        body?.traverse(o=>{
+          if(!(o instanceof T.Mesh)||!(o.material instanceof T.MeshStandardMaterial)||!o.material.map)return
+          const original=o.material
+          let ink=inks.get(original)
+          if(!ink){
+            const map=original.map!
+            map.magFilter=T.NearestFilter;map.minFilter=T.NearestFilter;map.generateMipmaps=false;map.needsUpdate=true
+            ink=new T.MeshBasicMaterial({map,alphaTest:.5,side:T.DoubleSide,toneMapped:false})
+            inks.set(original,ink)
+          }
+          o.material=ink;o.castShadow=true
+        })
+      }
+      inks.forEach((_,material)=>material.dispose())
+      for(const prefix of ['Player_','Rain_']){
+        const names=['Front','StrideA','StrideB','Side','AwayA','AwayB','Back']
+        if(prefix==='Rain_')names.push('Approach')
+        for(const name of names){
+          const pose=prefix+name,drawing=player.getObjectByName(pose)
+          if(!drawing)throw new Error('Missing player drawing '+pose)
+          poses.set(pose,drawing)
+        }
+      }
+      seatedFrames=['Seated_Rest','Seated_Change'].map(name=>seated!.getObjectByName(name) as T.Mesh)
+      scenes.home.add(seated);seated.position.set(.72,.48,1.27)
       for(let i=0;i<memberStops.length;i++){
         const name='Member'+String(i+1).padStart(2,'0'),body=g.getObjectByName(name)
         if(!body)throw new Error('Missing '+name)
-        const p=npcPositions[i],approach=stops[memberStops[i]].approach
+        const p=npcPositions[i]
         scenes.cafe.add(body);body.position.set(p.x,0,p.z)
-        facing[i]=Math.atan2(approach.x-p.x,approach.z-p.z);body.rotation.y=facing[i]
-        npcs[i]=body;heads[i]=body.getObjectByName(name+'_Head')
+        npcs[i]=body
       }
     }),
   ]
@@ -132,10 +156,7 @@ export function createStreetGame(host:HTMLDivElement,events:Controls,vision:stri
     }
     if(target&&distance(target,p)<.012)route.shift()
     if(!route.length&&nearGround)nearGround.visible=false
-    const swing=len>.001&&!motion.matches?Math.sin(stride):0
-    legs.forEach((leg,i)=>{if(leg)leg.rotation.x=(i?-1:1)*swing*.40})
-    if(arm)arm.rotation.x=-swing*.19
-    if(player)player.position.y=Math.abs(swing)*.035
+    walking=len>.001
     proximity()
     if(!route.length&&goal){
       const arrival=goal;goal=null
@@ -159,7 +180,18 @@ export function createStreetGame(host:HTMLDivElement,events:Controls,vision:stri
     if(view.mode==='bottle'){events.label();return}
     if(view.mode==='seated'||view.mode==='focus'){
       if(ray.intersectObject(tv.face).length){events.focus();return}
-      if(view.mode==='seated'&&seated){const remote=seated.getObjectByName('PlayerSeated_Remote');if(remote&&ray.intersectObject(remote,true).length)events.flip(1)}
+      if(view.mode==='seated'){
+        const drawing=seatedFrames.find(o=>o.visible)
+        if(drawing){
+          const contact=ray.intersectObject(drawing)[0]
+          if(contact?.uv){
+            const uv=drawing.geometry.getAttribute('uv')
+            const u=(contact.uv.x-uv.getX(0))/(uv.getX(1)-uv.getX(0))
+            const v=(contact.uv.y-uv.getY(0))/(uv.getY(2)-uv.getY(0))
+            if(u<.41&&v>.37&&v<.84)events.flip(1)
+          }
+        }
+      }
       return
     }
     if(view.mode!=='walk')return
@@ -197,14 +229,29 @@ export function createStreetGame(host:HTMLDivElement,events:Controls,vision:stri
       keyLights.street.target.position.x=avatar.position.x;keyLights.street.position.x=avatar.position.x-5
     }
     if(view.area==='cafe')npcs.forEach((body,i)=>{
-      const p=npcPositions[i],speaking=view.mode==='talk'&&view.member===i
-      const angle=speaking?Math.atan2(camera.position.x-p.x,camera.position.z-p.z):facing[i]
-      body.rotation.y+=Math.atan2(Math.sin(angle-body.rotation.y),Math.cos(angle-body.rotation.y))*(motion.matches?1:1-Math.exp(-dt*9))
-      const head=heads[i];if(head)head.rotation.z=motion.matches?0:Math.sin(time*(speaking?2.5:1.25)+i)*.018
+      const p=npcPositions[i]
+      body.rotation.y=Math.atan2(camera.position.x-p.x,camera.position.z-p.z)
+      body.scale.x=i%3===1?-1:1
     })
+    if(player&&view.mode==='walk'){
+      avatar.getWorldPosition(position)
+      const yaw=Math.atan2(camera.position.x-position.x,camera.position.z-position.z)
+      const heading=avatar.rotation.y-yaw
+      player.rotation.y=-heading
+      const side=Math.sin(heading),front=Math.cos(heading),step=Math.sin(stride)
+      const gait=walking&&!motion.matches
+      let pose='Front'
+      if(Math.abs(side)>.59)pose=!gait||Math.abs(step)<.35?'Side':step>0?'StrideA':'StrideB'
+      else if(front<0)pose=!gait||Math.abs(step)<.35?'Back':step>0?'AwayA':'AwayB'
+      else if(view.area==='street'&&gait&&Math.abs(step)>.45)pose='Approach'
+      pose=(view.area==='street'?'Rain_':'Player_')+pose
+      poses.forEach((drawing,name)=>{drawing.visible=name===pose;drawing.scale.x=side<-.2?-1:1})
+      player.position.y=gait?Math.abs(step)*.025:0
+    }
     if(seated&&view.mode==='seated'){
-      const hand=seated.getObjectByName('PlayerSeated_ArmL')
-      if(hand){remotePulse=Math.max(0,remotePulse-dt*3.8);hand.rotation.z=motion.matches?0:Math.sin(remotePulse*Math.PI)*.10}
+      seated.rotation.y=Math.atan2(camera.position.x-seated.position.x,camera.position.z-seated.position.z)
+      remotePulse=Math.max(0,remotePulse-dt*2.8)
+      seatedFrames.forEach((drawing,index)=>{drawing.visible=index===(remotePulse>.08&&!motion.matches?1:0)})
     }
     if(view.mode==='walk'&&(held.size||route.length)&&Math.floor(time*7)!==Math.floor((time-dt)*7))renderer.shadowMap.needsUpdate=true
     renderer.autoClear=true;renderer.render(scenes[view.area],camera)
