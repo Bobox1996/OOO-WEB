@@ -1,12 +1,19 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { PerspectiveCamera, Vector3 } from 'three'
-import { artworkWidth, pixelViewport } from '../src/components/sumiyoshi/pixelViewport.ts'
+import { artworkWidth, loungeViewport, pixelViewport } from '../src/components/sumiyoshi/pixelViewport.ts'
 import { placeHomeWalkCamera } from '../src/components/sumiyoshi/homeWalkCamera.ts'
 import {
   areas, cafeSpawn, distance, forestCenterX, homeDisplay, homeSpawn, members, nearby, pickStop,
   slideMove, stops, walkable, walkPath,
 } from '../src/components/sumiyoshi/world.ts'
+
+test('the lounge enlarges pixels evenly on desktop and handsets', () => {
+  assert.deepEqual(loungeViewport(1280, 612), { width: 427, height: 204 })
+  assert.deepEqual(loungeViewport(390, 736), { width: 195, height: 368 })
+  assert.deepEqual(loungeViewport(390, 844), { width: 195, height: 422 })
+  assert.deepEqual(loungeViewport(1, 1), { width: 1, height: 1 })
+})
 
 test('the detailed artwork preserves framing, with two lighter raster options', () => {
   assert.equal(artworkWidth(null), 960)

@@ -20,6 +20,16 @@ const ink = `
   vec3 linearInk(vec3 s) {
     return mix(s/12.92, pow((s+.055)/1.055,vec3(2.4)), step(.04045,s));
   }
+  vec3 coastInk(vec3 paint) {
+    float value=clamp(dot(paint,vec3(.2126,.7152,.0722)),0.,1.);
+    // Group the painted washes from midnight blue through slate to pearl.
+    // Keep some source chroma for the warm cloud break above the horizon.
+    float band=floor(value*16.+.5)/16.;
+    vec3 slate=vec3(.43,.50,.59);
+    vec3 ramp=mix(vec3(.04,.08,.14),slate,min(1.,2.*band));
+    ramp=mix(ramp,vec3(.94,.94,.91),max(0.,2.*band-1.));
+    return mix(ramp,paint+vec3(band-value),.49);
+  }
 `
 
 function seaWindow(clock: {value: number}) {
@@ -89,14 +99,17 @@ function seaWindow(clock: {value: number}) {
         uv+=proximity*vec2(.0018*sin(swell+.70*time)+.0008*sin(crossSea-.38*time),
                            .0029*sin(swell*.81+.58*time)+.0011*cos(crossSea+.74*time));
         uv.x+=smoothstep(.005,.11,altitude)*.018*sin(time*.021);
-        vec3 paint=texture2D(painting,uv).rgb;
+        // Average fine brushwork before grouping the values. At the back of
+        // the room neighbouring whitecaps read as short connected strokes.
+        vec3 paint=texture2D(painting,uv,.80).rgb;
         if(altitude<0.) {
           // A sparkle travels down the already painted silver lip of a wave;
           // its shaded face stays deep blue. Distant facets merge in the haze.
           float silver=smoothstep(.42,.78,paint.g);
           float flash=sin(.8*water.x+water.y*1.37+time*1.38);
           float filtered=1.-smoothstep(.55,2.4,fwidth(swell));
-          paint+=silver*proximity*filtered*flash*vec3(.041,.048,.052);
+          float crest=smoothstep(.38,.72,flash);
+          paint+=silver*proximity*filtered*crest*vec3(.043,.049,.052);
           paint+=vec3(.066,.084,.091)*rainImpact(water,range);
         }
         return paint;
@@ -106,7 +119,7 @@ function seaWindow(clock: {value: number}) {
         vec3 ray=normalize(windowPoint-cameraPosition);
         float bearing=atan(ray.x,-ray.z);
         float altitude=asin(ray.y);
-        vec3 color=hasPainting ? paintedCoast(ray,altitude) : quietSea(bearing,altitude);
+        vec3 color=coastInk(hasPainting ? paintedCoast(ray,altitude) : quietSea(bearing,altitude));
 
         // Beads adhere to the outer pane. A few creep along the same tracks,
         // picking up a silver lower rim and a dark, refracted upper edge.
@@ -217,7 +230,7 @@ export function rainCoast(scene: T.Scene) {
   scene.add(window,skiff,rain)
   return {
     ready,
-    update(seconds: number) { clock.value=seconds },
+    update(seconds: number) { clock.value=Math.floor(seconds*12)/12 },
     dispose() {
       disposed=true
       window.material.uniforms.painting.value?.dispose()

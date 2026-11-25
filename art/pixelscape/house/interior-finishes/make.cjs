@@ -1,6 +1,7 @@
-// Albedo plates for the coastal listening room. Run with Node from any directory.
-// All patterns repeat in UV space. The oak is four sequential veneer leaves across,
-// with vertical grain; cloth, stone and plaster do not contain any baked room light.
+// Pixel albedo plates for the coastal listening room. Each tile is drawn at its
+// native resolution. Repeated UVs keep grain, seams and mineral bands attached
+// to the building as the player moves.
+/* eslint-disable @typescript-eslint/no-require-imports -- Standalone CommonJS texture generator. */
 const path = require('node:path')
 const sharp = require('sharp')
 const tau = 2 * Math.PI
@@ -8,7 +9,6 @@ const wrap = (n, repeat) => (n % repeat + repeat) % repeat
 const fract = n => n - Math.floor(n)
 const ease = t => t * t * (3 - 2 * t)
 const blend = (a, b, t) => a + (b - a) * t
-const clamp = t => Math.max(0, Math.min(1, t))
 
 function hash(x, y, seed) {
   let v = Math.imul(x + seed, 374761393) + Math.imul(y, 668265263)
@@ -26,131 +26,107 @@ function grain(u, v, nx, ny, seed) {
     blend(hash(a, d, seed), hash(b, d, seed), sx), sy) * 2 - 1
 }
 
-function tint(base, range, value, chalk = 0) {
-  return base.map((channel, i) => channel + range[i] * value + chalk)
+function palette(colours) {
+  const inks = colours.split(' ').map(hex => Buffer.from(hex, 'hex'))
+  return value => inks[Math.max(0, Math.min(inks.length - 1, Math.floor((value + 1) * .5 * inks.length)))]
 }
+
+const wood = palette('815843 916448 a3714e af7d54 bd8b60 cd9d71')
+const hide = palette('292b30 32343a 37383d 404146')
+const wool = palette('aa9b88 b4a58f beaf99 c7b9a4')
+const flax = palette('c7baa6 d1c4ae d9cdb8 dfd5c0')
+const stone = palette('a59585 b6a18b c4ae97 d0bda5 dcceb5')
+const mineral = palette('898784 95908a 9f9b92 a7a299')
+const chalk = palette('beb3a4 c4b9a9 cbbfaf d2c6b4')
+const reed = palette('a39c8b b3ab98 beb5a1 cac0a9')
 
 function oak(u, v) {
-  const index = Math.min(3, Math.floor(u * 4))
-  const leaf = fract(u * 4)
-  // Two pairs of consecutive slices, opened like book pages; the fork of the
-  // growth rings stays in phase across the join, while the pores vary by slice.
-  const pair = Math.floor(index / 2), book = index % 2 ? 1 - leaf : leaf
-  const s = 31 + 17 * pair
-  const bend = .020 * grain(book, v, 3, 3, s) + .025 * Math.sin(tau * v + 1.3 * pair)
+  // Four leaves across 3.87 metres. The pairs open around a mirrored cathedral
+  // figure. Each annual ring resolves as a broken, stepped stroke between calmer
+  // fields of heartwood, with a few long dark vessels running alongside it.
+  const index = Math.floor(u * 4), leaf = fract(u * 4)
+  const book = index % 2 ? 1 - leaf : leaf
+  const pair = Math.floor(index / 2), seed = 31 + pair * 17
+  const bend = .024 * grain(book, v, 4, 3, seed) + .027 * Math.sin(tau * v + pair)
   const q = book + bend
-  const centre = pair ? .69 : .29
-  const cut = .15 + .06 * Math.sin(tau * v + pair) + .023 * Math.cos(tau * 2 * v - .7)
-  const distance = pair ? Math.hypot(q - centre, cut) : q
-  const annual = distance * (pair ? 16 : 14) + .50 * grain(q, v, 7, 2, s + 2)
-  const early = Math.pow(.5 + .5 * Math.cos(tau * annual), 3.9)
-  const bundles = grain(q + .005 * Math.sin(2 * tau * v), v, 46, 6, s + 3)
-  const vessel = Math.max(0, grain(q + .12 * distance, v, 120, 25, s + index + 6) - .16)
-  const ray = Math.max(0, grain(q + .04 * Math.sin(tau * v), v, 80, 112, s + index + 8) - .35)
-  const glint = ray * (2 + 3 * clamp((bundles + 1) / 2))
-  const band = .16 + .24 * clamp(.55 + grain(q, v, 4, 3, s + 12))
-  const value = .54 * grain(q, v, 7, 1, s + 4) + .38 * bundles -
-    band * (early - .26) - .44 * vessel + .08 * grain(leaf, v, 136, 67, s + 11)
-  return tint([170, 122, 82], [24, 23, 21], value, glint + [1.3, -.5, -1.4, .8][index])
-}
-
-// Distance to the two nearest pebbles, with wraparound at the sample boundary.
-function pebble(u, v, nx, ny, seed) {
-  const x = u * nx, y = v * ny
-  const ix = Math.floor(x), iy = Math.floor(y)
-  let first = 4, second = 4
-  for (let row = iy - 1; row <= iy + 1; row++) {
-    for (let col = ix - 1; col <= ix + 1; col++) {
-      const a = wrap(col, nx), b = wrap(row, ny)
-      const dx = col + .15 + .70 * hash(a, b, seed) - x
-      const dy = row + .15 + .70 * hash(a, b, seed + 5) - y
-      const d = dx * dx + dy * dy
-      if (d < first) { second = first; first = d } else if (d < second) second = d
-    }
-  }
-  return { distance: Math.sqrt(first), edge: Math.sqrt(second) - Math.sqrt(first) }
+  const cut = .17 + .13 * Math.cos(tau * v + .6 * pair)
+  const annual = Math.hypot(q - (pair ? .73 : .24), cut) * (pair ? 10 : 8)
+    + .17 * grain(q, v, 5, 2, seed + 1)
+  const ring = fract(annual)
+  const field = .43 * grain(q, v, 6, 2, seed + 2) + .28 * grain(q, v, 17, 4, seed + 3)
+  const edge = ring < .17 && grain(q, v, 9, 4, seed + 4) > -.28
+  const sap = ring > .79 && grain(q, v, 7, 6, seed + 5) > .03
+  const pores = grain(q, v, 43, 11, seed + index + 6) > .67
+  return wood(field - (edge ? .43 : 0) + (sap ? .25 : 0) - (pores ? .29 : 0))
 }
 
 function graphite(u, v) {
-  const peb = pebble(u + .009 * grain(u, v, 9, 5, 84), v, 38, 47, 72)
-  const crease = clamp(1 - peb.edge * 10)
-  const pore = Math.max(0, grain(u, v, 103, 151, 202) - .65)
-  const value = .53 * grain(u, v, 5, 5, 79) + .19 * grain(u, v, 33, 27, 63)
-    - .57 * (crease - .22) - .68 * pore + .1 * Math.cos(peb.distance * 4)
-  return tint([52, 52, 51], [9.2, 9.0, 8.8], value)
+  const body = grain(u, v, 3, 4, 79)
+  const brokenCrease = Math.abs(grain(u + .035 * body, v, 7, 3, 80)) < .095
+  const pebble = grain(u, v, 14, 13, 82)
+  return hide(.40 * body + .21 * pebble - (brokenCrease && pebble < .32 ? .33 : 0))
 }
 
 function boucle(u, v) {
-  const row = Math.floor(v * 65)
-  const s = u + .003 * grain(u, v, 32, 14, 77) + .42 * (row % 2) / 69
-  const loop = pebble(s, v, 67, 57, 26)
-  const centre = Math.exp(-22 * loop.distance * loop.distance)
-  const yarn = .5 - Math.min(1, Math.abs(loop.distance - .31) * 4.4)
-  const slub = grain(u, v, 83, 70, 18) * .33 + grain(s, v, 31, 20, 57) * .26
-  return tint([185, 172, 151], [15, 15, 14], .72 * yarn - .36 * centre + slub + .13 * grain(u, v, 8, 8, 51))
+  const row = Math.floor(v * 8)
+  const yarn = grain(u + (row % 2) / 16, v, 8, 8, 26)
+  const tip = fract(v * 8) > .64 && fract(u * 8 + (row % 2) * .5) < .5
+  return wool(.38 * yarn + .17 * grain(u, v, 3, 4, 57) + (tip ? .34 : -.13))
 }
 
 function linen(u, v) {
-  const warp = u * 59 + .18 * grain(u, v, 14, 5, 20)
-  const weft = v * 64 + .17 * grain(u, v, 7, 21, 36)
-  const forward = (Math.floor(warp) + Math.floor(weft)) % 2 === 0
-  const yarn = Math.cos(tau * ((forward ? warp : weft) - .5))
-  const slub = (forward ? grain(u, v, 87, 18, 52) : grain(u, v, 19, 82, 41))
-  return tint([216, 205, 184], [8, 8.6, 9], .23 * yarn + .42 * slub + .36 * grain(u, v, 9, 7, 23))
+  const row = Math.floor(v * 8), col = Math.floor(u * 8)
+  const warp = (col + row) % 2 === 0
+  const yarn = warp ? grain(u, v, 8, 3, 20) : grain(u, v, 3, 8, 36)
+  return flax(.42 * yarn + (fract((warp ? u : v) * 8) < .26 ? -.30 : .09))
 }
 
 function travertine(u, v) {
-  const bed = v + .034 * grain(u, v, 4, 3, 451) + .006 * grain(u, v, 11, 7, 511)
-  const sediment = grain(u, bed, 4, 18, 40) + .54 * grain(u, bed, 12, 52, 47)
-  const pores = Math.max(0, grain(u, bed, 118, 119, 222) - .39)
-  const calcite = Math.max(0, grain(u, bed, 29, 84, 253) - .40)
-  return tint([195, 179, 155], [12, 13, 14], .57 * sediment + .28 * grain(u, v, 23, 17, 81) - pores + .76 * calcite)
+  const bed = v + .039 * grain(u, v, 3, 2, 451)
+  const strata = grain(u, bed, 3, 15, 40)
+  const freckle = grain(u, bed, 28, 25, 222)
+  const pocket = Math.abs(strata + .14) < .12 && grain(u, v, 8, 9, 81) > .07
+  return stone(.48 * strata + .24 * grain(u, v, 4, 3, 47)
+    - (pocket ? .45 : 0) + (freckle > .67 ? .29 : 0))
 }
 
 function screed(u, v) {
-  const mineral = grain(u, v, 109, 107, 912)
-  const value = .48 * grain(u, v, 4, 5, 134) + .36 * grain(u, v, 13, 10, 47) +
-    .19 * mineral + .39 * Math.max(0, mineral - .56)
-  return tint([157, 152, 142], [8, 8, 8], value)
+  const aggregate = grain(u, v, 23, 19, 912)
+  const field = .36 * grain(u, v, 4, 4, 134) + .19 * grain(u, v, 9, 7, 47)
+  return mineral(field + (aggregate > .70 ? .30 : 0))
 }
 
 function plaster(u, v) {
-  const trowel = grain(u + .045 * Math.sin(v * tau), v, 11, 9, 321)
-  const value = .42 * grain(u, v, 5, 4, 556) + .30 * trowel + .2 * grain(u, v, 58, 61, 526)
-  return tint([201, 188, 169], [6, 6, 6], value)
+  const trowel = grain(u + .035 * Math.sin(v * tau), v, 6, 9, 321)
+  return chalk(.35 * grain(u, v, 4, 3, 556) + .30 * trowel)
 }
 
 function sudare(u, v) {
-  // Reed sheaths and pale binding thread form a continuous low-contrast field;
-  // the shade transmits the ocean light through the material's uniform alpha.
-  const row = v * 29 + .085 * grain(u, v, 6, 6, 118)
-  const reed = .5 + .5 * Math.cos(tau * (row - .44))
-  const binding = .5 + .5 * Math.cos(tau * (u * 14 + .04 * grain(u, v, 7, 5, 131)))
-  const value = .34 * grain(u, v, 17, 33, 302) + .24 * grain(u, v, 4, 6, 67)
-    + .31 * (reed - .5) + .17 * (binding * binding - .38)
-  return tint([190, 182, 162], [9, 8, 7], value)
+  const weft = fract(v * 8 + .07 * grain(u, v, 4, 3, 118))
+  const binding = fract(u * 4) < .12 && weft > .3
+  return reed(.31 * grain(u, v, 5, 7, 302) + (weft < .29 ? -.39 : .11) + (binding ? .29 : 0))
 }
 
 async function write(name, width, height, pigment) {
   const data = Buffer.alloc(width * height * 3)
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      const colour = pigment((x + .5) / width, (y + .5) / height)
-      for (let i = 0; i < 3; i++) data[(y * width + x) * 3 + i] = Math.round(colour[i])
+      const ink = pigment((x + .5) / width, (y + .5) / height)
+      ink.copy(data, (y * width + x) * 3)
     }
   }
   const output = path.join(__dirname, name + '.png')
   await sharp(data, {raw: {width, height, channels: 3}})
-    .png({palette: true, colours: 128, dither: 0, compressionLevel: 9}).toFile(output)
+    .png({palette: true, colours: 8, dither: 0, compressionLevel: 9}).toFile(output)
 }
 
 Promise.all([
-  write('honey-oak', 1024, 512, oak),
-  write('graphite-leather', 256, 256, graphite),
-  write('oat-boucle', 256, 256, boucle),
-  write('ivory-linen', 256, 256, linen),
-  write('dune-travertine', 512, 256, travertine),
-  write('smoke-screed', 384, 384, screed),
-  write('ecru-plaster', 384, 384, plaster),
-  write('mist-sudare', 128, 128, sudare),
+  write('honey-oak', 256, 160, oak),
+  write('graphite-leather', 32, 32, graphite),
+  write('oat-boucle', 32, 32, boucle),
+  write('ivory-linen', 32, 32, linen),
+  write('dune-travertine', 96, 48, travertine),
+  write('smoke-screed', 96, 96, screed),
+  write('ecru-plaster', 112, 112, plaster),
+  write('mist-sudare', 32, 32, sudare),
 ]).catch(error => { console.error(error); process.exitCode = 1 })

@@ -20,3 +20,12 @@ export function pixelViewport(width: number, height: number, desktopWidth: Artwo
     (portrait ? portraitHeight : desktopWidth * 9 / 16) / height)
   return { width: Math.max(1, Math.round(width * scale)), height: Math.max(1, Math.round(height * scale)) }
 }
+
+/** Enlarge each lounge texel by a whole number of CSS pixels on both axes. */
+export function loungeViewport(width: number, height: number) {
+  const portrait = width / height < 0.87
+  const zoom = Math.max(1, Math.round(Math.max(
+    width / (portrait ? 200 : 460), height / (portrait ? 400 : 290),
+  )))
+  return { width: Math.max(1, Math.round(width / zoom)), height: Math.max(1, Math.round(height / zoom)) }
+}

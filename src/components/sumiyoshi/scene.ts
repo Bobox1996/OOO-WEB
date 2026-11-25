@@ -5,7 +5,8 @@ import { bottleLabel, cafeWindowRain, furnishLight, rainField, television } from
 import { rainCoast } from './rainCoast'
 import { createCanopyBreeze } from './canopyBreeze'
 import { screenSurface } from './screenSurface'
-import { artworkWidth, pixelViewport } from './pixelViewport'
+import { artworkWidth, loungeViewport, pixelViewport } from './pixelViewport'
+import { applyLoungeInk } from './loungeInk'
 import { areas, stops, homeSpawn, forestCenterX, npcPositions, memberStops, nearby, walkable, walkPath, slideMove, distance, type Point, type Stop } from './world'
 
 type Controls={
@@ -53,7 +54,9 @@ export function createStreetGame(host:HTMLDivElement,events:Controls,vision:stri
   const cafeCeiling:T.Object3D[]=[]
   let view:View=opening,route:Point[]=[],goal:Stop|null=null,nearId:Stop|null=null
   let disposed=false,ready=false,blocked=false,resizePending=true,frame=0,then=0,time=0,stride=0
-  const rasterWidth=artworkWidth(new URLSearchParams(location.search).get('pixels'))
+  const rasterSetting=new URLSearchParams(location.search).get('pixels')
+  const rasterWidth=artworkWidth(rasterSetting)
+  const explicitRaster=rasterSetting===String(rasterWidth)
   let pointer:{x:number;y:number;angle:number}|null=null,bottleAngle=0,remotePulse=0
   let nearGround:T.Mesh|undefined
   const paintAnisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy())
@@ -62,15 +65,18 @@ export function createStreetGame(host:HTMLDivElement,events:Controls,vision:stri
       if(disposed){free([g.scene]);return}
       const environment=file!=='people'&&file!=='cola'
       const paint=new Set<T.Texture>()
+      const finishes=new Set<T.MeshStandardMaterial>()
       g.scene.traverse(o=>{if(o instanceof T.Mesh){
         const materials=Array.isArray(o.material)?o.material:[o.material]
         const m=materials[0]
         o.castShadow=!m.transparent&&!m.name.includes('Painted botanical sprays');o.receiveShadow=!m.transparent
         if(environment)for(const material of materials){
+          if(file==='house'&&material instanceof T.MeshStandardMaterial)finishes.add(material)
           if(material.map)paint.add(material.map)
           if(material.emissiveMap)paint.add(material.emissiveMap)
         }
       }})
+      finishes.forEach(applyLoungeInk)
       // Keep nearby texels sharp; filter receding leaf clusters, timber and fine metalwork
       // across mip levels so oblique views and slow tracking do not sparkle.
       for(const map of paint){
@@ -145,6 +151,7 @@ export function createStreetGame(host:HTMLDivElement,events:Controls,vision:stri
   function clear(){route=[];goal=null;held.clear();if(nearGround)nearGround.visible=false}
   function setView(next:View,spawn?:Point){
     const previous=view;view=next;clear()
+    if(isLoungeRaster(previous)!==isLoungeRaster(next))resizePending=true
     if(next.area!==previous.area){scenes[next.area].add(avatar);director.cut()}
     if(spawn){avatar.position.set(spawn.x,0,spawn.z);avatar.rotation.y=next.area==='street'?0:Math.PI}
     if(next.mode==='walk'&&(previous.mode==='seated'||previous.mode==='focus')){avatar.position.set(homeSpawn.x,0,homeSpawn.z);avatar.rotation.y=Math.PI*.5}
@@ -224,12 +231,16 @@ export function createStreetGame(host:HTMLDivElement,events:Controls,vision:stri
     if(choice){walkTo(stops[choice].approach,choice);return}
     if(ray.ray.intersectPlane(floor,hit)&&walkable(view.area,hit))walkTo({x:hit.x,z:hit.z},null)
   }
+  function isLoungeRaster(current:View){
+    return !explicitRaster&&current.area==='home'&&current.mode!=='focus'
+  }
   function resize(){
     const w=Math.max(1,host.clientWidth),h=Math.max(1,host.clientHeight)
+    if(camera.aspect!==w/h)director.cut()
     camera.aspect=w/h;camera.updateProjectionMatrix();bottleCam.aspect=w/h
     bottleCam.position.set(.0,.158,w/h<.8?.79:.63);bottleCam.lookAt(0,.145,0);bottleCam.updateProjectionMatrix()
-    const raster=pixelViewport(w,h,rasterWidth)
-    renderer.setSize(raster.width,raster.height,false);director.cut()
+    const raster=isLoungeRaster(view)?loungeViewport(w,h):pixelViewport(w,h,rasterWidth)
+    renderer.setSize(raster.width,raster.height,false)
   }
   function render(now:number){
     if(disposed||document.hidden)return
