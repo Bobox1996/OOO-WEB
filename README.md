@@ -28,7 +28,7 @@ For live editing, double-click `Preview-Sumiyoshi.cmd` or run `npm run preview:s
 
 ## Homepage A/B comparison
 
-The homepage randomly sends each new browser to the existing project index at `/works` or the interactive sea lounge at `/sumiyoshi`, with a 50% chance for each. It remembers the assignment for 180 days in the first-party `ooo_home_v1` cookie. Both paths also open directly for side-by-side review. The entry redirect preserves campaign parameters, and each page has its own path in Vercel Web Analytics.
+The homepage randomly sends each new browser to the existing project index at `/works` (80%) or the interactive sea lounge at `/sumiyoshi` (20%). It remembers the assignment for 180 days in the first-party `ooo_home_v1` cookie. Both paths also open directly for side-by-side review. The entry redirect preserves campaign parameters, and each page has its own path in Vercel Web Analytics.
 
 ## Learn More
 

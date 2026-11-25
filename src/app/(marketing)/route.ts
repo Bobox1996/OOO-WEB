@@ -8,7 +8,7 @@ const cookieName = 'ooo_home_v1'
 export function GET(request: NextRequest) {
   const saved = request.cookies.get(cookieName)?.value
   const assigned = saved === 'works' || saved === 'sumiyoshi'
-  const variant = assigned ? saved : (randomInt(2) === 0 ? 'works' : 'sumiyoshi')
+  const variant = assigned ? saved : (randomInt(100) < 80 ? 'works' : 'sumiyoshi')
   // A relative Location keeps the visitor on their original production or preview domain.
   const response = new NextResponse(null, {
     status: 307,
