@@ -1,12 +1,14 @@
 import * as T from 'three/webgpu'
 import { Category, Cell, RADIUS, WorldSave, cleanWorld, clamp, center, key, label, locate, makeCreeks, readSave, sample, variants } from './world'
 import { cellLine, makeLandscape, makeSpecimens } from './landscape'
+import { makeWalker } from './walking'
 
 export type Selection={kind:Category;variant:number;edit:boolean}
 export type SceneHandle={
   choose:(s:Selection)=>void;zoom:(factor:number)=>void;home:()=>void;undo:()=>void;setGrid:(v:boolean)=>void;dispose:()=>void
+  walk:(v:boolean)=>void;landAt:()=>void;moveStick:(x:number,z:number)=>void
 }
-export type SceneUI={note:(v:string)=>void;history:(n:number)=>void;ready:(count:number,backend:string)=>void;ground:(v:string)=>void}
+export type SceneUI={note:(v:string)=>void;history:(n:number)=>void;ready:(count:number,backend:string)=>void;ground:(v:string)=>void;walking:(v:boolean)=>void}
 const STORAGE='ooo.my-little-planet.environment.v1'
 const startRotation=new T.Quaternion().setFromEuler(new T.Euler(.14,.04,-.12))
 const cancelFrame=(n:number)=>{if(n)cancelAnimationFrame(n)}
@@ -29,6 +31,24 @@ export async function mountPlanet(canvas:HTMLCanvasElement,ui:SceneUI,signal:Abo
   const specs=makeSpecimens()
   let data=localWorld(),land=makeLandscape(specs,data,small)
   root.add(land.group)
+  let walker=makeWalker(land.creeks,land.obstacles),pickingLanding=false,orbitRotation=startRotation.clone()
+  root.add(walker.group);scene.add(sun.target)
+  const walkSky=new T.FogExp2('#d5dfcc',.021),litSide=new T.Vector3()
+  function walkMode(on:boolean,normal?:T.Vector3){
+    pickingLanding=false;clearOverlay();lastCell='';hovering=null;focus=null
+    if(on){
+      if(!walker.active)orbitRotation=root.quaternion.clone()
+      root.quaternion.identity();walker.start(normal);land.setWalkFocus(walker.up)
+      scene.fog=walkSky;camera.fov=51;sun.shadow.camera.left=-9;sun.shadow.camera.right=9;sun.shadow.camera.top=9;sun.shadow.camera.bottom=-9
+      canvas.focus({preventScroll:true})
+    }else{
+      walker.stop();land.setWalkFocus(null);root.quaternion.copy(orbitRotation);camera.up.set(0,1,0);camera.fov=33;camera.position.set(0,0,homeZ*distance);camera.lookAt(0,0,0);camera.updateMatrixWorld();scene.fog=null
+      sun.position.set(-22,35,30);sun.target.position.set(0,0,0);fill.position.set(0,1,0);bounce.position.set(17,2,9)
+      sun.shadow.camera.left=-22;sun.shadow.camera.right=22;sun.shadow.camera.top=22;sun.shadow.camera.bottom=-22
+    }
+    sun.shadow.camera.updateProjectionMatrix();camera.updateProjectionMatrix();canvas.dataset.walk=on?'true':'false'
+    ui.walking(on);ui.ground('');dirty=true
+  }
   let mode:Selection={kind:'tree',variant:0,edit:false},grid=false,distance=1,targetDistance=1,frame=0,live=true
   let lastDraw=0, dirty=true, lastCell='', hovering:Cell|null=null, focus:T.Quaternion|null=null
   const history:WorldSave[]=[],ray=new T.Raycaster(),screen=new T.Vector2(),v3=new T.Vector3()
@@ -61,7 +81,8 @@ export async function mountPlanet(canvas:HTMLCanvasElement,ui:SceneUI,signal:Abo
     dirty=true
   }
   function refresh(){
-    root.remove(land.group);land.dispose();land=makeLandscape(specs,data,small);root.add(land.group)
+    root.remove(land.group,walker.group);walker.dispose();land.dispose();land=makeLandscape(specs,data,small);root.add(land.group)
+    walker=makeWalker(land.creeks,land.obstacles);root.add(walker.group)
     clearOverlay();lastCell='';hovering=null;dirty=true;ui.history(history.length)
     try{localStorage.setItem(STORAGE,JSON.stringify(data));return true}catch{return false}
   }
@@ -103,8 +124,9 @@ export async function mountPlanet(canvas:HTMLCanvasElement,ui:SceneUI,signal:Abo
     const s=sample(n,land.creeks)
     ui.ground(s.river>=0?'溪床':s.wet?(s.depth>.7?'海水':'浅滩'):s.f<.10?'沙岸':s.f>.54?'高台草甸':'草地')
   }
-  function zoom(factor:number){targetDistance=clamp(targetDistance*factor,.48,1.27);dirty=true}
+  function zoom(factor:number){if(walker.active)walker.zoom(factor);else targetDistance=clamp(targetDistance*factor,.48,1.27);dirty=true}
   function orbit(dx:number,dy:number){
+    if(walker.active){walker.look(dx,dy);dirty=true;return}
     focus=null;const sensitivity=.006*distance
     const rot=new T.Quaternion().setFromEuler(new T.Euler(dy*sensitivity,dx*sensitivity,0,'YXZ'))
     root.quaternion.premultiply(rot).normalize();dirty=true
@@ -124,55 +146,74 @@ export async function mountPlanet(canvas:HTMLCanvasElement,ui:SceneUI,signal:Abo
       if(pointer.size===2){const g=gap();if(pinch>0&&g>0)zoom(pinch/g);pinch=g;return}
       const dx=e.clientX-old.x,dy=e.clientY-old.y
       if(drag){drag.travel+=Math.hypot(dx,dy);if(drag.travel>4){orbit(dx,dy);displayCell(null)}}
-    }else if(mode.edit||grid)inspect(targetAt(e.clientX,e.clientY))
+    }else if(!walker.active&&(mode.edit||grid||pickingLanding))inspect(targetAt(e.clientX,e.clientY))
   },opts)
   canvas.addEventListener('pointerup',e=>{
     const tap=pointer.has(e.pointerId)&&pointer.size===1&&!!drag&&drag.travel<=5
     pointer.delete(e.pointerId);if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId)
-    if(tap){const n=targetAt(e.clientX,e.clientY);inspect(n);if(n&&mode.edit)place(n)}
+    if(tap&&!walker.active){const n=targetAt(e.clientX,e.clientY);inspect(n)
+      if(n&&pickingLanding){if(sample(n,land.creeks).wet)ui.note('请在露出水面的地表选择落点。');else {walkMode(true,n);ui.note('已抵达新的落点。')}}
+      else if(n&&mode.edit)place(n)}
     if(!pointer.size)drag=null
   },opts)
   canvas.addEventListener('pointercancel',e=>{pointer.delete(e.pointerId);drag=null;pinch=0},opts)
   canvas.addEventListener('pointerleave',()=>{if(!pointer.size){displayCell(null);ui.ground('')}},opts)
   canvas.addEventListener('wheel',e=>{e.preventDefault();zoom(Math.exp(clamp(e.deltaY,-95,95)*.0019))},{passive:false,signal})
   canvas.addEventListener('dblclick',e=>{
-    if(mode.edit)return
+    if(mode.edit||walker.active||pickingLanding)return
     const n=targetAt(e.clientX,e.clientY);if(!n)return
     const view=n.applyQuaternion(root.quaternion),q=new T.Quaternion().setFromUnitVectors(view,new T.Vector3(0,0,1))
     focus=q.multiply(root.quaternion.clone());targetDistance=.56;dirty=true
   },opts)
   canvas.addEventListener('keydown',e=>{
+    if(walker.active)return
     const dir:Record<string,[number,number]>={ArrowLeft:[-12,0],ArrowRight:[12,0],ArrowUp:[0,-12],ArrowDown:[0,12]}
     if(dir[e.key]){e.preventDefault();orbit(...dir[e.key])}
     if(e.key==='+'||e.key==='=')zoom(.85);if(e.key==='-')zoom(1.17)
   },opts)
+  window.addEventListener('keydown',e=>{
+    if(!walker.active||e.ctrlKey||e.metaKey||e.altKey)return
+    if((e.target as HTMLElement)?.matches('input,textarea,select,[contenteditable=true]'))return
+    if(walker.key(e.code,true))e.preventDefault()
+    if(e.code==='Escape'){walkMode(false);e.preventDefault()}
+  },opts)
+  window.addEventListener('keyup',e=>{if(walker.key(e.code,false))e.preventDefault()},opts)
+  window.addEventListener('blur',()=>walker.clear(),opts)
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)walker.clear()},opts)
   let homeZ=63
   function resize(){
     const b=canvas.getBoundingClientRect();if(!b.width||!b.height)return
     renderer.setSize(b.width,b.height,false);camera.aspect=b.width/b.height;camera.updateProjectionMatrix()
-    homeZ=18.25/Math.sin(T.MathUtils.degToRad(camera.fov*.5))/Math.min(1,camera.aspect);dirty=true
+    homeZ=18.25/Math.sin(T.MathUtils.degToRad(16.5))/Math.min(1,camera.aspect);dirty=true
   }
   const ro=new ResizeObserver(resize);ro.observe(canvas);resize()
-  let shown=false
+  let shown=false,previousTime=0
   function tick(t:number){
     if(!live)return
     frame=requestAnimationFrame(tick)
     if(document.hidden)return
     if(Math.abs(targetDistance-distance)>.0002){distance+=(targetDistance-distance)*.2;dirty=true}
     if(focus){root.quaternion.slerp(focus,.17);if(root.quaternion.angleTo(focus)<.002){root.quaternion.copy(focus);focus=null}dirty=true}
-    if(!dirty&&t-lastDraw<(reduced?160:55))return
-    const near=distance<.85?'true':'false';if(canvas.dataset.near!==near)canvas.dataset.near=near
-    camera.position.set(0,0,homeZ*distance);camera.lookAt(v3.set(0,0,0))
+    if(!dirty&&t-lastDraw<(walker.active?(small?31:16):(reduced?95:35)))return
+    const dt=clamp(previousTime?(t-previousTime)/1000:1/30,.001,.10);previousTime=t
+    const near=walker.active||distance<.85?'true':'false';if(canvas.dataset.near!==near)canvas.dataset.near=near
+    if(walker.active){
+      walker.tick(dt,camera);land.setWalkFocus(walker.up)
+      sun.target.position.copy(walker.group.position);litSide.copy(walker.right)
+      sun.position.copy(sun.target.position).addScaledVector(walker.up,24).addScaledVector(litSide,-15).addScaledVector(walker.forward,-8)
+      fill.position.copy(walker.up);bounce.position.copy(walker.group.position).addScaledVector(walker.right,14).addScaledVector(walker.up,10)
+      const pos=walker.up;canvas.dataset.walkPosition=pos.toArray().map(n=>n.toFixed(5)).join(',')
+    }else{camera.position.set(0,0,homeZ*distance);camera.lookAt(v3.set(0,0,0))}
     renderer.render(scene,camera);dirty=false;lastDraw=t
     if(!shown){shown=true;canvas.dataset.ready='true';ui.ready(land.count,renderer.backend.constructor.name.includes('WebGL')?'WebGL 2':'WebGPU')}
   }
   frame=requestAnimationFrame(tick)
   return {
     choose(s){mode=s;lastCell='!';displayCell(hovering)},zoom,
+    walk(v){walkMode(v)},landAt(){if(walker.active)walkMode(false);pickingLanding=true;ui.note('旋转星球，在想去的干地上轻点落地。')},moveStick(x,z){walker.touch(x,z)},
     home(){focus=startRotation.clone();targetDistance=1;dirty=true},
     undo(){const previous=history.pop();if(previous){data=previous;const saved=refresh();ui.note(saved?'已撤销上一步。':'已撤销 · 本次更改仅在此页保留')}},
     setGrid(v){grid=v;lastCell='!';displayCell(hovering)},
-    dispose(){live=false;cancelFrame(frame);ro.disconnect();clearOverlay();hoverMat.dispose();gridMat.dispose();land.dispose();specs.forEach(g=>g.dispose());sun.shadow.dispose();renderer.dispose()}
+    dispose(){live=false;cancelFrame(frame);ro.disconnect();clearOverlay();hoverMat.dispose();gridMat.dispose();walker.dispose();land.dispose();specs.forEach(g=>g.dispose());sun.shadow.dispose();renderer.dispose()}
   }
 }
-

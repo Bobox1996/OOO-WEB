@@ -84,7 +84,7 @@ export function creekPoint(c:Creek,t:number,offset=0){
 }
 export function sample(p:Vector3,creeks:Creek[]) {
   const {f,h}=natural(p)
-  let bed=h, water=0, river=-1, near=9,throat=0,route=-1
+  let bed=h, water=0, river=-1, near=9,throat=0,route=-1,waterPlane=0
   for(const c of creeks){
     const d=p.dot(c.n);if(d<.56)continue
     const t=p.dot(c.along)/(d*c.length)+.08;if(t<-.045||t>1.12)continue
@@ -92,15 +92,17 @@ export function sample(p:Vector3,creeks:Creek[]) {
     const w=(.021+.012*clamp(t)+(c.variant===2?.014*smooth(.22,.63,t):0))*smooth(-.045,.035,t)
     const dist=offset/Math.max(.002,w)
     if(dist<near){near=dist;route=c.id}
-    if(dist>1.75)continue
+    if(dist>2.70)continue
     const level=Math.max(0,1.46*(1-smooth(0,.83,t))-.04)
-    const cut=1-smooth(.65,1.55,dist)
-    bed=h+(Math.min(h,level-.15)-h)*cut
-    if(dist<1.2&&bed<level){water=level;river=c.id;throat=dist}
+    waterPlane=level*(1-smooth(1.30,1.85,dist))
+    const cut=1-smooth(.57,2.65,dist)
+    const channelDepth=.095+.07*(1-smooth(.2,1.05,dist))+.092*smooth(.32,.75,t)*(1-smooth(.82,1.04,t))
+    bed=h+(Math.min(h,level-channelDepth)-h)*cut
+    if(dist<1.85&&bed<waterPlane){water=waterPlane;river=c.id;throat=dist}
     break
   }
   const wet=bed<water
-  return {f,bed,water,wet,height:Math.max(water,bed),river,near,route,throat,depth:Math.max(0,water-bed)}
+  return {f,bed,water,waterPlane,wet,height:Math.max(water,bed),river,near,route,throat,depth:Math.max(0,water-bed)}
 }
 export function readSave(raw:string|null):WorldSave{
   if(!raw)return cleanWorld()
@@ -112,4 +114,3 @@ export function readSave(raw:string|null):WorldSave{
     return {schema:1,stamps,streams:w.streams.map((v:unknown,i:number)=>vi(v)?Number(v):i)}
   }catch{return cleanWorld()}
 }
-
