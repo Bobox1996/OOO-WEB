@@ -20,6 +20,16 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Sumiyoshi Street local preview
+
+Open `OOO-Sumiyoshi-Pixelscape.html` beside the repository in Chrome or Edge to play the portable build. It includes the Blender scenes, project covers, member portraits and studio content.
+
+For live editing, double-click `Preview-Sumiyoshi.cmd` or run `npm run preview:sumiyoshi`. The development site opens at [127.0.0.1:3021/sumiyoshi](http://127.0.0.1:3021/sumiyoshi). Run `npm run package:sumiyoshi` to rebuild the portable file from this checkout.
+
+## Homepage A/B comparison
+
+The homepage randomly sends each new browser to the existing project index at `/works` or the interactive sea lounge at `/sumiyoshi`, with a 50% chance for each. It remembers the assignment for 180 days in the first-party `ooo_home_v1` cookie. Both paths also open directly for side-by-side review. The entry redirect preserves campaign parameters, and each page has its own path in Vercel Web Analytics.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

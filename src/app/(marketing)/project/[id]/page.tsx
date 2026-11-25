@@ -25,7 +25,7 @@ export default async function ProjectPage({ params }: Props) {
   if (!project) notFound()
   const images = [...(project.images || [])].sort((a, b) => a.sort_order - b.sort_order)
   const date = projectDate(project)
-  return <main className="folio-page"><Link className="back-link" href="/">← Project index</Link>
+  return <main className="folio-page"><Link className="back-link" href="/works">← Project index</Link>
     <div className="folio-heading"><h1>{project.title}</h1>{project.index && <span>{project.index}</span>}</div>
     <dl className="project-facts"><div><dt>{date.yearIsFiled ? 'Year filed' : 'Year'}</dt><dd>{date.year}</dd></div>
       {project.category && <div><dt>Type</dt><dd>{project.category}</dd></div>}

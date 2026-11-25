@@ -1,0 +1,433 @@
+{
+  "source": "https://ooo-web.vercel.app",
+  "captured": "2026-11-23",
+  "projects": [
+    {
+      "id": "a742536a-039e-42fe-a7f6-a10184929883",
+      "index": null,
+      "title": "Iceland Abandoned Airport Birdwatching Pavilions",
+      "category": "Architecture",
+      "cover": {
+        "id": "6f457dc8-4c17-484a-8175-ff8b36e93e82",
+        "sort_order": 0,
+        "url": "/drive-in/content/cover-01.webp"
+      }
+    },
+    {
+      "id": "bed1c6b0-b7df-43c9-ad9b-73f1d05d59c0",
+      "index": null,
+      "title": "Exhibition at Shanghai West Bund Art Museum",
+      "category": "Exhibition",
+      "cover": {
+        "id": "0329f208-b20b-4361-a885-90bf4a82a27a",
+        "sort_order": 1,
+        "url": "/drive-in/content/cover-02.webp"
+      }
+    },
+    {
+      "id": "3fabe620-6eff-418c-9764-a79f7147f71f",
+      "index": null,
+      "title": "South Lebanon Agricultural Landscape Regeneration",
+      "category": "Landscape",
+      "cover": {
+        "id": "17ac5ba8-c13c-4f2f-859a-6b65f9a7171b",
+        "sort_order": 0,
+        "url": "/drive-in/content/cover-03.webp"
+      }
+    },
+    {
+      "id": "7049d619-54d3-4971-a8a9-438790f60c0c",
+      "index": null,
+      "title": "Beijing Miao Street space renovation",
+      "category": "Architecture",
+      "cover": {
+        "id": "5224711c-254c-4fad-a699-499e4f4841ce",
+        "sort_order": 8,
+        "url": "/drive-in/content/cover-04.webp"
+      }
+    },
+    {
+      "id": "472d1c39-1118-4f38-8e4a-dffa0ace25d2",
+      "index": null,
+      "title": "FOREST-WANNA-BE HOUSE",
+      "category": "Residential",
+      "cover": {
+        "id": "b99c6018-8d7a-4662-a0da-8a4480f34a73",
+        "sort_order": 0,
+        "url": "/drive-in/content/cover-05.webp"
+      }
+    },
+    {
+      "id": "f226b632-3e0c-4e63-b41f-aad5ac72dcfe",
+      "index": null,
+      "title": "A HOUSE AROUND A TREE",
+      "category": "Residential",
+      "cover": {
+        "id": "d8caa1ba-adb5-4363-b5fc-57e8f171d6ee",
+        "sort_order": 0,
+        "url": "/drive-in/content/cover-06.webp"
+      }
+    },
+    {
+      "id": "7796758b-30c0-4476-9f2f-e5e7b3c6deeb",
+      "index": null,
+      "title": "COUNTRY BOOKSTORE",
+      "category": "Community Impact | Adaptive Reuse | Education Space",
+      "cover": {
+        "id": "0fca4c85-176a-40a4-91b9-8f013e2e29de",
+        "sort_order": 5,
+        "url": "/drive-in/content/cover-07.webp"
+      }
+    },
+    {
+      "id": "9a6b81da-90e5-4415-99f3-04d63df320d8",
+      "index": null,
+      "title": "AIR PYRAMID",
+      "category": "PRODUCT",
+      "cover": {
+        "id": "ca1ff577-cfae-49d0-a507-e5767dc110e7",
+        "sort_order": 6,
+        "url": "/drive-in/content/cover-08.webp"
+      }
+    },
+    {
+      "id": "6d8cc004-10a1-4287-a29c-e7917569bc5e",
+      "index": null,
+      "title": "AIR ROCKS",
+      "category": "PRODUCT",
+      "cover": {
+        "id": "9c13e96a-b64f-4b43-904b-87f0b7c4a15a",
+        "sort_order": 0,
+        "url": "/drive-in/content/cover-09.webp"
+      }
+    },
+    {
+      "id": "6a6d126f-12e5-4489-8b6f-93f2758c73fe",
+      "index": null,
+      "title": "BETWEEN UNDER",
+      "category": "COMMERCIAL",
+      "cover": {
+        "id": "2a8bcd0f-6c9e-48df-911f-34c65b41e2d0",
+        "sort_order": 0,
+        "url": "/drive-in/content/cover-10.webp"
+      }
+    },
+    {
+      "id": "fa1acd49-341e-439f-bb6c-ccb9c0f519c5",
+      "index": null,
+      "title": "ZHUNLI TEAHOUSE LANDSCAPE",
+      "category": "LANDSCAPE",
+      "cover": {
+        "id": "57b6935e-efd5-4c3e-a6d1-cabcea61e603",
+        "sort_order": 1,
+        "url": "/drive-in/content/cover-11.webp"
+      }
+    },
+    {
+      "id": "72f15906-8831-48dc-879c-03c3a46197a8",
+      "index": null,
+      "title": "ZHUNLI TEAHOUSE INTERIOR",
+      "category": "INTERIOR",
+      "cover": {
+        "id": "3c995762-9a78-4447-a3c0-ec343503bc80",
+        "sort_order": 0,
+        "url": "/drive-in/content/cover-12.webp"
+      }
+    },
+    {
+      "id": "ef0766f1-13bd-422c-a38e-d320b21eceb9",
+      "index": null,
+      "title": "林间",
+      "category": "HOTEL",
+      "cover": {
+        "id": "578afa4b-ef72-4872-81a8-37bf6e4db764",
+        "sort_order": 1,
+        "url": "/drive-in/content/cover-13.webp"
+      }
+    },
+    {
+      "id": "35b0380e-a5fa-4356-af74-96620b95b419",
+      "index": null,
+      "title": "3AM. FEVER CLUB",
+      "category": "VI",
+      "cover": {
+        "id": "b1b64afd-49f6-4d84-810a-d3d895eef2cc",
+        "sort_order": 0,
+        "url": "/drive-in/content/cover-14.webp"
+      }
+    },
+    {
+      "id": "815581f2-838f-487f-9688-45981e552d14",
+      "index": null,
+      "title": "COCCOON GARDEN",
+      "category": "ILLUSTRATION",
+      "cover": {
+        "id": "ec714b23-48b9-49d4-a10e-bf81ec9fc415",
+        "sort_order": 3,
+        "url": "/drive-in/content/cover-15.webp"
+      }
+    },
+    {
+      "id": "6f956c50-cf1d-4cda-8729-108e0170fd89",
+      "index": null,
+      "title": "THE LIVING BLANKET",
+      "category": "PAVILION",
+      "cover": {
+        "id": "167cab35-4db9-400e-984e-78c97aeeee56",
+        "sort_order": 1,
+        "url": "/drive-in/content/cover-16.webp"
+      }
+    },
+    {
+      "id": "180af782-d585-4d51-8ab2-72b91ae97127",
+      "index": null,
+      "title": "88",
+      "category": "COMMERCIAL",
+      "cover": {
+        "id": "2955c0fb-fe5e-44ae-a802-2801cee345f3",
+        "sort_order": 3,
+        "url": "/drive-in/content/cover-17.webp"
+      }
+    },
+    {
+      "id": "fe8c2eb2-62d8-4d6c-9df1-41564f578ac6",
+      "index": null,
+      "title": "SCHOOL OF PALESTINE",
+      "category": "EDUCATION",
+      "cover": {
+        "id": "c712b957-422b-4e71-8437-b65204e611cb",
+        "sort_order": 0,
+        "url": "/drive-in/content/cover-18.webp"
+      }
+    },
+    {
+      "id": "6583c8de-9334-48e2-acac-440c98b438f1",
+      "index": null,
+      "title": "2026 OLYMPIC VILLAGE MILANO",
+      "category": "CULTURAL",
+      "cover": {
+        "id": "1426cc51-cefe-45f0-812c-57bf5146011b",
+        "sort_order": 1,
+        "url": "/drive-in/content/cover-19.webp"
+      }
+    },
+    {
+      "id": "14906624-562b-4edf-9314-06b8d805e83a",
+      "index": null,
+      "title": "LAKE CHAPEL",
+      "category": "REUSE",
+      "cover": {
+        "id": "03667c13-d038-49b0-af0f-e4b844ae2baf",
+        "sort_order": 1,
+        "url": "/drive-in/content/cover-20.webp"
+      }
+    },
+    {
+      "id": "4018a35d-bcbb-4288-b618-cfc15d20f77a",
+      "index": null,
+      "title": "BOOK DESIGN-STEPPING STONES",
+      "category": "VI",
+      "cover": {
+        "id": "919bdbed-4a1c-4dbf-94c1-e4649c9a5d66",
+        "sort_order": 2,
+        "url": "/drive-in/content/cover-21.webp"
+      }
+    },
+    {
+      "id": "0cd2aadd-794f-4d13-bf42-480da7da8715",
+      "index": null,
+      "title": "GRAPHIC DESIGN-FLOWERS/IN HEART",
+      "category": "VI",
+      "cover": {
+        "id": "0869b946-17fd-4320-8360-20edffc29baa",
+        "sort_order": 0,
+        "url": "/drive-in/content/cover-22.webp"
+      }
+    },
+    {
+      "id": "88286cfc-c31e-4659-879d-bc9ac4650481",
+      "index": null,
+      "title": "PACKAGE DESIGN-SHAN",
+      "category": "VI",
+      "cover": {
+        "id": "33d874bc-13e1-4bb2-8b4c-46cc541927a7",
+        "sort_order": 1,
+        "url": "/drive-in/content/cover-23.webp"
+      }
+    },
+    {
+      "id": "76f4b4dc-9387-431f-8fa9-f8965c18b4bb",
+      "index": null,
+      "title": "DESSAU GLASS PAVILION",
+      "category": "CULTURAL",
+      "cover": {
+        "id": "019690d6-72a0-4618-bc81-9ca2f70eac9a",
+        "sort_order": 3,
+        "url": "/drive-in/content/cover-24.webp"
+      }
+    },
+    {
+      "id": "75c89cc5-5390-41ea-9fa2-4d86909a59d0",
+      "index": null,
+      "title": "WINERY",
+      "category": "WINERY",
+      "cover": {
+        "id": "38b3fa57-58ea-4c2b-8575-2073da8a855e",
+        "sort_order": 1,
+        "url": "/drive-in/content/cover-25.webp"
+      }
+    },
+    {
+      "id": "bd68dbe1-1b91-4dc3-bc48-c798c2915533",
+      "index": null,
+      "title": "ROCK GALLERY",
+      "category": "CULTURAL",
+      "cover": {
+        "id": "8ebe4528-be42-4f2a-a0bd-42fdfc2ff9e8",
+        "sort_order": 0,
+        "url": "/drive-in/content/cover-26.webp"
+      }
+    },
+    {
+      "id": "382dc67a-6889-47fb-abb7-192438971d68",
+      "index": null,
+      "title": "THE NEST",
+      "category": "COMMUNITY",
+      "cover": {
+        "id": "ed82523d-ccdd-445b-b3de-9d21364043f4",
+        "sort_order": 2,
+        "url": "/drive-in/content/cover-27.webp"
+      }
+    },
+    {
+      "id": "488ae7e7-9a56-47de-855c-aa1104369b79",
+      "index": null,
+      "title": "OFF-MODERN RUINOPHILIA",
+      "category": "MIXED-USE",
+      "cover": {
+        "id": "1a1fe9b6-a9d1-4f89-acce-6977e44886b0",
+        "sort_order": 3,
+        "url": "/drive-in/content/cover-28.webp"
+      }
+    },
+    {
+      "id": "25cbd569-1f58-48f2-b5eb-0caed8f63852",
+      "index": null,
+      "title": "INSIDE OUT",
+      "category": "HOUSING",
+      "cover": {
+        "id": "3695dbe5-0bad-4c62-a158-9ba35f14a768",
+        "sort_order": 1,
+        "url": "/drive-in/content/cover-29.webp"
+      }
+    },
+    {
+      "id": "32042b1b-673d-42ce-93a0-728af877df55",
+      "index": null,
+      "title": "UPSIDE DOWN",
+      "category": "CULTURAL",
+      "cover": {
+        "id": "ec8de181-b6e6-4117-a42f-4d78a3be1b13",
+        "sort_order": 3,
+        "url": "/drive-in/content/cover-30.webp"
+      }
+    },
+    {
+      "id": "497ace81-156c-4c8b-bf1d-b9d184ec7be6",
+      "index": null,
+      "title": "KURANDZA LEARNING CENTER",
+      "category": "EDUCATION",
+      "cover": {
+        "id": "e039e242-ea4e-4a05-a384-ff59b6b879c4",
+        "sort_order": 1,
+        "url": "/drive-in/content/cover-31.webp"
+      }
+    },
+    {
+      "id": "152bf470-3a59-4c51-a2f6-bb37f2b18e34",
+      "index": null,
+      "title": "MÝVATN BEER SPA",
+      "category": "SPA",
+      "cover": {
+        "id": "90caa5c4-3cbe-433d-a132-46a160fa4f8c",
+        "sort_order": 0,
+        "url": "/drive-in/content/cover-32.webp"
+      }
+    },
+    {
+      "id": "049d9361-4518-4e63-9b71-c14c23c2c678",
+      "index": null,
+      "title": "LA VERTICAL FARM",
+      "category": "AGRICULTURAL/COMMERCIAL",
+      "cover": {
+        "id": "0db224b4-ecbd-4563-96aa-4578fe180e9c",
+        "sort_order": 1,
+        "url": "/drive-in/content/cover-33.webp"
+      }
+    },
+    {
+      "id": "703ddcbe-a47c-4da7-8ad1-f2c8d0153dba",
+      "index": null,
+      "title": "RAIN GALLERY 雫の回廊",
+      "category": "HOTEL",
+      "cover": {
+        "id": "eaf9e249-b7d5-49fb-a411-62589f97651c",
+        "sort_order": 0,
+        "url": "/drive-in/content/cover-34.webp"
+      }
+    }
+  ],
+  "members": [
+    {
+      "id": "0f27c69d-2229-486c-a1c2-ad33fb9cb35d",
+      "first_name": "CHRISSIE",
+      "last_name": "CHEN 陈亚琼",
+      "description": "Architect / Interior Designer / Marketing Strategy Supervisor\n\nDesigner at a leading San Francisco practice. Led marketing strategy planning for Coca-Cola (Shanghai). \nFormer academic researcher and teaching assistant at UC Berkeley\n\nCurrently at\nFougeron Architecture (San Francisco)\n\nPreviously at\nCoca-Cola Marketing (Shanghai) | Qian Neng Architecture Design Office (Shanghai)\n\nEducation\nUC Berkeley — Master of Architecture (M.Arch)\n\n\n建筑​设计​师​/室​内​设计​师/​市场​策略​总监\n\n​美国​旧金山明星​事务​所​设计​师\n​曾​负责​可口​可乐​（上海）​市场​战略​策划\n​曾​担任​加州​伯克利​大学，​学术​研究员​与​助理​教师​\n\n现​就​职于​\n旧​金山Fougeron A​rchitecture\n\n​曾​就​职于​\n可口​可​乐Marketing，​上海​潜​能​建筑​设计​事务​所​\n\n​毕业于加州​伯克利​大学​\n建筑学​硕士",
+      "portrait_url": "/drive-in/content/member-01.webp"
+    },
+    {
+      "id": "82e517ff-cca8-4cf6-98ae-1d0e0acbfc56",
+      "first_name": "RUOQI",
+      "last_name": "JIANG 江若​琦",
+      "description": "Landscape & Environmental Designer / Design Graphic Lead\n\nDesigner at a pioneer landscape design practice in Bay Area, US.\nLed and contributed to international landscape design competitions in New York State.\nMultiple field research and conference engagements focused on social issues in developing countries\n\nCurrently at\nEinwillerKuehl Landscape Architecture\n\nPreviously at\nFletcher Studio\n\nEducation\nUC Berkeley — B.A. in Anthropology\nUC Berkeley — B.A. in Landscape Architecture\n\n\n景观​与​环境​设计总监/​平面​画​家\n\n美国​先锋​设计​事务​所​设计​师\n​参加​与​负责​纽约州​景观​设计​国际​竞赛​\n多​次​参与​发展​中​国家​社会​田野​调查​事件​与​研究​会议​\n\n现​就​职于​\nE​inwillerKuehl Lands​cape Architecture\n\n​曾​就​职于​\nF​LETCHER STUDIO\n\n​毕业于加州​伯克利​大学​\n人​类学​学士​\n景观​建筑学​学士",
+      "portrait_url": "/drive-in/content/member-02.webp"
+    },
+    {
+      "id": "dc071172-e7ac-495c-aad4-4efc75e54baa",
+      "first_name": "YIBO",
+      "last_name": "LIN 林义博",
+      "description": "Architect / Spatial Designer / Brand Operations Lead\n\nDesigner at a leading San Francisco practice\nContributed to internationally recognized architectural\nprojects and major design competitions\nFounder of the new hospitality brand “Lin Jian” \n\nCurrently at\nWRNS Studio\n\nPreviously at\nVector Architects | Herzog & de Meuron\n\nEducation\nUC Berkeley — Master of Architecture (M.Arch)\n\n\n建筑​设计​师/​空间​设计师​/​品牌​策划负责人\n\n​美国​旧金山明星​事务​所​设计​师\n曾​参与​国际​知名​建筑​设计​项目​与​大型​设计​竞赛​\n新​住​宿​品牌​“林间”​创始​人​\n\n现​就​职于​\n旧​金山WRNS Studio\n\n​曾​就​职于​\n直​向​建筑，​赫尔​佐德​与​德梅​隆​建筑​事务​所​\n\n​加州​伯克利​大学​\n建筑学​硕士",
+      "portrait_url": "/drive-in/content/member-03.webp"
+    },
+    {
+      "id": "fea1b03c-b1b1-4703-9cfe-4e6ca60eb970",
+      "first_name": "SHIMIN",
+      "last_name": "ZHOU 周时敏",
+      "description": "Architect / Chief Engineer\n\nWinner of multiple awards and shortlists in well-known international architecture design competitions. \nFounding engineer at a well-known startup.\nParticipant in multiple parametric design D&R projects\n\nCurrently at\nTYPE FIVE\n\nPreviously at\n PAO | Stanley Saitowitz | Anderson Anderson Architecture\n\nEducation\nUC Berkeley — M.S. in Architecture & Environmental Technology\n\n\n​建筑​设计​师​/​技术​总工程师​\n\n多个国际​知名​​设计竞赛​​奖​项获得者\n​美国​加州​知名​Startup​创始​工程师​\n参与多个参数化建筑设计研发项目\n\n现​就​职于​\nT​YPE FIVE\n\n​曾​就​职于​\n​众建筑PAO, ​STANLEY SAITOWITZ, Ande​rson Ande​rson Architecture, 云大设计研究院\n\n​毕业于加州​伯克利​大学​\n建筑​与​环境​技术​硕士",
+      "portrait_url": "/drive-in/content/member-04.webp"
+    },
+    {
+      "id": "bd4f103a-4686-4f3f-adc5-57a8558c556c",
+      "first_name": "CHANGSHU",
+      "last_name": "CHEN 陈昌澍",
+      "description": "Architect / Chief Curator\n\nArchitect at a leading Italian design practice. Contributed to exhibition design and delivery for the Venice Biennale (Italy).\nParticipated in the execution of internationally recognized architectural projects and major design competitions\n\nCurrently at\nCino Zucchi Architetti\n\nPreviously at\nChristian Kerez Zürich AG | MVRDV Rotterdam | Panda Architects\n\nEducation\nPolitecnico di Milano — M.S. in Architecture, Built Environment & Interior Design\n\n\n建筑​设计师​/策展负责人\n\n意​大利​先​锋​设计​事务​所​设计​师\n​曾​参​与​意大利双​年​展展​陈​设计​与​执行​\n曾​参与​国际​知名​建筑​设计​项目​与​大型​设计​竞赛​\n\n现​就​职于​\nCino Zucchi Architetti \n\n​曾​就​职于​\nChristian Kerez Zürich AG，​MVRDV​ Rotterdam，​槃达​建筑​\n\n毕业于米兰理​工大学\n建筑​，建成​环境与室内设计​设计​硕士",
+      "portrait_url": "/drive-in/content/member-05.webp"
+    },
+    {
+      "id": "f60f3737-ae91-4722-ba8c-fcf7efbd1575",
+      "first_name": "DAVID",
+      "last_name": "ROBINSON 大卫 罗宾逊",
+      "description": "CEO",
+      "portrait_url": "/drive-in/content/member-06.webp"
+    },
+    {
+      "id": "ef0cac7f-5f89-414d-81c0-8fa8589c48bf",
+      "first_name": "MAGGIE",
+      "last_name": "WU 吴汶倩",
+      "description": "Graphic Designer / Illustrator / Curator\n\nAwarded and shortlisted in multiple internationally recognized illustration and visual design competitions.\nDelivered visual identity and brand promotion for various brands and cultural festivals\n\nPreviously at\nOgilvy Shanghai (Creative Dept.) | SAIC Motor (Shanghai Industrial Museum Planning Dept.) | Bilibili (Visual Design Dept.)\n\nEducation\nArtCenter College of Design (ACCD) — B.F.A. in Illustration\nArtCenter College of Design (ACCD) — M.F.A. in Graphic Design\n\n\n平面设计负责人 / 插画师 / 策展负责人\n\n曾在多个国际知名插画与视觉设计竞赛中获奖及入围\n为多个品牌与文化节庆项目提供视觉识别系统与品牌推广设计\n\n曾任职于\n奥美上海（创意部）｜上汽集团（上海工业博物馆策划部）｜哔哩哔哩（视觉设计部）\n\n教育背景\n艺术中心设计学院（ArtCenter College of Design，ACCD）— 插画学士（B.F.A.）\n艺术中心设计学院（ArtCenter College of Design，ACCD）— 平面设计硕士（M.F.A.）",
+      "portrait_url": "/drive-in/content/member-07.webp"
+    }
+  ],
+  "vision": "THE PROGRAM OF PROGRAMMING PROGRAMS\n\nAS AI AND DIGITIZATION RESHAPE THE WORLD\nWE HARNESS NEW TECHNOLOGY TO PROPEL DESIGN\nLINKING VIRTUAL AND PHYSICAL REALITIES\nSPANNING TIME\nAND BUILDING SOLUTIONS FOR SOCIETY’S MOST PRESSING ISSUES\n\n在这个技术带来不可逆剧变的时代\n我们通过新技术驱动设计\n贯通虚与实\n过去与未来\n以此回应社会",
+  "intro": "OUT OF OFFICE is an international alliance of young designers\nwho believe design can serve society\nBased in San Francisco, Los Angeles, and Milan\nwe bring together\narchitecture, landscape, interior, graphic, and product design\nalong with marketing strategy, to create thoughtful solutions\nWe work collaboratively to tackle today’s challenges\nand imagine new possibilities for a shared future\n\nOUT OF OFFICE / 在野实践\n是一个面向快速变化的文化与社会现实的研究型设计所\n兼具实践与研究属性\n我们从日常细微处出发营造可聚集和可生活的场所\n我们致力于回溯与研究中国现代性\n并通过实践探索其另一种可能与必然\n我们的研究方法以还原历史事实为基础\n重访一手资料并进行重新解读"
+}

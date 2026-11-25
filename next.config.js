@@ -1,4 +1,5 @@
 const nextConfig = {
+  ...(process.env.OOO_CINEMA_PREVIEW === "1" && { devIndicators: false }),
   images: {
     remotePatterns: [
       {

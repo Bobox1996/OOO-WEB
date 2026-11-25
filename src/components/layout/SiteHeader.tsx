@@ -11,9 +11,9 @@ export default function SiteHeader({ onTeamClick }: { onTeamClick?: (e: React.Mo
       <StudioLogo className="studio-head-logo" />
       <span>Out Of<br />Office Design</span>
     </Link>
-    <nav aria-label="Main navigation">{[['/', 'Works'], ['/team', 'Team'], ['/vision', 'Vision']].map(([href, label]) =>
+    <nav aria-label="Main navigation">{[['/works', 'Works'], ['/team', 'Team'], ['/vision', 'Vision']].map(([href, label]) =>
       <Link key={href} href={href} onClick={href === '/team' ? onTeamClick : undefined}
-        aria-current={(href === '/' ? path === '/' || path.startsWith('/project/') : path === href) ? 'page' : undefined}>{label}</Link>
+        aria-current={(path === href || (href === '/works' && path.startsWith('/project/'))) ? 'page' : undefined}>{label}</Link>
     )}</nav>
     <a className="head-contact" href="mailto:office@out-of-office.design">Contact <span>↗</span></a>
   </header>

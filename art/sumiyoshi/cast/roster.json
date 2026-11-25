@@ -1,0 +1,240 @@
+{
+  "sources": [
+    {
+      "url": "https://www.nintendo.com/en-gb/Support/Purchases-Subscriptions/Games/Can-I-Change-My-Character-s-Appearance-Animal-Crossing-New-Horizons--1747981.html",
+      "note": "Nintendo Support confirms that mirrors and vanities reopen appearance customization."
+    },
+    {
+      "url": "https://nookipedia.com/wiki/Hairstyle",
+      "note": "Nookipedia illustrates the separate hairstyle and hair colour controls in the New Horizons customization menu."
+    },
+    {
+      "url": "https://gamewith.net/animal-crossing-new-horizons/article/show/16262",
+      "note": "The illustrated creator separates skin, hair, eyes, nose, mouth and cheeks. Shape names and meshes in this file are original OOO presets."
+    },
+    {
+      "url": "https://ooo-web.vercel.app/team",
+      "note": "The official team portraits in public/drive-in/content/member-01.webp through member-07.webp supply the character and clothes silhouettes. The reference portraits are monochrome; colours are an authored palette."
+    }
+  ],
+  "presets": {
+    "complexion": [
+      "biscuit",
+      "apricot",
+      "honey"
+    ],
+    "hairColor": [
+      "umber",
+      "ink",
+      "cocoa",
+      "ash"
+    ],
+    "hair": [
+      "page",
+      "ripple",
+      "blunt",
+      "quiff",
+      "broken",
+      "curtain",
+      "brush",
+      "wing"
+    ],
+    "eyes": [
+      "oval",
+      "almond",
+      "soft",
+      "level"
+    ],
+    "nose": [
+      "button",
+      "kite",
+      "short"
+    ],
+    "mouth": [
+      "upturn",
+      "quiet",
+      "smile"
+    ],
+    "cheeks": [
+      "peach",
+      "muted",
+      "none"
+    ],
+    "glasses": [
+      "none",
+      "wire",
+      "square"
+    ],
+    "outfit": [
+      "stripe",
+      "collarless",
+      "smock",
+      "crew",
+      "denim",
+      "highneck",
+      "tee",
+      "vest"
+    ]
+  },
+  "people": [
+    {
+      "id": "Player",
+      "name": "Visitor",
+      "portrait": null,
+      "hair": "page",
+      "hairColor": "umber",
+      "complexion": "biscuit",
+      "eyes": "oval",
+      "nose": "button",
+      "mouth": "upturn",
+      "cheeks": "peach",
+      "glasses": "none",
+      "outfit": "stripe",
+      "fabric": "9DA6A1",
+      "trim": "EEE4C8",
+      "slacks": "554D51",
+      "shoes": "94704E",
+      "visibleCues": "Original player. Russet side-parted page crop, striped knitted top and stitched slippers."
+    },
+    {
+      "id": "Member01",
+      "name": "Chrissie Chen",
+      "portrait": "member-01.webp",
+      "hair": "ripple",
+      "hairColor": "ink",
+      "complexion": "apricot",
+      "eyes": "almond",
+      "nose": "short",
+      "mouth": "quiet",
+      "cheeks": "muted",
+      "glasses": "none",
+      "outfit": "collarless",
+      "fabric": "3F5053",
+      "trim": "81918A",
+      "slacks": "454647",
+      "shoes": "73594F",
+      "visibleCues": "Long, gently waved hair swept asymmetrically, open forehead and dark loose shirt.",
+      "memberId": "0f27c69d-2229-486c-a1c2-ad33fb9cb35d"
+    },
+    {
+      "id": "Member02",
+      "name": "Ruoqi Jiang",
+      "portrait": "member-02.webp",
+      "hair": "blunt",
+      "hairColor": "ink",
+      "complexion": "biscuit",
+      "eyes": "soft",
+      "nose": "button",
+      "mouth": "smile",
+      "cheeks": "peach",
+      "glasses": "none",
+      "outfit": "smock",
+      "fabric": "73655E",
+      "trim": "D3BC99",
+      "slacks": "695B57",
+      "shoes": "655951",
+      "visibleCues": "Straight chin-length bob with a divided, wispy fringe and softly rounded neckline.",
+      "memberId": "82e517ff-cca8-4cf6-98ae-1d0e0acbfc56"
+    },
+    {
+      "id": "Member03",
+      "name": "Yibo Lin",
+      "portrait": "member-03.webp",
+      "hair": "quiff",
+      "hairColor": "cocoa",
+      "complexion": "apricot",
+      "eyes": "almond",
+      "nose": "kite",
+      "mouth": "smile",
+      "cheeks": "muted",
+      "glasses": "none",
+      "outfit": "crew",
+      "fabric": "DED9C9",
+      "trim": "B4B4A1",
+      "slacks": "586773",
+      "shoes": "92745C",
+      "visibleCues": "Short side-swept style with a lifted forelock, relaxed smile and a light crewneck.",
+      "memberId": "dc071172-e7ac-495c-aad4-4efc75e54baa"
+    },
+    {
+      "id": "Member04",
+      "name": "Shimin Zhou",
+      "portrait": "member-04.webp",
+      "hair": "broken",
+      "hairColor": "ink",
+      "complexion": "biscuit",
+      "eyes": "level",
+      "nose": "short",
+      "mouth": "quiet",
+      "cheeks": "none",
+      "glasses": "none",
+      "outfit": "denim",
+      "fabric": "45525D",
+      "trim": "91978F",
+      "slacks": "43484E",
+      "shoes": "776452",
+      "visibleCues": "Broken fringe, tousled short crown and dark collared shirt with a seam along the sleeve.",
+      "memberId": "fea1b03c-b1b1-4703-9cfe-4e6ca60eb970"
+    },
+    {
+      "id": "Member05",
+      "name": "Changshu Chen",
+      "portrait": "member-05.webp",
+      "hair": "curtain",
+      "hairColor": "umber",
+      "complexion": "honey",
+      "eyes": "level",
+      "nose": "kite",
+      "mouth": "quiet",
+      "cheeks": "none",
+      "glasses": "wire",
+      "outfit": "highneck",
+      "fabric": "615957",
+      "trim": "8C8477",
+      "slacks": "464849",
+      "shoes": "584D49",
+      "visibleCues": "Loose middle-parted curtain silhouette, fine metal glasses and dark high neckline.",
+      "memberId": "bd4f103a-4686-4f3f-adc5-57a8558c556c"
+    },
+    {
+      "id": "Member06",
+      "name": "David Robinson",
+      "portrait": "member-06.webp",
+      "hair": "brush",
+      "hairColor": "ash",
+      "complexion": "apricot",
+      "eyes": "level",
+      "nose": "short",
+      "mouth": "quiet",
+      "cheeks": "none",
+      "glasses": "square",
+      "outfit": "tee",
+      "fabric": "76817F",
+      "trim": "ADB3A6",
+      "slacks": "59636B",
+      "shoes": "63574D",
+      "visibleCues": "Bright grey hair swept out and upward and prominent dark rectangular frames; portrait crop shows a simple neckline.",
+      "memberId": "f60f3737-ae91-4722-ba8c-fcf7efbd1575"
+    },
+    {
+      "id": "Member07",
+      "name": "Maggie Wu",
+      "portrait": "member-07.webp",
+      "hair": "wing",
+      "hairColor": "ink",
+      "complexion": "biscuit",
+      "eyes": "soft",
+      "nose": "button",
+      "mouth": "upturn",
+      "cheeks": "muted",
+      "glasses": "square",
+      "outfit": "vest",
+      "fabric": "7E7C71",
+      "trim": "484E4C",
+      "slacks": "555556",
+      "shoes": "65594F",
+      "visibleCues": "Short rounded bob, parted fringe, dark broad glasses and textured waistcoat over a dark high neck.",
+      "memberId": "ef0cac7f-5f89-414d-81c0-8fa8589c48bf"
+    }
+  ]
+}

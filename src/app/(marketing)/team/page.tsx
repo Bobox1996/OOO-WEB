@@ -15,7 +15,7 @@ export default async function TeamPage() {
   ])
   const members = (people.data || []) as TeamMember[]
   const description = intro.data as Pick<TeamDescription, 'content'> | null
-  return <main className="folio-page"><Link className="back-link" href="/">← Project index</Link>
+  return <main className="folio-page"><Link className="back-link" href="/works">← Project index</Link>
     <StudioIntro title="Team" count={members.length} content={description?.content} />
     {members.length > 0 && <section className="studio-spread member-directory" aria-labelledby="members-title">
       <h2 id="members-title">Members</h2>
