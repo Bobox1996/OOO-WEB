@@ -7,8 +7,14 @@ export const UP = new Vector3(0, 1, 0)
 export type Category = 'tree' | 'rock' | 'grass' | 'sand' | 'creek'
 export type Cell = { face: number; i: number; j: number }
 export type Stamp = Cell & { kind: Exclude<Category, 'creek'>; variant: number; angle: number }
-export type WorldSave = { schema: 1; stamps: Stamp[]; streams: number[] }
-export const cleanWorld = (): WorldSave => ({ schema: 1, stamps: [], streams: [0, 1, 2] })
+export const BLOCK_EDGE = Math.PI * RADIUS / (2 * CELLS)
+export const BLOCK_HEIGHT = BLOCK_EDGE / 2
+export const MIN_LAYER = -7
+export const MAX_LAYER = 8
+export type BlockKind = 'grass' | 'sand' | 'water'
+export type BlockEdit = Cell & { layer:number; material:BlockKind|null }
+export type WorldSave = { schema: 2; stamps: Stamp[]; streams: number[]; blocks:BlockEdit[] }
+export const cleanWorld = (): WorldSave => ({ schema: 2, stamps: [], streams: [0, 1, 2], blocks:[] })
 export const label: Record<Category,string> = { tree:'树木', rock:'石头', grass:'草地', sand:'沙地', creek:'小溪' }
 export const variants: Record<Category, string[]> = {
   tree:['海岸柏','白桦','风剪松'], rock:['花岗岩','层理岩','溪卵石'],
@@ -38,13 +44,15 @@ export function facePoint(face:number,u:number,v:number) {
   const [n,right,up]=FACE[face]
   return n.clone().addScaledVector(right,Math.tan((u-.5)*Math.PI/2)).addScaledVector(up,Math.tan((v-.5)*Math.PI/2)).normalize()
 }
-export function locate(n:Vector3):Cell {
+export function localCoords(n:Vector3) {
   let face=0
   for(let f=1;f<6;f++)if(n.dot(FACE[f][0])>n.dot(FACE[face][0])+1e-12)face=f
   const [axis,right,up]=FACE[face],d=n.dot(axis)
-  const coord=(s:number)=>clamp(Math.floor((.5+Math.atan(s/d)*2/Math.PI)*CELLS),0,CELLS-1)
-  return {face,i:coord(n.dot(right)),j:coord(n.dot(up))}
+  const coord=(s:number)=>clamp((.5+Math.atan(s/d)*2/Math.PI)*CELLS,0,CELLS-1e-9)
+  const x=coord(n.dot(right)),y=coord(n.dot(up)),i=Math.floor(x),j=Math.floor(y)
+  return {face,i,j,u:x-i,v:y-j}
 }
+export function locate(n:Vector3):Cell{const {face,i,j}=localCoords(n);return {face,i,j}}
 export const center=(c:Cell)=>facePoint(c.face,(c.i+.5)/CELLS,(c.j+.5)/CELLS)
 export const key=(c:Cell)=>[c.face,c.i,c.j].join('.')
 const LAND = [
@@ -108,9 +116,15 @@ export function readSave(raw:string|null):WorldSave{
   if(!raw)return cleanWorld()
   try{
     const w=JSON.parse(raw)
-    if(w.schema!==1||!Array.isArray(w.stamps)||!Array.isArray(w.streams)||w.streams.length!==3)return cleanWorld()
+    if((w.schema!==1&&w.schema!==2)||!Array.isArray(w.stamps)||!Array.isArray(w.streams)||w.streams.length!==3)return cleanWorld()
     const vi=(v:unknown)=>Number.isInteger(v)&&Number(v)>=0&&Number(v)<3
     const stamps=w.stamps.filter((s:Stamp)=>s&&['rock','tree','grass','sand'].includes(s.kind)&&vi(s.variant)&&Number.isInteger(s.face)&&s.face>=0&&s.face<6&&[s.i,s.j].every(x=>Number.isInteger(x)&&x>=0&&x<CELLS)&&Number.isFinite(s.angle))
-    return {schema:1,stamps,streams:w.streams.map((v:unknown,i:number)=>vi(v)?Number(v):i)}
+    const changes=new Map<string,BlockEdit>()
+    if(w.schema===2&&Array.isArray(w.blocks))for(const b of w.blocks){
+      if(!b||!Number.isInteger(b.face)||b.face<0||b.face>=6||![b.i,b.j].every(v=>Number.isInteger(v)&&v>=0&&v<CELLS))continue
+      if(!Number.isInteger(b.layer)||b.layer<MIN_LAYER||b.layer>MAX_LAYER||![null,'grass','sand','water'].includes(b.material))continue
+      changes.set(key(b)+'.'+b.layer,{face:b.face,i:b.i,j:b.j,layer:b.layer,material:b.material})
+    }
+    return {schema:2,stamps,streams:w.streams.map((v:unknown,i:number)=>vi(v)?Number(v):i),blocks:[...changes.values()]}
   }catch{return cleanWorld()}
 }

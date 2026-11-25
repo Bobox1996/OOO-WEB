@@ -1,9 +1,11 @@
 import * as T from 'three/webgpu'
-import { Category, Cell, RADIUS, WorldSave, cleanWorld, clamp, center, key, label, locate, makeCreeks, readSave, sample, variants } from './world'
+import { BLOCK_HEIGHT, MAX_LAYER, MIN_LAYER, Category, Cell, RADIUS, WorldSave, cleanWorld, clamp, center, key, locate, readSave, variants } from './world'
 import { cellLine, makeLandscape, makeSpecimens } from './landscape'
+import { coastalMaterials } from './coastal-materials'
 import { makeWalker } from './walking'
+import { BlockTool, cellId, createTerrain, edgeUV, pointOn } from './terrain-blocks'
 
-export type Selection={kind:Category;variant:number;edit:boolean}
+export type Selection={kind:Category;variant:number;edit:boolean;tool:BlockTool|null}
 export type SceneHandle={
   choose:(s:Selection)=>void;zoom:(factor:number)=>void;home:()=>void;undo:()=>void;setGrid:(v:boolean)=>void;dispose:()=>void
   walk:(v:boolean)=>void;landAt:()=>void;moveStick:(x:number,z:number)=>void
@@ -28,17 +30,18 @@ export async function mountPlanet(canvas:HTMLCanvasElement,ui:SceneUI,signal:Abo
   Object.assign(sun.shadow.camera,{left:-22,right:22,top:22,bottom:-22,near:5,far:90})
   sun.shadow.mapSize.set(small?768:1536,small?768:1536);sun.shadow.normalBias=.042;sun.shadow.bias=-.00032
   const bounce=new T.DirectionalLight('#abd6de',.72);bounce.position.set(17,2,9);scene.add(fill,sun,bounce)
-  const specs=makeSpecimens()
-  let data=localWorld(),land=makeLandscape(specs,data,small)
+  const specs=makeSpecimens(),materials=coastalMaterials()
+  let viewLevel:number|null=null,data=localWorld(),land=makeLandscape(specs,data,small,materials)
   root.add(land.group)
-  let walker=makeWalker(land.creeks,land.obstacles),pickingLanding=false,orbitRotation=startRotation.clone()
+  let walker=makeWalker(land.terrain,land.obstacles),pickingLanding=false,orbitRotation=startRotation.clone()
   root.add(walker.group);scene.add(sun.target)
   const walkSky=new T.FogExp2('#d5dfcc',.021),litSide=new T.Vector3()
   function walkMode(on:boolean,normal?:T.Vector3){
     pickingLanding=false;clearOverlay();lastCell='';hovering=null;focus=null
     if(on){
-      if(!walker.active)orbitRotation=root.quaternion.clone()
-      root.quaternion.identity();walker.start(normal);land.setWalkFocus(walker.up)
+      if(viewLevel!==null){viewLevel=null;refresh(false)}
+      if(!walker.start(normal)){ui.note('没有找到足够大的干地，请先增加土地模块。');return}
+      orbitRotation=root.quaternion.clone();root.quaternion.identity();land.setWalkFocus(walker.up)
       scene.fog=walkSky;camera.fov=51;sun.shadow.camera.left=-9;sun.shadow.camera.right=9;sun.shadow.camera.top=9;sun.shadow.camera.bottom=-9
       canvas.focus({preventScroll:true})
     }else{
@@ -49,7 +52,7 @@ export async function mountPlanet(canvas:HTMLCanvasElement,ui:SceneUI,signal:Abo
     sun.shadow.camera.updateProjectionMatrix();camera.updateProjectionMatrix();canvas.dataset.walk=on?'true':'false'
     ui.walking(on);ui.ground('');dirty=true
   }
-  let mode:Selection={kind:'tree',variant:0,edit:false},grid=false,distance=1,targetDistance=1,frame=0,live=true
+  let mode:Selection={kind:'tree',variant:0,edit:false,tool:null},grid=false,distance=1,targetDistance=1,frame=0,live=true
   let lastDraw=0, dirty=true, lastCell='', hovering:Cell|null=null, focus:T.Quaternion|null=null
   const history:WorldSave[]=[],ray=new T.Raycaster(),screen=new T.Vector2(),v3=new T.Vector3()
   const pointer=new Map<number,{x:number;y:number}>()
@@ -59,7 +62,23 @@ export async function mountPlanet(canvas:HTMLCanvasElement,ui:SceneUI,signal:Abo
   const gridMat=new T.LineBasicMaterial({color:'#e6ecd2',transparent:true,opacity:.41,depthWrite:false})
   function clearOverlay(){for(const obj of [...overlay.children]){overlay.remove(obj);(obj as T.Line).geometry.dispose()}}
   function outline(c:Cell,material:T.LineBasicMaterial){
-    const line=new T.Line(new T.BufferGeometry().setFromPoints(cellLine(c,land.creeks)),material);line.renderOrder=3;overlay.add(line)
+    const line=new T.Line(new T.BufferGeometry().setFromPoints(cellLine(c,land.terrain)),material);line.renderOrder=3;overlay.add(line)
+  }
+  const brushMat=new T.LineBasicMaterial({color:'#ffe4a1',transparent:true,opacity:.97,depthTest:false,depthWrite:false})
+  function blockOutline(c:Cell,tool:BlockTool){
+    const id=cellId(c),{layer,before}=land.terrain.target(id,tool)
+    if(layer<MIN_LAYER||layer>MAX_LAYER)return
+    const h=(layer+1)*BLOCK_HEIGHT,points:T.Vector3[]=[]
+    for(let e=0;e<4;e++){
+      const p0=pointOn(id,...edgeUV(e,0))
+      points.push(p0.clone().multiplyScalar(RADIUS+h+.025),p0.clone().multiplyScalar(RADIUS+h-BLOCK_HEIGHT+.018))
+      for(let j=0;j<4;j++)for(const alt of [h+.025,h-BLOCK_HEIGHT+.018]){
+        points.push(pointOn(id,...edgeUV(e,j/4)).multiplyScalar(RADIUS+alt),pointOn(id,...edgeUV(e,(j+1)/4)).multiplyScalar(RADIUS+alt))
+      }
+    }
+    const legal=tool.action==='add'?before===null:before!==null
+    brushMat.color.set(!legal||tool.action==='dig'?'#f0a583':tool.material==='water'?'#b8ebe1':'#ffe7a0')
+    const group=new T.LineSegments(new T.BufferGeometry().setFromPoints(points),brushMat);group.renderOrder=5;overlay.add(group)
   }
   function displayCell(c:Cell|null){
     const id=c?key(c):''
@@ -76,14 +95,15 @@ export async function mountPlanet(canvas:HTMLCanvasElement,ui:SceneUI,signal:Abo
         }
         near.forEach(a=>{if(key(a)!==id)outline(a,gridMat)})
       }
-      outline(c,hoverMat)
+      if(mode.edit&&mode.tool)blockOutline(c,mode.tool);else outline(c,hoverMat)
     }
     dirty=true
   }
-  function refresh(){
-    root.remove(land.group,walker.group);walker.dispose();land.dispose();land=makeLandscape(specs,data,small);root.add(land.group)
-    walker=makeWalker(land.creeks,land.obstacles);root.add(walker.group)
+  function refresh(persist=true){
+    root.remove(land.group,walker.group);walker.dispose();land.dispose();land=makeLandscape(specs,data,small,materials,viewLevel);root.add(land.group)
+    walker=makeWalker(land.terrain,land.obstacles);root.add(walker.group)
     clearOverlay();lastCell='';hovering=null;dirty=true;ui.history(history.length)
+    if(!persist)return true
     try{localStorage.setItem(STORAGE,JSON.stringify(data));return true}catch{return false}
   }
   function change(next:WorldSave,msg:string){
@@ -91,17 +111,25 @@ export async function mountPlanet(canvas:HTMLCanvasElement,ui:SceneUI,signal:Abo
     data=next;const saved=refresh();ui.note(saved?msg:msg+' · 本次更改仅在此页保留')
   }
   function place(n:T.Vector3){
-    const c=locate(n),s=sample(center(c),land.creeks),k=mode.kind,v=mode.variant
+    const c=locate(n)
+    if(mode.tool){
+      const changeTo=land.terrain.edit(cellId(c),mode.tool)
+      if(!changeTo.world){ui.note(changeTo.reason??'无法修改这一格。');return}
+      const verb={add:'已增加',dig:'已挖去',paint:'已替换'},name={grass:'草地',sand:'沙地',water:'海水'}
+      const msg=verb[mode.tool.action]+(mode.tool.action==='dig'?'模块':name[mode.tool.material]+'模块')+' · 第 '+changeTo.layer+' 层'
+      change(changeTo.world,msg);inspect(n);return
+    }
+    const s=land.terrain.sample(center(c)),k=mode.kind,v=mode.variant
     if(k==='creek'){
-      const hit=sample(n,land.creeks)
+      const hit=land.terrain.sample(n)
       if(hit.route<0||hit.near>2.9){ui.note('请点在溪床或溪岸上，替换这条小溪的水道。');return}
       if(data.streams[hit.route]===v){ui.note('这条溪流已使用该形态。');return}
       const streams=data.streams.slice();streams[hit.route]=v
-      const future=makeCreeks(streams)
-      if(data.stamps.some(st=>st.kind!=='sand'&&sample(center(st),future).wet)){ui.note('新河道会淹没已摆放的标本，请换一种形态。');return}
+      const future=createTerrain({...data,streams})
+      if(data.stamps.some(st=>st.kind!=='sand'&&future.sample(center(st)).wet)){ui.note('新河道会淹没已摆放的标本，请换一种形态。');return}
       change({...data,streams},'已替换溪流 · '+variants[k][v]);return
     }
-    if(s.wet||s.near<1.2){ui.note('这里是水面。请选择一块露出水面的地表。');return}
+    if(s.wet||!s.material){ui.note('这里是水面。请选择一块露出水面的地表。');return}
     if((k==='tree'||k==='grass')&&s.f<.10){ui.note('这里是潮间带。树和草需要更高的干地。');return}
     if(k==='sand'&&s.f>.32){ui.note('沙地笔刷适用于海岸和低台地。');return}
     const found=data.stamps.find(t=>key(t)===key(c))
@@ -115,13 +143,22 @@ export async function mountPlanet(canvas:HTMLCanvasElement,ui:SceneUI,signal:Abo
     const b=canvas.getBoundingClientRect()
     screen.set((x-b.left)/b.width*2-1,1-(y-b.top)/b.height*2)
     root.updateMatrixWorld(true);camera.updateMatrixWorld();ray.setFromCamera(screen,camera)
-    const hit=ray.intersectObject(land.surface,false)[0]
+    if(mode.edit&&mode.tool?.level!=null){
+      const shell=new T.Sphere(new T.Vector3(),RADIUS+(mode.tool.level+1)*BLOCK_HEIGHT)
+      const hit=ray.ray.intersectSphere(shell,new T.Vector3())
+      return hit?root.worldToLocal(hit).normalize():null
+    }
+    const hit=ray.intersectObjects([land.surface,land.water],false)[0]
     return hit?root.worldToLocal(hit.point.clone()).normalize():null
   }
   function inspect(n:T.Vector3|null){
     displayCell(n?locate(n):null)
     if(!n){ui.ground('');return}
-    const s=sample(n,land.creeks)
+    const s=land.terrain.sample(n)
+    if(mode.edit&&mode.tool){
+      const hit=land.terrain.target(s.id,mode.tool),names={grass:'草地',sand:'沙地',water:'水'}
+      ui.ground('第 '+hit.layer+' 层 · '+(hit.before?names[hit.before]:'空格'));return
+    }
     ui.ground(s.river>=0?'溪床':s.wet?(s.depth>.7?'海水':'浅滩'):s.f<.10?'沙岸':s.f>.54?'高台草甸':'草地')
   }
   function zoom(factor:number){if(walker.active)walker.zoom(factor);else targetDistance=clamp(targetDistance*factor,.48,1.27);dirty=true}
@@ -152,7 +189,7 @@ export async function mountPlanet(canvas:HTMLCanvasElement,ui:SceneUI,signal:Abo
     const tap=pointer.has(e.pointerId)&&pointer.size===1&&!!drag&&drag.travel<=5
     pointer.delete(e.pointerId);if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId)
     if(tap&&!walker.active){const n=targetAt(e.clientX,e.clientY);inspect(n)
-      if(n&&pickingLanding){if(sample(n,land.creeks).wet)ui.note('请在露出水面的地表选择落点。');else {walkMode(true,n);ui.note('已抵达新的落点。')}}
+      if(n&&pickingLanding){if(land.terrain.sample(n).wet)ui.note('请在露出水面的地表选择落点。');else {walkMode(true,n);ui.note('已抵达新的落点。')}}
       else if(n&&mode.edit)place(n)}
     if(!pointer.size)drag=null
   },opts)
@@ -209,11 +246,17 @@ export async function mountPlanet(canvas:HTMLCanvasElement,ui:SceneUI,signal:Abo
   }
   frame=requestAnimationFrame(tick)
   return {
-    choose(s){mode=s;lastCell='!';displayCell(hovering)},zoom,
+    choose(s){mode=s
+      if(s.edit)pickingLanding=false
+      const limit=!walker.active&&s.edit&&s.tool?s.tool.level:null
+      if(limit!==viewLevel){viewLevel=limit;refresh(false)}
+      lastCell='!';displayCell(hovering)
+      if(!s.edit)ui.ground('')
+    },zoom,
     walk(v){walkMode(v)},landAt(){if(walker.active)walkMode(false);pickingLanding=true;ui.note('旋转星球，在想去的干地上轻点落地。')},moveStick(x,z){walker.touch(x,z)},
     home(){focus=startRotation.clone();targetDistance=1;dirty=true},
     undo(){const previous=history.pop();if(previous){data=previous;const saved=refresh();ui.note(saved?'已撤销上一步。':'已撤销 · 本次更改仅在此页保留')}},
     setGrid(v){grid=v;lastCell='!';displayCell(hovering)},
-    dispose(){live=false;cancelFrame(frame);ro.disconnect();clearOverlay();hoverMat.dispose();gridMat.dispose();walker.dispose();land.dispose();specs.forEach(g=>g.dispose());sun.shadow.dispose();renderer.dispose()}
+    dispose(){live=false;cancelFrame(frame);ro.disconnect();clearOverlay();hoverMat.dispose();gridMat.dispose();brushMat.dispose();walker.dispose();land.dispose();materials.dispose();specs.forEach(g=>g.dispose());sun.shadow.dispose();renderer.dispose()}
   }
 }

@@ -1,7 +1,7 @@
 import * as T from 'three/webgpu'
-import { RADIUS, UP, clamp, creekPoint, makeCreeks, sample } from './world'
+import { RADIUS, UP, clamp, creekPoint } from './world'
 
-type Rivers=ReturnType<typeof makeCreeks>
+import { Terrain, cellAt, charts } from './terrain-blocks'
 type Obstacle={p:T.Vector3;radius:number}
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z)
 function makeHiker(){
@@ -37,12 +37,14 @@ function makeHiker(){
   return {group,animate(phase:number,stride:number){const wave=Math.sin(phase);legs[0].rotation.x=wave*.43*stride;legs[1].rotation.x=-wave*.43*stride;arms[0].rotation.x=-wave*.32*stride;arms[1].rotation.x=wave*.32*stride;body.position.y=.59+Math.abs(Math.cos(phase))*.025*stride},
     dispose(){meshes.forEach(m=>m.dispose());mats.forEach(m=>m.dispose())}}
 }
-export function makeWalker(creeks:Rivers,obstacles:Obstacle[]){
+export function makeWalker(terrain:Terrain,obstacles:Obstacle[]){
+  const creeks=terrain.creeks
+  let level=0
   const human=makeHiker(),up=V(),forward=V(),facing=V(),right=V(),move=V(),next=V(),q=new T.Quaternion(),basis=new T.Matrix4()
   const aim=V(),ideal=V(),target=V(),camUp=V(),support=V(),foot=V(),view=V(),frameX=V(),normal=V(),touch=new T.Vector2()
   const keys=new Set<string>();let initialized=false,phase=0,stride=0,yawPitch=.57,range=3.95,snapped=false,active=false
   const project=(v:T.Vector3,n:T.Vector3)=>v.addScaledVector(n,-v.dot(n)).normalize()
-  function safeSpawn(p:T.Vector3){const s=sample(p,creeks);return !s.wet&&s.near>1.25&&!obstacles.some(o=>p.distanceToSquared(o.p)<((o.radius+.20)/RADIUS)**2)}
+  function safeSpawn(p:T.Vector3){const s=terrain.sample(p);return !!s.material&&!s.wet&&s.near>1.05&&!obstacles.some(o=>p.distanceToSquared(o.p)<((o.radius+.20)/RADIUS)**2)}
   function start(point?:T.Vector3){
     if(!initialized||point){
       let spawn=point?.clone()??creekPoint(creeks[0],.61,-.085)
@@ -50,13 +52,15 @@ export function makeWalker(creeks:Rivers,obstacles:Obstacle[]){
         const east=V().crossVectors(spawn,Math.abs(spawn.y)<.92?UP:V(1,0,0)).normalize(),north=V().crossVectors(spawn,east)
         let chosen:T.Vector3|null=null
         for(let k=1;k<=15&&!chosen;k++)for(let i=0;i<12;i++){const a=i*Math.PI/6;const test=spawn.clone().addScaledVector(east,Math.cos(a)*k*.029).addScaledVector(north,Math.sin(a)*k*.029).normalize();if(safeSpawn(test)){chosen=test;break}}
-        spawn=chosen??creekPoint(creeks[0],.27,.108)
+        chosen??=charts.find(c=>safeSpawn(c.p))?.p.clone()??null
+        if(!chosen)return false
+        spawn=chosen
       }
-      up.copy(spawn);const river=creeks.reduce((a,b)=>a.n.dot(spawn)>b.n.dot(spawn)?a:b)
+      up.copy(spawn);level=terrain.solid[cellAt(up)];const river=creeks.reduce((a,b)=>a.n.dot(spawn)>b.n.dot(spawn)?a:b)
       forward.copy(river.along).multiplyScalar(-1).addScaledVector(river.across,.26);project(forward,up)
       if(forward.lengthSq()<.01)project(forward.set(1,0,0),up);facing.copy(forward);initialized=true
     }
-    active=true;snapped=false;keys.clear();touch.set(0,0);human.group.visible=true
+    active=true;snapped=false;keys.clear();touch.set(0,0);human.group.visible=true;return true
   }
   function stop(){active=false;keys.clear();touch.set(0,0);human.group.visible=false}
   stop()
@@ -69,27 +73,28 @@ export function makeWalker(creeks:Rivers,obstacles:Obstacle[]){
     const x=touch.x+Number(keys.has('KeyD')||keys.has('ArrowRight'))-Number(keys.has('KeyA')||keys.has('ArrowLeft'))
     const z=touch.y+Number(keys.has('KeyW')||keys.has('ArrowUp'))-Number(keys.has('KeyS')||keys.has('ArrowDown'))
     right.crossVectors(forward,up).normalize();move.copy(forward).multiplyScalar(z).addScaledVector(right,x)
-    const strength=Math.min(1,move.length()),current=sample(up,creeks);let moved=false
+    const strength=Math.min(1,move.length()),current=terrain.support(up,level);let moved=false
     if(strength>.035){
-      move.normalize();const run=keys.has('ShiftLeft')||keys.has('ShiftRight'),speed=(run?2.65:1.68)*(current.wet?.57:1)
-      const step=speed*strength*dt;next.copy(up).addScaledVector(move,step/(RADIUS+current.bed)).normalize()
-      const s=sample(next,creeks),blocked=obstacles.some(o=>next.distanceToSquared(o.p)<((o.radius+.085)/RADIUS)**2&&next.distanceToSquared(o.p)<up.distanceToSquared(o.p))
-      if(s.depth<.31&&Math.abs(s.bed-current.bed)<.085+step*1.18&&!blocked){
+      move.normalize();const run=keys.has('ShiftLeft')||keys.has('ShiftRight'),speed=(run?2.65:1.68)*(current?.wet?.57:1)
+      const step=speed*strength*dt;next.copy(up).addScaledVector(move,step/(RADIUS+(current?.height??0))).normalize()
+      const s=terrain.traverse(up,next,level),blocked=obstacles.some(o=>next.distanceToSquared(o.p)<((o.radius+.085)/RADIUS)**2&&next.distanceToSquared(o.p)<up.distanceToSquared(o.p))
+      if(s&&!blocked){
+        level=s.layer
         q.setFromUnitVectors(up,next);forward.applyQuaternion(q);facing.applyQuaternion(q);up.copy(next);project(forward,up)
         facing.lerp(project(move,up),1-Math.exp(-dt*12));if(facing.lengthSq()<.001)facing.copy(move);project(facing,up)
         moved=true;phase+=dt*(run?10:7.8)*strength
       }
     }
     stride+=(Number(moved)*strength-stride)*(1-Math.exp(-dt*15))
-    const ground=sample(up,creeks);foot.copy(up).multiplyScalar(RADIUS+ground.bed+.016)
+    const ground=terrain.support(up,level);foot.copy(up).multiplyScalar(RADIUS+(ground?.height??terrain.sample(up).bed)+.016)
     human.group.position.copy(foot);frameX.crossVectors(up,facing).normalize();basis.makeBasis(frameX,up,facing);human.group.quaternion.setFromRotationMatrix(basis);human.animate(phase,stride)
     right.crossVectors(forward,up).normalize()
     aim.copy(foot).addScaledVector(up,.84).addScaledVector(forward,1.45)
     ideal.copy(foot).addScaledVector(up,1.04+Math.sin(yawPitch)*range).addScaledVector(forward,-Math.cos(yawPitch)*range).addScaledVector(right,.27)
     // A shoulder camera stays above the terrain along the entire boom, including cliff edges.
-    for(let i=1;i<=9;i++){const t=i/9;support.copy(aim).lerp(ideal,t);normal.copy(support).normalize();const h=sample(normal,creeks).height+RADIUS+.19
+    for(let i=1;i<=9;i++){const t=i/9;support.copy(aim).lerp(ideal,t);normal.copy(support).normalize();const h=terrain.cameraFloor(normal,support.length()-RADIUS)+RADIUS+.19
       if(support.length()<h){ideal.copy(aim).lerp(ideal,Math.max(.20,(i-.7)/9));break}}
-    normal.copy(ideal).normalize();const floor=RADIUS+sample(normal,creeks).height+.24
+    normal.copy(ideal).normalize();const floor=RADIUS+terrain.cameraFloor(normal,ideal.length()-RADIUS)+.24
     if(ideal.length()<floor)ideal.copy(normal).multiplyScalar(floor)
     if(!snapped){camera.position.copy(ideal);target.copy(aim);camUp.copy(up);snapped=true}
     else{camera.position.lerp(ideal,1-Math.exp(-dt*15));target.lerp(aim,1-Math.exp(-dt*14));camUp.lerp(up,1-Math.exp(-dt*13)).normalize()}
