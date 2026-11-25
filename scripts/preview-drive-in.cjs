@@ -6,7 +6,8 @@ const street = process.argv.includes('--sumiyoshi')
 const title = street ? 'OOO Sumiyoshi Pixelscape' : 'OOO Drive-In'
 const host = '127.0.0.1'
 const port = street ? 3021 : 3017
-const url = `http://${host}:${port}`
+const origin = `http://${host}:${port}`
+const url = street ? origin + '/sumiyoshi' : origin
 const healthPath = '/__ooo_local_preview'
 const signature = title + ' local preview'
 
@@ -51,7 +52,7 @@ async function main() {
     })
   } catch (error) {
     if (error.code !== 'EADDRINUSE') throw error
-    const existing = await fetch(url + healthPath, { signal: AbortSignal.timeout(4000) }).catch(() => null)
+    const existing = await fetch(origin + healthPath, { signal: AbortSignal.timeout(4000) }).catch(() => null)
     if (existing?.ok && await existing.text() === signature) {
       openPreview()
       return

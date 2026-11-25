@@ -27,7 +27,7 @@ function free(roots:T.Object3D[]){
   geometry.forEach(g=>g.dispose());material.forEach(m=>m.dispose());textures.forEach(t=>t.dispose())
 }
 export function createStreetGame(host:HTMLDivElement,events:Controls,vision:string){
-  const renderer=new T.WebGLRenderer({antialias:false,powerPreference:'high-performance'})
+  const renderer=new T.WebGLRenderer({alpha:true,antialias:false,powerPreference:'high-performance'})
   renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.04
   renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFShadowMap;renderer.shadowMap.autoUpdate=false
   const canvas=renderer.domElement;host.appendChild(canvas);canvas.setAttribute('aria-hidden','true')
@@ -39,6 +39,8 @@ export function createStreetGame(host:HTMLDivElement,events:Controls,vision:stri
   const breeze=createCanopyBreeze()
   const camera=new T.PerspectiveCamera(48,1,.035,95),director=cameraDirector(camera),tv=television(scenes.home)
   const tvDocument=screenSurface(tv.face,camera)
+  const tvPicture=screenSurface(tv.face,camera)
+  host.insertBefore(tv.picture,canvas);tvPicture.attach(tv.picture)
   const avatar=new T.Group();scenes.home.add(avatar);avatar.position.set(homeSpawn.x,0,homeSpawn.z)
   const bottleScene=new T.Scene(),bottleRig=new T.Group(),bottleCam=new T.PerspectiveCamera(36,1,.015,5)
   bottleScene.add(bottleRig);bottleScene.add(new T.HemisphereLight('#fff0d7','#e6b883',2.05))
@@ -88,6 +90,7 @@ export function createStreetGame(host:HTMLDivElement,events:Controls,vision:stri
     })
   }
   function applyVisibility(){
+    tv.picture.hidden=view.area!=='home'
     avatar.visible=view.mode==='walk'
     cafeCeiling.forEach(o=>{o.visible=view.mode!=='walk'||!director.elevated})
     if(seated)seated.visible=view.mode==='seated'
@@ -254,6 +257,7 @@ export function createStreetGame(host:HTMLDivElement,events:Controls,vision:stri
       for(let i=0;i<steps;i++)walk(dt/steps)
     }
     director.frame(view,avatar.position,dt,motion.matches,tvDocument.attached,canvas.width)
+    if(view.area==='home')tvPicture.place(canvas.clientWidth,canvas.clientHeight)
     if(tvDocument.attached&&view.mode==='focus')tvDocument.place(canvas.clientWidth,canvas.clientHeight)
     const weatherTime=motion.matches?0:time
     if(view.area==='home')coast.update(weatherTime)
@@ -316,7 +320,7 @@ export function createStreetGame(host:HTMLDivElement,events:Controls,vision:stri
     turnBottle(by:number){bottleAngle+=by},
     dispose(){
       disposed=true;cancelAnimationFrame(frame);observe.disconnect();listeners.forEach(([el,n,fn])=>el.removeEventListener(n,fn))
-      tvDocument.attach(null);tv.dispose();coast.dispose();streetRain.dispose()
+      tvDocument.attach(null);tvPicture.attach(null);tv.dispose();coast.dispose();streetRain.dispose()
       free([...Object.values(scenes),bottleScene]);renderer.dispose();canvas.remove()
     },
   }

@@ -44,9 +44,8 @@ const imageShim = writeModule('image.tsx', `
   }`)
 const linkShim = writeModule('link.tsx', `
   export default function Link({href, children, prefetch, ...props}) {
-    const path = href === '/works' ? '/' : href
     return <a target="_blank" rel="noopener noreferrer" {...props}
-      href={new URL(path, 'https://ooo-web.vercel.app/').href}>{children}</a>
+      href={new URL(href, 'https://ooo-web.vercel.app/').href}>{children}</a>
   }`)
 const entry = writeModule('entry.tsx', `
   import {createRoot} from 'react-dom/client'

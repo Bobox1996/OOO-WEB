@@ -183,9 +183,16 @@ export function furnishLight(scene:T.Scene,area:Area){
 }
 
 export function television(room:T.Scene){
-  let ctx!:CanvasRenderingContext2D
-  const map=texture(1440,810,c=>{ctx=c})
-  const face=new T.Mesh(new T.PlaneGeometry(display.width,display.height),new T.MeshBasicMaterial({map,toneMapped:false}))
+  const picture=document.createElement('div')
+  picture.dataset.tvPicture=''
+  picture.setAttribute('aria-hidden','true')
+  // Write a transparent, depth-tested opening in the low-resolution scene.
+  // The original photograph sits behind it. People and furniture can still occlude it.
+  const face=new T.Mesh(new T.PlaneGeometry(display.width,display.height),new T.ShaderMaterial({
+    blending:T.NoBlending,
+    vertexShader:'void main(){gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
+    fragmentShader:'void main(){gl_FragColor=vec4(0.0);}',
+  }))
   face.name='Television_ProjectDisplay'
   face.material.name='Television_ActiveProject'
   face.position.set(display.x,display.y,display.z);room.add(face)
@@ -195,10 +202,15 @@ export function television(room:T.Scene){
   sample.width=12;sample.height=6
   const small=sample.getContext('2d',{willReadFrequently:true})
   const pixel=new T.Color()
-  function refresh(){
-    map.needsUpdate=true
+  function refresh(img?:HTMLImageElement){
     if(!small)return
-    small.drawImage(ctx.canvas,0,0,sample.width,sample.height)
+    if(img){
+      const scale=Math.max(display.width/img.naturalWidth,display.height/img.naturalHeight)
+      const sw=display.width/scale,sh=display.height/scale
+      small.drawImage(img,(img.naturalWidth-sw)/2,(img.naturalHeight-sh)/2,sw,sh,0,0,sample.width,sample.height)
+    }else{
+      small.fillStyle='#232f2e';small.fillRect(0,0,sample.width,sample.height)
+    }
     // Average in linear light; each half of the picture lights its own side of the room.
     const patches=small.getImageData(0,0,sample.width,sample.height).data
     for(let half=0;half<2;half++){
@@ -220,23 +232,19 @@ export function television(room:T.Scene){
     const id=++sequence
     if(source){source.onload=null;source.onerror=null}
     const slate=()=>{
-      const {width:w,height:h}=ctx.canvas
-      ctx.fillStyle='#232f2e';ctx.fillRect(0,0,w,h);ctx.fillStyle='#f6efd9';ctx.textAlign='center'
-      ctx.font='italic 58px Georgia';ctx.fillText(title||'Out Of Office',w/2,h/2,w*.86);refresh()
+      const caption=document.createElement('span')
+      caption.textContent=title||'Out Of Office';picture.replaceChildren(caption);refresh()
     }
     if(!url){slate();return}
     const img=new Image();source=img;img.crossOrigin='anonymous';img.decoding='async'
     img.onload=()=>{
       if(id!==sequence)return
-      const {width:w,height:h}=ctx.canvas,iw=img.naturalWidth,ih=img.naturalHeight
-      // Centered object-fit: cover. Portraits fill the entire 16:9 television.
-      const scale=Math.max(w/iw,h/ih),sw=w/scale,sh=h/scale
-      ctx.drawImage(img,(iw-sw)/2,(ih-sh)/2,sw,sh,0,0,w,h);refresh()
+      img.alt='';picture.replaceChildren(img);refresh(img)
     }
     img.onerror=()=>{if(id===sequence)slate()};img.src=url
   }
   set(null,'Out Of Office')
-  return {face,set,dispose(){sequence++;if(source){source.onload=null;source.onerror=null}}}
+  return {face,picture,set,dispose(){sequence++;if(source){source.onload=null;source.onerror=null}picture.remove()}}
 }
 
 export function bottleLabel(parent:T.Object3D,statement:string){

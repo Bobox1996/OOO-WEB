@@ -29,11 +29,17 @@ export function screenSurface(screen:T.Mesh<T.PlaneGeometry>,camera:T.Perspectiv
       if(viewportWidth===w&&viewportHeight===h&&previousClip.equals(clip))return
       viewportWidth=w;viewportHeight=h;previousClip.copy(clip)
       project(-width/2,height/2,w,h,origin);project(width/2,height/2,w,h,right);project(-width/2,-height/2,w,h,bottom)
-      if(Math.min(origin.z,right.z,bottom.z)<=0){element.style.visibility='hidden';return}
-      const cssWidth=Math.max(1,Math.round(Math.hypot(right.x/right.z-origin.x/origin.z,right.y/right.z-origin.y/origin.z)))
+      const fourthDepth=right.z+bottom.z-origin.z
+      if(Math.max(origin.z,right.z,bottom.z,fourthDepth)<camera.near){element.style.visibility='hidden';return}
+      // Walking past the screen can put a corner behind the camera. Preserve its
+      // signed W for browser clipping, while keeping the backing element finite.
+      const centerDepth=Math.max(camera.near,(right.z+bottom.z)/2)
+      const projectedWidth=Math.min(origin.z,right.z)>camera.near?
+        Math.hypot(right.x/right.z-origin.x/origin.z,right.y/right.z-origin.y/origin.z):w
+      const cssWidth=Math.max(1,Math.round(Math.min(2*Math.hypot(w,h),projectedWidth)))
       const cssHeight=cssWidth*height/width
-      right.sub(origin).multiplyScalar(1/(cssWidth*origin.z));bottom.sub(origin).multiplyScalar(1/(cssHeight*origin.z))
-      const transform='matrix3d('+[right.x,right.y,0,right.z,bottom.x,bottom.y,0,bottom.z,0,0,1,0,origin.x/origin.z,origin.y/origin.z,0,1].map(n=>Number(n.toFixed(9))).join(',')+')'
+      right.sub(origin).multiplyScalar(1/(cssWidth*centerDepth));bottom.sub(origin).multiplyScalar(1/(cssHeight*centerDepth))
+      const transform='matrix3d('+[right.x,right.y,0,right.z,bottom.x,bottom.y,0,bottom.z,0,0,1,0,origin.x/centerDepth,origin.y/centerDepth,0,origin.z/centerDepth].map(n=>Number(n.toFixed(9))).join(',')+')'
       if(cssWidth!==previousWidth){element.style.width=cssWidth+'px';element.style.height=cssHeight+'px';previousWidth=cssWidth}
       if(transform!==previousTransform){element.style.transform=transform;previousTransform=transform}
       element.style.visibility='visible'

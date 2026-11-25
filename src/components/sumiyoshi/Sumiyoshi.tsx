@@ -7,7 +7,6 @@ import StudioLogo from '@/components/layout/StudioLogo'
 import { folio } from '@/lib/portfolio'
 import type { ProjectDetails } from '@/lib/sumiyoshi-projects'
 import roster from '../../../art/sumiyoshi/cast/roster.json'
-import dialoguePortraits from '../../../art/pixelscape/cast/dialogue.png'
 import type { Film } from '../drive-in/ProjectDeck'
 import type { TeamMember } from '@/types'
 import { opening, type View } from './camera'
@@ -33,10 +32,9 @@ function Conversation({person,index,done}:{person:Member|undefined;index:number;
   const pages=text.trim().split(/\r?\n\s*\r?\n/).filter(Boolean)
   return <section className={s.bubble+' '+s.conversation} aria-label="Member conversation">
     <div className={s.dialogueTop}><small>Forest café · {roles[index]}</small><button onClick={done}>Done <kbd>Space</kbd></button></div>
-    <div className={s.bio}><div className={s.drawnPortrait} aria-hidden="true" style={{
-      backgroundImage:`url("${typeof dialoguePortraits==='string'?dialoguePortraits:dialoguePortraits.src}")`,
-      backgroundPosition:`${index*100/6}% center`,
-    }}/>
+    <div className={s.bio}>
+      {person?.portrait_url&&<Image className={s.memberPortrait} src={person.portrait_url}
+        width={420} height={520} sizes="(max-width: 760px) 76px, 108px" alt={memberName(person,index)}/>}
       <div><h2>{memberName(person,index)}</h2><p aria-live="polite">{pages[page]}</p></div></div>
     {pages.length>1&&<div className={s.speechPages}><button aria-label="Previous part" disabled={!page} onClick={()=>setPage(page-1)}>←</button>
       <span>{folio(page)} / {String(pages.length).padStart(2,'0')}</span><button onClick={()=>page===pages.length-1?done():setPage(page+1)}>{page===pages.length-1?'Finish':'Continue'} →</button></div>}

@@ -3,7 +3,7 @@ import Sumiyoshi from '@/components/sumiyoshi/Sumiyoshi'
 import { makeCatalog } from '@/lib/portfolio'
 import { makeProjectDetails } from '@/lib/sumiyoshi-projects'
 
-export default async function HomePage() {
+export default async function SumiyoshiPage() {
   const [snapshot, savedArticles] = process.env.NODE_ENV === 'development'
     ? await Promise.all([
       import('@/lib/drive-in-snapshot.json').then(module => module.default),
