@@ -38,6 +38,7 @@ const cssClasses = writeModule('css.cjs', `
     return 'export default ' + JSON.stringify(Object.fromEntries(names.map(name => [name, name])))
   }`)
 const imageShim = writeModule('image.tsx', `
+  export function getImageProps(props) { return {props} }
   export default function Image({src, fill, unoptimized, priority, quality, style, ...rest}) {
     return <img {...rest} src={typeof src === 'string' ? src : src.src}
       style={fill ? { position: 'absolute', inset: 0, width: '100%', height: '100%', ...style } : style}/>

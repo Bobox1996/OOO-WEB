@@ -1,4 +1,5 @@
 import * as T from 'three'
+import { getImageProps } from 'next/image'
 import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js'
 import { glowTexture, texture } from '../drive-in/geometry'
 import { homeDisplay as display, type Area } from './world'
@@ -236,12 +237,25 @@ export function television(room:T.Scene){
       caption.textContent=title||'Out Of Office';picture.replaceChildren(caption);refresh()
     }
     if(!url){slate();return}
-    const img=new Image();source=img;img.crossOrigin='anonymous';img.decoding='async'
+    const img=new Image();source=img;img.decoding='async'
+    // Use the site's responsive image service so the opening TV does not wait
+    // for a full print-resolution upload. Offline covers already have local URLs.
+    const {props}=getImageProps({src:url,alt:'',width:1600,height:900,sizes:'(max-width: 700px) 100vw, 85vw'})
+    let originalFallback=false
     img.onload=()=>{
       if(id!==sequence)return
-      img.alt='';picture.replaceChildren(img);refresh(img)
+      img.alt='';picture.replaceChildren(img)
+      const displayed=new URL(img.currentSrc,document.baseURI)
+      refresh(displayed.origin===location.origin||displayed.protocol==='data:'?img:undefined)
     }
-    img.onerror=()=>{if(id===sequence)slate()};img.src=url
+    img.onerror=()=>{
+      if(id!==sequence)return
+      if(!originalFallback && props.src!==url){
+        originalFallback=true;img.removeAttribute('srcset');img.src=url
+      }else slate()
+    }
+    if(props.srcSet){img.sizes=props.sizes||'85vw';img.srcset=props.srcSet}
+    img.src=props.src
   }
   set(null,'Out Of Office')
   return {face,picture,set,dispose(){sequence++;if(source){source.onload=null;source.onerror=null}picture.remove()}}
