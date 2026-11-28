@@ -11,6 +11,12 @@ export default function AppLayout({
 }) {
   const pathname = usePathname()
 
+  // The alpine scene owns its viewport and photography UI; authentication still
+  // runs through the shared /admin middleware.
+  if (pathname === '/admin/app/experiments/mountain-cabin') {
+    return <>{children}</>
+  }
+
   if (pathname === '/admin/app' || pathname.startsWith('/admin/app/experiments/')) {
     return (
       <>
